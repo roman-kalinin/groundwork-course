@@ -1,0 +1,267 @@
+{
+  "id": "embeddings-and-rag",
+  "title": "Embeddings and RAG",
+  "summary": "How to let a model answer from your own data: turn text into embeddings, search by meaning with pgvector, and feed only the best matches into the prompt.",
+  "minutes": 14,
+  "level": "intermediate",
+  "youWillLearn": [
+    "What an <b>embedding</b> is, and why it finds meaning that keyword search misses",
+    "The two halves of <b>RAG</b>: indexing your data, then retrieving for each question",
+    "How to store and search vectors in Supabase with <b>pgvector</b>",
+    "The bugs that leak data or serve stale answers, and how to check for them"
+  ],
+  "glossary": {
+    "embedding": "A list of numbers that represents the meaning of a piece of text. Texts with similar meaning get similar lists.",
+    "vector": "A list of numbers, like a point on a map with many directions. Embeddings are vectors.",
+    "embedding model": "A model whose only job is turning text into an embedding. It is separate from the chat model and much cheaper.",
+    "chunk": "A small piece of a longer document, such as a paragraph, embedded and searched on its own.",
+    "RAG": "Retrieval-augmented generation: find the most relevant pieces of your own data, put them in the prompt, then let the model answer from them.",
+    "pgvector": "A Postgres extension that adds a vector column type and fast nearest-match search. Supabase supports it.",
+    "cosine distance": "A way to measure how far apart two vectors point. Smaller distance means closer meaning.",
+    "HNSW": "A type of index for vectors that finds near matches very fast by skipping most rows, at the price of being approximate.",
+    "hybrid search": "Combining keyword search and vector search, so exact words and similar meanings both count."
+  },
+  "steps": [
+    {
+      "title": "\"What did I decide about the logo?\"",
+      "chapter": "problem",
+      "body": [
+        "Maya asks Notely's chat a question about her own notes. She has 2,000 of them. Sending them all would overflow the context window, and cost a fortune every question.",
+        "Keyword search does not save us either. The note that answers it says \"going with the blue brand mark\". It never uses the word <em>logo</em>, so a search for \"logo\" finds nothing."
+      ],
+      "scene": {
+        "caption": "Too many notes to send, and the right one does not contain the search word.",
+        "nodes": [
+          { "id": "q", "x": 2, "y": 4, "label": "Maya's question", "sublabel": "\"the logo?\"", "icon": "chat", "kind": "person" },
+          { "id": "route", "x": 6.4, "y": 4, "label": "Chat route", "sublabel": "Notely server", "icon": "function", "kind": "server" },
+          { "id": "notes", "x": 10.2, "y": 4, "label": "notes table", "sublabel": "2,000 notes", "icon": "database", "kind": "data", "status": "warn", "tags": ["0 rows match"] }
+        ],
+        "edges": [
+          { "from": "q", "to": "route", "packet": { "label": "ask" } },
+          { "from": "route", "to": "notes", "label": "ILIKE '%logo%'", "status": "warn", "packet": true }
+        ],
+        "notes": [
+          { "id": "miss", "x": 10.2, "y": 6.2, "text": "The note says \"brand mark\"", "status": "warn" }
+        ]
+      }
+    },
+    {
+      "title": "Turn meaning into coordinates",
+      "chapter": "idea",
+      "body": [
+        "An <span class=\"term\">embedding model</span> turns text into an <span class=\"term\">embedding</span>: a <span class=\"term\">vector</span>, or long list of numbers. Think of it as a position on a map of meaning.",
+        "Texts about similar things land near each other, even with no words in common. \"Logo decision\" and \"blue brand mark\" sit close. \"Grocery list\" sits far away. Searching becomes: find the nearest points."
+      ],
+      "callout": {
+        "type": "analogy",
+        "text": "A library shelved by topic, not by title. Walk to where your question would sit, and the useful books are right there, whatever their titles say."
+      },
+      "scene": {
+        "caption": "On the map of meaning, the question lands next to the note that answers it.",
+        "zones": [
+          { "id": "space", "x": 0.4, "y": 0.5, "w": 11.2, "h": 7, "label": "Meaning space" }
+        ],
+        "nodes": [
+          { "id": "q", "x": 2.6, "y": 3, "label": "\"Logo decision?\"", "sublabel": "the question", "icon": "chat", "kind": "person", "status": "active" },
+          { "id": "n1", "x": 6.8, "y": 3, "label": "Blue brand mark", "sublabel": "brand call note", "icon": "file", "kind": "data", "status": "ok" },
+          { "id": "n2", "x": 5.2, "y": 5.4, "label": "Font shortlist", "sublabel": "design note", "icon": "file", "kind": "data" },
+          { "id": "n3", "x": 9.8, "y": 6.4, "label": "Grocery list", "icon": "file", "kind": "data", "status": "dim" },
+          { "id": "n4", "x": 9.8, "y": 1.4, "label": "Gym plan", "icon": "file", "kind": "data", "status": "dim" }
+        ],
+        "edges": [
+          { "from": "q", "to": "n1", "label": "very close", "status": "ok", "arrow": "none" },
+          { "from": "q", "to": "n2", "label": "close", "style": "dashed", "arrow": "none" },
+          { "from": "q", "to": "n3", "label": "far", "style": "dotted", "status": "dim", "arrow": "none" }
+        ]
+      }
+    },
+    {
+      "title": "Step 1: index your notes once",
+      "chapter": "how",
+      "body": [
+        "Split each note into <span class=\"term\" data-term=\"chunk\">chunks</span> of a paragraph or so, embed each chunk, and store the vector next to its text in Postgres with <span class=\"term\">pgvector</span>.",
+        "This happens ahead of time, not per question. Anthropic does not sell an embedding model, so Claude Code will pick one from another provider. Whatever you pick, the column size must match its output size."
+      ],
+      "code": {
+        "language": "sql",
+        "filename": "supabase/migrations/…_note_chunks.sql",
+        "code": "create extension if not exists vector;\n\ncreate table note_chunks (\n  id bigint generated always as identity primary key,\n  note_id uuid not null references notes(id) on delete cascade,\n  user_id uuid not null references auth.users(id),\n  content text not null,\n  embedding vector(1024) -- must match your model's size\n);",
+        "caption": "user_id on every chunk is not optional. You will see why in the watch-out step."
+      },
+      "scene": {
+        "caption": "Indexing: notes are chunked, embedded, and stored as vectors next to their text.",
+        "nodes": [
+          { "id": "notes", "x": 2, "y": 1.6, "label": "notes table", "sublabel": "2,000 notes", "icon": "database", "kind": "data" },
+          { "id": "embedder", "x": 6.4, "y": 3.2, "label": "Embedding model", "sublabel": "text → vector", "icon": "vector", "kind": "ai", "status": "active" },
+          { "id": "chunks", "x": 10.2, "y": 3.2, "label": "note_chunks", "sublabel": "text + vector", "icon": "table", "kind": "data", "tags": ["vector(1024)"] }
+        ],
+        "edges": [
+          { "from": "notes", "to": "embedder", "label": "chunks", "packet": { "label": "text" } },
+          { "from": "embedder", "to": "chunks", "label": "store", "packet": { "label": "vector", "status": "active" } }
+        ]
+      }
+    },
+    {
+      "title": "Step 2: find the nearest chunks",
+      "chapter": "how",
+      "body": [
+        "When Maya asks, embed her question with the <b>same</b> model. Now it is a point on the same map.",
+        "Then ask Postgres for the rows whose vectors are closest. pgvector's <code>&lt;=&gt;</code> operator gives the <span class=\"term\">cosine distance</span>: smaller means more similar. Take the top five. That is retrieval."
+      ],
+      "code": {
+        "language": "sql",
+        "code": "select note_id, content\nfrom note_chunks\norder by embedding <=> $1  -- $1 = the question's vector\nlimit 5;",
+        "caption": "Sorting by distance: the five chunks closest in meaning to the question."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "The question is embedded the same way, then matched to its nearest chunks.",
+        "nodes": [
+          { "id": "notes", "status": "dim" },
+          { "id": "q", "x": 2, "y": 4.8, "label": "Maya's question", "sublabel": "\"the logo?\"", "icon": "chat", "kind": "person", "status": "active" },
+          { "id": "chunks", "status": "ok", "tags": ["top 5 by <=>"] }
+        ],
+        "edges": [
+          { "id": "notes>embedder", "status": "dim", "packet": false },
+          { "id": "embedder>chunks", "label": "nearest 5?", "packet": { "label": "query", "status": "active" } },
+          { "from": "q", "to": "embedder", "label": "same model", "packet": { "label": "text" } }
+        ]
+      }
+    },
+    {
+      "title": "Step 3: answer from what you found",
+      "chapter": "how",
+      "body": [
+        "Put those chunks into the prompt, each tagged with its note id, and ask the model to answer <em>only</em> from them and cite the id. Allow \"not in your notes\" as an answer.",
+        "Find, then add to the prompt, then generate: <span class=\"term\">RAG</span>. The model reads five paragraphs instead of 2,000 notes, and Notely can link each claim to its source."
+      ],
+      "code": {
+        "language": "ts",
+        "code": "const sources = chunks\n  .map((c) => `<source id=\"${c.note_id}\">\\n${c.content}\\n</source>`)\n  .join(\"\\n\");\n\nconst prompt = `${sources}\n\nAnswer the question using only the sources above.\nCite source ids. If they do not answer it, say so.\n\nQuestion: ${question}`;",
+        "caption": "The prompt habits from lesson 3: labeled data first, the request last, a way out."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Only the best chunks reach the model, which answers and cites them.",
+        "nodes": [
+          { "id": "embedder", "status": "normal" },
+          { "id": "route", "x": 6.4, "y": 6.4, "label": "Chat route", "sublabel": "builds the prompt", "icon": "function", "kind": "server", "status": "active" },
+          { "id": "llm", "x": 10.7, "y": 6.4, "label": "Claude API", "sublabel": "answers + cites", "icon": "sparkle", "kind": "ai", "status": "ok" }
+        ],
+        "edges": [
+          { "id": "embedder>chunks", "packet": false },
+          { "from": "chunks", "to": "route", "label": "top 5 chunks", "packet": { "label": "chunks", "status": "ok" } },
+          { "from": "route", "to": "llm", "label": "question + sources", "packet": { "label": "prompt" } }
+        ]
+      }
+    },
+    {
+      "title": "Make retrieval fast and sharp",
+      "chapter": "how",
+      "body": [
+        "Without an index, Postgres compares the question with every row. An <span class=\"term\">HNSW</span> index makes nearest-match search fast on large tables, trading a little accuracy for a lot of speed. You met indexes in system design; this is one for vectors.",
+        "Pure vector search can miss exact things like names or order numbers. <span class=\"term\">Hybrid search</span> combines it with Postgres full-text search."
+      ],
+      "code": {
+        "language": "sql",
+        "code": "create index on note_chunks\nusing hnsw (embedding vector_cosine_ops);",
+        "caption": "The operator class must match the distance you sort by: cosine here."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "An index on the vectors keeps search fast as Notely grows.",
+        "nodes": [
+          { "id": "chunks", "tags": ["HNSW index", "+ full-text"] }
+        ],
+        "edges": [
+          { "id": "chunks>route", "packet": { "label": "fast", "status": "ok", "speed": "fast" } }
+        ]
+      }
+    },
+    {
+      "title": "Notely's search, scoped to Maya",
+      "chapter": "example",
+      "body": [
+        "In Supabase, wrap the search in a Postgres function and call it with <code>supabase.rpc(\"match_note_chunks\", …)</code> from the route, using Maya's logged-in client.",
+        "The function filters by <code>auth.uid()</code> and runs as the caller, so the RLS policies on <code>note_chunks</code> apply too. Two locks on the same door. This is also what lesson 4's <code>search_notes</code> tool calls under the hood."
+      ],
+      "code": {
+        "language": "sql",
+        "code": "create function match_note_chunks(\n  query_embedding vector(1024),\n  match_count int default 5\n) returns table (note_id uuid, content text)\nlanguage sql stable security invoker\nas $$\n  select note_id, content from note_chunks\n  where user_id = auth.uid()\n  order by embedding <=> query_embedding\n  limit match_count;\n$$;"
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "The search runs as Maya, so it can only ever return Maya's chunks.",
+        "nodes": [
+          { "id": "chunks", "tags": ["user = auth.uid()", "RLS on"], "status": "ok" },
+          { "id": "route", "tags": ["Maya's client"] }
+        ]
+      }
+    },
+    {
+      "title": "Leaks, stale answers, mixed models",
+      "chapter": "watch-out",
+      "body": [
+        "<b>Leaks:</b> a match function that skips the user filter, or runs with the service role key, hands Maya someone else's notes. <b>Stale:</b> Maya edits a note, but the old chunks stay, so answers quote what she deleted. Re-embed on every change.",
+        "<b>Mixed models:</b> vectors from two different embedding models are not comparable. Switching models means re-embedding everything."
+      ],
+      "callout": {
+        "type": "claude-code",
+        "text": "Ask: does every chunk row have a <code>user_id</code>, and does the search filter by it? Is it called with the user's client or the service role? What re-embeds a note when it is edited or deleted? Is the embedding model name stored, so a switch is visible? Is there a vector index?"
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "The two classic failures: someone else's chunks, and chunks from a deleted version.",
+        "nodes": [
+          { "id": "chunks", "status": "error", "tags": ["no user filter?", "old versions?"] },
+          { "id": "llm", "status": "warn", "sublabel": "quotes the wrong note" },
+          { "id": "route", "tags": null, "status": "warn" }
+        ],
+        "edges": [
+          { "id": "chunks>route", "label": "someone else's chunk", "status": "error", "packet": { "label": "leak", "status": "error" } }
+        ]
+      }
+    },
+    {
+      "title": "Recap in one breath",
+      "chapter": "recap",
+      "body": [
+        "Embeddings turn meaning into points on a map, so search finds \"brand mark\" when you ask about the logo.",
+        "RAG has two halves. Ahead of time: chunk, embed, store in pgvector. Per question: embed it with the same model, fetch the nearest chunks for this user only, and let the model answer from them with citations. Keep the index fresh."
+      ]
+    }
+  ],
+  "quiz": [
+    {
+      "question": "Why does vector search find the \"blue brand mark\" note when Maya asks about the \"logo\"?",
+      "options": [
+        { "text": "Postgres knows that logo and brand mark are synonyms.", "why": "Postgres compares numbers. The meaning comes from the embedding model that produced them." },
+        { "text": "Their embeddings are close, because the texts have similar meaning.", "correct": true, "why": "Embedding models place related meanings near each other, even with no shared words. Nearest-match search finds them." },
+        { "text": "The chat model reads all 2,000 notes and picks the right one.", "why": "That is exactly what RAG avoids. Only the top few chunks ever reach the chat model." }
+      ]
+    },
+    {
+      "question": "Maya deleted a paragraph from a note last week, but the chat still quotes it. What is the most likely cause?",
+      "options": [
+        { "text": "The model memorized her note during training.", "why": "Models are not trained on your users' notes when you call the API. The text came from your own data." },
+        { "text": "The HNSW index is approximate.", "why": "Approximate search may miss a close match. It does not invent text that is no longer in the table." },
+        { "text": "Old chunks were never re-embedded or deleted when the note changed.", "correct": true, "why": "The chunk table is a copy. Every edit or delete must update it, or retrieval keeps serving the old version." }
+      ]
+    },
+    {
+      "question": "Claude Code wrote a <code>match_note_chunks</code> function with no <code>user_id</code> filter and calls it with the service role key \"for speed\". What do you ask for?",
+      "options": [
+        { "text": "Filter by <code>auth.uid()</code> and call it with the logged-in user's client, so RLS applies.", "correct": true, "why": "Without both, the nearest chunks can come from any user's notes, and then they land in Maya's answer." },
+        { "text": "Nothing, as long as the prompt tells the model to ignore other users' notes.", "why": "Once another user's text is in the prompt, it has already leaked. Filtering must happen in the database." },
+        { "text": "Add an HNSW index so the search is fast without the service role.", "why": "An index helps speed, but the issue is access. The fix is the user filter and the user's own client." }
+      ]
+    }
+  ],
+  "takeaways": [
+    "An <b>embedding</b> is meaning as numbers. Near vectors mean similar text, even with different words.",
+    "<b>RAG</b> = index ahead of time, retrieve the nearest chunks per question, answer only from them with citations.",
+    "In Supabase: <code>pgvector</code>, a <code>vector(n)</code> column that matches your model, an <code>hnsw</code> index, a match function.",
+    "Every chunk carries a <code>user_id</code>, and every search runs as the user, so RLS applies.",
+    "Re-embed on every edit and delete, and re-embed everything when you switch embedding models."
+  ]
+}

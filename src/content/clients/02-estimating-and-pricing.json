@@ -1,0 +1,310 @@
+{
+  "id": "estimating-and-pricing",
+  "title": "Estimating and pricing",
+  "summary": "How to turn a signed scope into an estimate you can defend, choose between fixed and hourly pricing, and plan for AI usage costs that grow with every click.",
+  "minutes": 13,
+  "level": "beginner",
+  "youWillLearn": [
+    "How to estimate by breaking stories into small tasks with <b>three numbers</b> each",
+    "Which work Claude Code does not speed up, and why you need a buffer",
+    "When to use a <b>fixed price</b> and when to bill by the hour",
+    "How to estimate and contain <b>AI usage costs</b> before they surprise anyone"
+  ],
+  "glossary": {
+    "estimate": "Your best forecast of the effort a piece of work will take, given as a range with the reasons behind it.",
+    "three-point estimate": "Estimating each task three times, for the best case, the most likely case and the worst case, then combining the numbers.",
+    "buffer": "Extra time added on top of an estimate for the problems you cannot see yet.",
+    "fixed price": "One agreed amount for an agreed scope. If the work takes longer, the builder absorbs the extra hours.",
+    "time and materials": "Billing for the hours actually worked, at an agreed rate. If the work takes longer, the client pays more.",
+    "milestone": "A visible point in the project, like \"booking works on staging\", that is tied to a payment.",
+    "deposit": "A payment made before work starts. It commits the client and covers your early work.",
+    "token": "The unit AI models read and write in, roughly a short word or part of a word. AI APIs bill per token.",
+    "pass-through": "A running cost the client pays directly to the provider, from their own account, rather than through your invoice.",
+    "spend limit": "A cap set in a provider's dashboard that stops or alerts on usage once monthly spending reaches an amount."
+  },
+  "steps": [
+    {
+      "title": "\"So, roughly how much?\"",
+      "chapter": "problem",
+      "body": [
+        "Sam has signed the scope doc from lesson 1. Now she asks: \"So, roughly how much?\" You feel the pressure to say a number on the spot.",
+        "A number said out loud becomes the price in her head. Say a low figure today and a higher one next week, and you lose trust, even if the higher one was always right."
+      ],
+      "callout": {
+        "type": "tip",
+        "text": "A safe answer on the call: \"I will send a written estimate within two days, with a range and what drives it.\" Clients trust a clear process more than a fast guess."
+      },
+      "scene": {
+        "caption": "Sam asks for a price. A number from your gut is a promise with nothing under it.",
+        "nodes": [
+          { "id": "sam", "x": 2, "y": 4, "label": "Sam", "sublabel": "signed the scope", "icon": "user", "kind": "person" },
+          { "id": "you", "x": 10.4, "y": 4, "label": "You", "sublabel": "on the spot", "icon": "laptop", "kind": "person", "status": "warn" }
+        ],
+        "edges": [
+          { "from": "sam", "to": "you", "label": "how much?", "packet": { "label": "$ ?" } }
+        ],
+        "notes": [
+          { "id": "gut", "x": 6.2, "y": 2.2, "text": "A gut number becomes the price", "status": "warn" }
+        ]
+      }
+    },
+    {
+      "title": "Estimate the parts, not the whole",
+      "chapter": "idea",
+      "body": [
+        "Big things are hard to guess. Small things are easier. So break each Must story into tasks of half a day to two days, and estimate those.",
+        "Add them up and you get an <span class=\"term\">estimate</span> you can defend line by line. If Sam wants it cheaper, she can see which line to cut."
+      ],
+      "scene": {
+        "caption": "One story splits into small tasks. Small tasks are much easier to size.",
+        "nodes": [
+          { "id": "story", "x": 2, "y": 4, "label": "Online booking", "sublabel": "Must story", "icon": "list", "kind": "neutral", "status": "active" },
+          { "id": "t1", "x": 6.4, "y": 1.6, "label": "Slot picker UI", "sublabel": "1-2 days", "icon": "code", "kind": "neutral" },
+          { "id": "t2", "x": 6.4, "y": 4, "label": "Bookings table", "sublabel": "about half a day", "icon": "table", "kind": "neutral" },
+          { "id": "t3", "x": 6.4, "y": 6.4, "label": "Double-book guard", "sublabel": "1-2 days", "icon": "shield", "kind": "neutral" },
+          { "id": "total", "x": 10.4, "y": 4, "label": "Story total", "sublabel": "sum of tasks", "icon": "chart", "kind": "neutral", "status": "ok" }
+        ],
+        "edges": [
+          { "from": "story", "to": "t1" },
+          { "from": "story", "to": "t2" },
+          { "from": "story", "to": "t3" },
+          { "from": "t1", "to": "total", "style": "dotted" },
+          { "from": "t2", "to": "total", "style": "dotted" },
+          { "from": "t3", "to": "total", "style": "dotted" }
+        ]
+      }
+    },
+    {
+      "title": "Three numbers per task, not one",
+      "chapter": "how",
+      "body": [
+        "For each task, write a best case, a most likely case and a worst case. This <span class=\"term\">three-point estimate</span> makes you think about what could go wrong.",
+        "A common way to combine them weights the likely case four times. The gap between best and worst shows you where the risk lives."
+      ],
+      "code": {
+        "language": "ts",
+        "filename": "estimate.ts",
+        "code": "type Task = {\n  name: string; best: number; likely: number; worst: number;\n};\n\n// Weighted average in days (the PERT formula)\nconst expected = (t: Task) => (t.best + 4 * t.likely + t.worst) / 6;\n\nconst tasks: Task[] = [\n  { name: \"Slot picker UI\", best: 1, likely: 1.5, worst: 3 },\n  { name: \"Bookings table\", best: 0.5, likely: 0.5, worst: 1 },\n  { name: \"Double-book guard\", best: 1, likely: 1.5, worst: 4 },\n];\n\nconst total = tasks.reduce((sum, t) => sum + expected(t), 0);\n// ≈ 4.1 days. The 1 → 4 gap marks the risky task.",
+        "caption": "A spreadsheet does the same job. What matters is three honest numbers per task."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Each task now carries best / likely / worst. The widest gap is the risk.",
+        "nodes": [
+          { "id": "t1", "sublabel": "1 / 1.5 / 3 days" },
+          { "id": "t2", "sublabel": "0.5 / 0.5 / 1 day" },
+          { "id": "t3", "sublabel": "1 / 1.5 / 4 days", "status": "warn", "tags": ["widest gap"] },
+          { "id": "total", "sublabel": "≈ 4.1 days" }
+        ]
+      }
+    },
+    {
+      "title": "The work that is not coding",
+      "chapter": "how",
+      "body": [
+        "Claude Code makes writing code faster. It does not speed up calls, waiting for feedback, reviewing what it wrote, testing on real phones, fixing deploys or writing the handoff.",
+        "On small client projects that work is a large share of the hours. Give it its own lines, then add a <span class=\"term\">buffer</span> on top for the problems you cannot see yet."
+      ],
+      "callout": {
+        "type": "claude-code",
+        "text": "Ask Claude Code: \"List everything needed to ship this story, including tests, migrations, env vars and deploy steps.\" Compare its list with yours. It tends to miss meetings, revision rounds and waiting time, because it never sees them."
+      },
+      "scene": {
+        "caption": "Coding is one line of the estimate. Review, calls and a buffer are separate lines.",
+        "nodes": [
+          { "id": "build", "x": 2, "y": 1.6, "label": "Build", "sublabel": "Claude Code helps", "icon": "code", "kind": "neutral", "status": "ok" },
+          { "id": "review", "x": 2, "y": 4, "label": "Review + test", "sublabel": "real phones", "icon": "eye", "kind": "neutral" },
+          { "id": "pm", "x": 2, "y": 6.4, "label": "Calls, revisions", "sublabel": "waiting on feedback", "icon": "chat", "kind": "neutral" },
+          { "id": "buffer", "x": 6.4, "y": 6.4, "label": "Buffer", "sublabel": "for the unknowns", "icon": "shield", "kind": "neutral", "status": "active" },
+          { "id": "total", "x": 10.4, "y": 4, "label": "Project estimate", "sublabel": "a range, in days", "icon": "chart", "kind": "neutral", "status": "ok" }
+        ],
+        "edges": [
+          { "from": "build", "to": "total", "label": "faster now" },
+          { "from": "review", "to": "total", "label": "not faster" },
+          { "from": "pm", "to": "total", "label": "own line" },
+          { "from": "buffer", "to": "total", "label": "on top", "status": "active" }
+        ]
+      }
+    },
+    {
+      "title": "Fixed price or hourly: who holds the risk",
+      "chapter": "how",
+      "body": [
+        "With a <span class=\"term\">fixed price</span>, Sam pays one agreed amount. If the work runs long, you pay for it in unpaid hours. With <span class=\"term\">time and materials</span>, Sam pays for the hours worked. If it runs long, she pays.",
+        "Neither is better. Fixed price needs a tight, signed scope. Hourly fits fuzzy or changing work."
+      ],
+      "callout": {
+        "type": "analogy",
+        "text": "A set menu versus ordering à la carte. With the set menu, the kitchen carries the risk of extra portions. À la carte, the guest pays for exactly what arrives."
+      },
+      "scene": {
+        "caption": "Same overrun, different payer. The pricing model decides who carries the risk.",
+        "zones": [
+          { "id": "z-fixed", "x": 0.3, "y": 0.5, "w": 5.5, "h": 7, "label": "Fixed price" },
+          { "id": "z-tm", "x": 6.2, "y": 0.5, "w": 5.5, "h": 7, "label": "Time and materials" }
+        ],
+        "nodes": [
+          { "id": "f-sam", "x": 3, "y": 2.2, "label": "Sam", "sublabel": "pays one amount", "icon": "user", "kind": "person", "status": "ok" },
+          { "id": "f-you", "x": 3, "y": 5.6, "label": "You", "sublabel": "absorb the overrun", "icon": "laptop", "kind": "person", "status": "warn" },
+          { "id": "t-sam", "x": 9, "y": 2.2, "label": "Sam", "sublabel": "pays per hour", "icon": "user", "kind": "person", "status": "warn" },
+          { "id": "t-you", "x": 9, "y": 5.6, "label": "You", "sublabel": "paid for every hour", "icon": "laptop", "kind": "person", "status": "ok" }
+        ],
+        "edges": [
+          { "from": "f-sam", "to": "f-you", "label": "risk lands here", "status": "warn", "packet": { "label": "+2 days", "status": "warn" } },
+          { "from": "t-you", "to": "t-sam", "label": "risk lands here", "status": "warn", "packet": { "label": "+2 days", "status": "warn" } }
+        ]
+      }
+    },
+    {
+      "title": "A deposit and milestones",
+      "chapter": "how",
+      "body": [
+        "For a fixed price, split payment into <span class=\"term\" data-term=\"milestone\">milestones</span> Sam can see: a <span class=\"term\">deposit</span> to start, a payment when booking works on staging, the rest at launch.",
+        "The deposit commits Sam and pays for work you already did. Milestones keep both sides honest: nobody is ever more than one step out of pocket."
+      ],
+      "code": {
+        "language": "text",
+        "filename": "payment schedule",
+        "code": "Milestone                    Share  Trigger\n1. Kickoff deposit            30%  contract signed\n2. Booking flow on staging    40%  Sam tests the criteria\n3. Launch + handoff           30%  live, docs delivered",
+        "caption": "Example split. Tie each trigger to something Sam can check, not to \"60% done\"."
+      },
+      "scene": {
+        "caption": "Payments follow visible progress. Each step is small enough to trust.",
+        "nodes": [
+          { "id": "m1", "x": 2, "y": 4, "label": "Deposit", "sublabel": "contract signed", "icon": "money", "kind": "neutral", "status": "ok", "tags": ["30%"] },
+          { "id": "m2", "x": 6.4, "y": 4, "label": "Staging demo", "sublabel": "Sam tests it", "icon": "browser", "kind": "neutral", "status": "active", "tags": ["40%"] },
+          { "id": "m3", "x": 10.4, "y": 4, "label": "Launch", "sublabel": "live + handoff", "icon": "rocket", "kind": "neutral", "tags": ["30%"] }
+        ],
+        "edges": [
+          { "from": "m1", "to": "m2", "label": "build", "packet": { "label": "work" } },
+          { "from": "m2", "to": "m3", "label": "polish, launch", "style": "dashed" }
+        ]
+      }
+    },
+    {
+      "title": "AI costs grow with every click",
+      "chapter": "how",
+      "body": [
+        "Say Sam later approves the AI rebooking feature. Hosting costs are fairly flat. AI usage is not. Each Claude API call is billed in <span class=\"term\" data-term=\"token\">tokens</span>: input (prompt plus context) and output (the reply), at different rates.",
+        "Estimate it like a utility bill: calls per month × tokens per call × price. Take prices from the provider's pricing page, not from memory."
+      ],
+      "code": {
+        "language": "ts",
+        "filename": "ai-cost.ts",
+        "code": "// Prices: $ per million tokens, from the provider's pricing page\nconst PRICE_IN = 0;   // fill in\nconst PRICE_OUT = 0;  // fill in\n\nconst callsPerMonth = 3000;  // rebooking suggestions\nconst tokensIn = 1500;       // prompt + booking history\nconst tokensOut = 300;       // a short message\n\nconst monthly =\n  (callsPerMonth * (tokensIn * PRICE_IN + tokensOut * PRICE_OUT))\n  / 1_000_000;",
+        "caption": "Show Sam a low, expected and high month. Usage, not your build, sets this number."
+      },
+      "scene": {
+        "caption": "Every AI click sends tokens in and out. The bill grows with usage.",
+        "nodes": [
+          { "id": "app", "x": 2, "y": 4, "label": "Salon app", "sublabel": "AI rebooking", "icon": "server", "kind": "server" },
+          { "id": "llm", "x": 6.4, "y": 4, "label": "Claude API", "sublabel": "billed per token", "icon": "sparkle", "kind": "ai", "tags": ["in + out"] },
+          { "id": "bill", "x": 10.4, "y": 4, "label": "Monthly bill", "sublabel": "grows with use", "icon": "money", "kind": "neutral", "status": "warn" }
+        ],
+        "edges": [
+          { "from": "app", "to": "llm", "label": "each click", "packet": { "label": "1.8k tok", "speed": "fast" } },
+          { "from": "llm", "to": "bill", "label": "usage" }
+        ]
+      }
+    },
+    {
+      "title": "Let running costs pass through",
+      "chapter": "how",
+      "body": [
+        "Running costs belong to the client: hosting, database, SMS and AI. The clean setup is a <span class=\"term\">pass-through</span>: accounts in Sam's name, on her card, so she pays providers directly.",
+        "Your quote then has two parts: your fee for the build, and an estimated monthly running cost as a range. Lesson 3 covers setting up those accounts."
+      ],
+      "callout": {
+        "type": "tip",
+        "text": "If you do pay a cost on the client's behalf, invoice it as a separate line with a margin you state openly. Hidden markups on usage turn into awkward conversations when usage spikes."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Every running cost lands on Sam's card. Your invoice covers only your work.",
+        "nodes": [
+          { "id": "bill", "label": "Sam's card", "sublabel": "pays providers", "status": "ok" },
+          { "id": "host", "x": 6.4, "y": 1.6, "label": "Vercel + Supabase", "sublabel": "hosting, database", "icon": "cloud", "kind": "external" },
+          { "id": "sms", "x": 6.4, "y": 6.4, "label": "SMS provider", "sublabel": "per message", "icon": "mail", "kind": "external" }
+        ],
+        "edges": [
+          { "from": "host", "to": "bill", "label": "monthly" },
+          { "from": "sms", "to": "bill", "label": "per text" }
+        ]
+      }
+    },
+    {
+      "title": "One bug can burn a month's budget",
+      "chapter": "watch-out",
+      "body": [
+        "A bug that retries an AI call forever, or a bot hammering the endpoint, can spend a lot of money overnight. Under a fixed price, that bill becomes an argument.",
+        "Protect both sides: set a <span class=\"term\">spend limit</span> in the provider console, cap <code>max_tokens</code> on every call, rate-limit the endpoint, and log usage per call so you see the curve early."
+      ],
+      "code": {
+        "language": "ts",
+        "filename": "lib/rebooking.ts",
+        "code": "const msg = await anthropic.messages.create({\n  model: process.env.AI_MODEL!,\n  max_tokens: 300,\n  messages: [{ role: \"user\", content: prompt }],\n});\n\nconsole.log(\"ai_usage\", {\n  salonId,\n  input: msg.usage.input_tokens,\n  output: msg.usage.output_tokens,\n});"
+      },
+      "callout": {
+        "type": "claude-code",
+        "text": "When Claude Code writes an AI call, check: is <code>max_tokens</code> sized to the feature? Is the model id in one env var, not hard-coded in five files? Does it log the <code>usage</code> numbers from the response? Is there a rate limit and a retry cap in front of it?"
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "A runaway loop multiplies calls. Caps and a spend limit stop the damage.",
+        "remove": ["host", "sms"],
+        "nodes": [
+          { "id": "bill", "label": "Monthly bill", "sublabel": "capped by a limit", "status": "warn" },
+          { "id": "llm", "tags": ["max_tokens: 300"] },
+          { "id": "loop", "x": 2, "y": 6.6, "label": "Retry loop", "sublabel": "a bug", "icon": "bug", "kind": "threat", "status": "error" }
+        ],
+        "edges": [
+          { "from": "loop", "to": "llm", "label": "x 10,000", "status": "error", "packet": { "label": "retry", "status": "error", "speed": "fast" } }
+        ],
+        "notes": [
+          { "id": "cap", "x": 10.4, "y": 2.2, "text": "Spend limit stops it", "status": "ok" }
+        ]
+      }
+    },
+    {
+      "title": "Recap in one breath",
+      "chapter": "recap",
+      "body": [
+        "Never price from your gut. Break stories into small tasks, give each three numbers, add the non-coding work and a buffer, and send a range in writing.",
+        "Fixed price puts the risk on you, so it needs a tight scope and milestones. Running costs, AI usage above all, pass through to the client and need caps from day one."
+      ]
+    }
+  ],
+  "quiz": [
+    {
+      "question": "Your estimate for a task is best 1 day, likely 1.5, worst 6. What does that tell you?",
+      "options": [
+        { "text": "Use 1.5 days; the likely case is what usually happens.", "why": "Ignoring the worst case is how fixed-price projects lose money. The wide gap is information, not noise." },
+        { "text": "The task hides an unknown. Spike it or split it before you commit.", "correct": true, "why": "A gap that large means you do not understand part of the work yet. Learn more first, or price the risk in." },
+        { "text": "Average the three: about 2.8 days.", "why": "A plain average hides the problem. The point is to notice the risk and do something about it." }
+      ]
+    },
+    {
+      "question": "Sam's scope is still fuzzy, and she expects to change her mind as she sees screens. Which pricing fits best?",
+      "options": [
+        { "text": "Fixed price, with a big buffer.", "why": "A fixed price on a moving scope turns every change into an argument, and the buffer will not be enough." },
+        { "text": "Free until she is happy, then one invoice.", "why": "That puts all the risk on you and gives Sam no reason to decide." },
+        { "text": "Time and materials, with a budget cap and regular check-ins.", "correct": true, "why": "Hourly billing fits changing work. The cap and check-ins keep Sam in control of the total." }
+      ]
+    },
+    {
+      "question": "Claude Code wrote an AI endpoint that retries on any error with no limit, and sets <code>max_tokens</code> far higher than the feature needs. What is the main risk for a client project?",
+      "options": [
+        { "text": "Slower responses for users.", "why": "Maybe, but that is not the expensive part." },
+        { "text": "A runaway bill if something loops or gets abused.", "correct": true, "why": "Unlimited retries and no output cap mean one bug or bot can multiply token usage. Add a retry limit, a sensible <code>max_tokens</code>, rate limiting and a spend limit." },
+        { "text": "The model may give a wrong answer.", "why": "That is a quality risk, but retries and missing caps are a cost risk." }
+      ]
+    }
+  ],
+  "takeaways": [
+    "Never say a number on the first call. Send a written <b>range</b> with the reasons behind it.",
+    "Estimate small tasks with best, likely and worst cases. A wide gap means unknown work: spike it.",
+    "Claude Code speeds up coding, not calls, reviews or revisions. Estimate those separately, plus a <b>buffer</b>.",
+    "Fixed price moves the risk to you; protect it with a tight scope, a deposit and milestones.",
+    "AI usage is a running cost: estimate it per month, pass it through, and cap it with <code>max_tokens</code> and a spend limit."
+  ]
+}

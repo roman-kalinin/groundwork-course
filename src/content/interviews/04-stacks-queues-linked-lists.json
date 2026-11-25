@@ -1,0 +1,751 @@
+{
+  "id": "stacks-queues-linked-lists",
+  "title": "Stacks, queues and linked lists",
+  "summary": "Three simple structures defined by where things go in and come out, the interview classics built on them, and where they show up in AI apps.",
+  "minutes": 13,
+  "level": "beginner",
+  "youWillLearn": [
+    "How a <b>stack</b> (last in, first out) powers undo and bracket matching",
+    "How a <b>queue</b> (first in, first out) keeps work in order, and why <code>shift()</code> can be slow",
+    "What a <b>linked list</b> is, and how to reverse one without losing it",
+    "How trimming a chat history for an LLM is a queue problem"
+  ],
+  "glossary": {
+    "stack": "A list where you only add and remove at the top, so the last thing in is the first thing out (LIFO).",
+    "LIFO": "Last in, first out: the newest item leaves first, like a pile of plates.",
+    "push": "Add an item to the top of a stack or the end of a list.",
+    "pop": "Remove and return the item on top of a stack.",
+    "queue": "A list where you add at the back and remove from the front, so the first thing in is the first thing out (FIFO).",
+    "FIFO": "First in, first out: the oldest item leaves first, like a line at a coffee shop.",
+    "linked list": "A chain of items where each item holds its value plus a pointer to the next item, instead of sitting in numbered boxes.",
+    "pointer": "A reference that says where another item is, so you can follow it there.",
+    "head": "The first item of a linked list. If you lose it, you lose the whole list.",
+    "context window": "The maximum amount of text, counted in tokens, that a model can read in one request."
+  },
+  "steps": [
+    {
+      "title": "Undo: which change goes first?",
+      "chapter": "problem",
+      "body": [
+        "Maya types a title in Notely, bolds a word, then deletes a line. She presses Cmd+Z.",
+        "Which change should come back? The <b>last</b> one: the deleted line. Press again, and the bold goes. The editor needs a structure where the newest item is always the easiest one to reach."
+      ],
+      "scene": {
+        "caption": "Three edits, newest on top. Undo needs the top one.",
+        "zones": [
+          {
+            "id": "z-stack",
+            "x": 1.4,
+            "y": 2.2,
+            "w": 4.4,
+            "h": 5.3,
+            "label": "Edit history"
+          }
+        ],
+        "nodes": [
+          {
+            "id": "s1",
+            "x": 3.6,
+            "y": 6.6,
+            "label": "Typed title",
+            "sublabel": "1st edit",
+            "icon": "pencil",
+            "kind": "data"
+          },
+          {
+            "id": "s2",
+            "x": 3.6,
+            "y": 5.4,
+            "label": "Bold a word",
+            "sublabel": "2nd edit",
+            "icon": "pencil",
+            "kind": "data"
+          },
+          {
+            "id": "s3",
+            "x": 3.6,
+            "y": 4.2,
+            "label": "Deleted line",
+            "sublabel": "3rd edit, newest",
+            "icon": "pencil",
+            "kind": "data",
+            "status": "active"
+          },
+          {
+            "id": "undo",
+            "x": 9,
+            "y": 4.2,
+            "label": "Cmd+Z",
+            "sublabel": "Maya hits undo",
+            "icon": "refresh",
+            "kind": "client",
+            "status": "warn"
+          }
+        ],
+        "edges": [
+          {
+            "from": "undo",
+            "to": "s3",
+            "label": "which one?",
+            "style": "dashed",
+            "status": "warn"
+          }
+        ]
+      }
+    },
+    {
+      "title": "Stacks: last in, first out",
+      "chapter": "idea",
+      "body": [
+        "A <span class=\"term\">stack</span> only lets you touch the top. You <span class=\"term\">push</span> a new item onto the top, and you <span class=\"term\">pop</span> the top item off. Both are <b>O(1)</b>.",
+        "That rule is called <span class=\"term\">LIFO</span>. In JavaScript, a plain array is a fine stack: <code>push()</code> and <code>pop()</code> both work at the end, so nothing shifts."
+      ],
+      "callout": {
+        "type": "analogy",
+        "text": "A pile of plates. You put clean plates on top and take from the top. Nobody pulls a plate from the middle."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "New edits are pushed on top. Undo pops the top.",
+        "nodes": [
+          {
+            "id": "s3",
+            "status": "normal",
+            "sublabel": "3rd edit"
+          },
+          {
+            "id": "s4",
+            "x": 3.6,
+            "y": 3,
+            "label": "Added link",
+            "sublabel": "4th edit, top",
+            "icon": "pencil",
+            "kind": "data",
+            "status": "active"
+          },
+          {
+            "id": "edit",
+            "x": 9,
+            "y": 1.8,
+            "label": "New edit",
+            "sublabel": "Maya types",
+            "icon": "pencil",
+            "kind": "client"
+          },
+          {
+            "id": "undo",
+            "status": "ok"
+          }
+        ],
+        "remove": [
+          "undo>s3"
+        ],
+        "edges": [
+          {
+            "from": "edit",
+            "to": "s4",
+            "label": "push()",
+            "packet": {
+              "label": "edit"
+            }
+          },
+          {
+            "from": "s4",
+            "to": "undo",
+            "label": "pop()",
+            "status": "ok",
+            "packet": {
+              "label": "undo",
+              "status": "ok"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "title": "Stacks check brackets, too",
+      "chapter": "how",
+      "body": [
+        "A classic interview problem: is <code>{[()]}</code> balanced? Walk the string. Push every opening bracket. On a closing bracket, pop the top and check it is the matching opener.",
+        "If anything mismatches, or the stack is not empty at the end, it is unbalanced. One pass: <b>O(n)</b>. Your program's call stack works the same way: the newest function call finishes first."
+      ],
+      "code": {
+        "language": "ts",
+        "code": "const PAIRS = new Map([[\")\", \"(\"], [\"]\", \"[\"], [\"}\", \"{\"]]);\n\nfunction isBalanced(s: string): boolean {\n  const stack: string[] = [];\n  for (const ch of s) {\n    if (\"([{\".includes(ch)) stack.push(ch);\n    else if (PAIRS.has(ch) && stack.pop() !== PAIRS.get(ch)) {\n      return false;\n    }\n  }\n  return stack.length === 0;\n}"
+      },
+      "callout": {
+        "type": "tip",
+        "text": "Tools that parse streamed JSON from a model use the same idea: a stack of the braces and brackets still open tells them what has not closed yet."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Openers pile up. A closer must match whatever is on top.",
+        "remove": [
+          "s4",
+          "edit"
+        ],
+        "nodes": [
+          {
+            "id": "s1",
+            "label": "(",
+            "sublabel": "pushed 3rd",
+            "icon": "code",
+            "y": 4.2
+          },
+          {
+            "id": "s2",
+            "label": "[",
+            "sublabel": "pushed 2nd",
+            "icon": "code"
+          },
+          {
+            "id": "s3",
+            "label": "{",
+            "sublabel": "pushed 1st",
+            "icon": "code",
+            "y": 6.6
+          },
+          {
+            "id": "undo",
+            "label": "Next: )",
+            "sublabel": "matches top (",
+            "icon": "check",
+            "status": "ok"
+          }
+        ],
+        "zones": [
+          {
+            "id": "z-stack",
+            "label": "Open brackets"
+          }
+        ],
+        "edges": [
+          {
+            "from": "undo",
+            "to": "s1",
+            "label": "pop and compare",
+            "status": "ok",
+            "packet": {
+              "label": ")",
+              "status": "ok"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "title": "Queues: first in, first out",
+      "chapter": "how",
+      "body": [
+        "Now the opposite rule. Notely gets many AI summary jobs and should handle them in the order they arrived. That is a <span class=\"term\">queue</span>: add at the back, take from the front.",
+        "That rule is called <span class=\"term\">FIFO</span>. You met queues as services in system design. Inside an algorithm, the same shape keeps work in arrival order, and breadth-first search (next lesson) depends on it."
+      ],
+      "callout": {
+        "type": "analogy",
+        "text": "A line at a coffee shop. New people join at the back. The barista serves whoever is at the front."
+      },
+      "scene": {
+        "caption": "Jobs join at the back. The worker takes from the front.",
+        "nodes": [
+          {
+            "id": "in",
+            "x": 1.6,
+            "y": 4,
+            "label": "New job",
+            "sublabel": "enqueue",
+            "icon": "upload",
+            "kind": "client"
+          },
+          {
+            "id": "q3",
+            "x": 4.2,
+            "y": 4,
+            "label": "Job 3",
+            "sublabel": "newest",
+            "kind": "data"
+          },
+          {
+            "id": "q2",
+            "x": 6.4,
+            "y": 4,
+            "label": "Job 2",
+            "kind": "data"
+          },
+          {
+            "id": "q1",
+            "x": 8.6,
+            "y": 4,
+            "label": "Job 1",
+            "sublabel": "oldest, front",
+            "kind": "data",
+            "status": "active"
+          },
+          {
+            "id": "worker",
+            "x": 10.8,
+            "y": 4,
+            "label": "Worker",
+            "sublabel": "dequeue",
+            "icon": "gear",
+            "kind": "server"
+          }
+        ],
+        "zones": [
+          {
+            "id": "z-queue",
+            "x": 2.8,
+            "y": 2.6,
+            "w": 7.2,
+            "h": 2.8,
+            "label": "Queue"
+          }
+        ],
+        "edges": [
+          {
+            "from": "in",
+            "to": "q3",
+            "packet": {
+              "label": "job 4"
+            }
+          },
+          {
+            "from": "q1",
+            "to": "worker",
+            "status": "ok",
+            "packet": {
+              "label": "job 1",
+              "status": "ok"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "title": "The shift() trap",
+      "chapter": "how",
+      "body": [
+        "In JavaScript, the obvious queue is an array with <code>push()</code> and <code>shift()</code>. But <code>shift()</code> removes index 0, and you saw in the last lesson what that costs: everything moves. <b>O(n)</b> per dequeue.",
+        "For a few dozen items, it does not matter. For a loop that dequeues thousands of times, keep a <code>head</code> index that moves forward instead of removing."
+      ],
+      "code": {
+        "language": "ts",
+        "code": "const queue: Job[] = [];\nlet head = 0;\n\nqueue.push(job);             // enqueue, O(1)\nconst next = queue[head++];  // dequeue, O(1), no shifting\nconst size = queue.length - head;",
+        "caption": "A moving index instead of shift(). Fine for an algorithm that runs once."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "shift() takes the front item, then every other item moves up one place.",
+        "nodes": [
+          {
+            "id": "q1",
+            "status": "dim"
+          },
+          {
+            "id": "q2",
+            "status": "warn",
+            "sublabel": "moves"
+          },
+          {
+            "id": "q3",
+            "status": "warn",
+            "sublabel": "moves"
+          }
+        ],
+        "notes": [
+          {
+            "id": "shift",
+            "x": 6.4,
+            "y": 6.4,
+            "text": "shift(): everyone moves. O(n)",
+            "status": "warn"
+          }
+        ]
+      }
+    },
+    {
+      "title": "Linked lists: a chain of pointers",
+      "chapter": "how",
+      "body": [
+        "A <span class=\"term\">linked list</span> skips the numbered boxes. Each item holds its value and a <span class=\"term\">pointer</span> to the next item. You keep the first one, the <span class=\"term\">head</span>.",
+        "Adding at the head is <b>O(1)</b>: point the new item at the old head. But reaching item 500 means following 500 pointers: <b>O(n)</b>. You rarely build one in app code, but interviews love them for testing pointer care."
+      ],
+      "code": {
+        "language": "ts",
+        "code": "type ListNode = { value: string; next: ListNode | null };\n\nconst c: ListNode = { value: \"Note C\", next: null };\nconst b: ListNode = { value: \"Note B\", next: c };\nlet head: ListNode = { value: \"Note A\", next: b };"
+      },
+      "scene": {
+        "caption": "Each item points to the next. The last one points to nothing.",
+        "nodes": [
+          {
+            "id": "head",
+            "x": 1.6,
+            "y": 4,
+            "label": "head",
+            "icon": "link",
+            "kind": "client",
+            "status": "active"
+          },
+          {
+            "id": "l1",
+            "x": 4.2,
+            "y": 4,
+            "label": "Note A",
+            "kind": "data"
+          },
+          {
+            "id": "l2",
+            "x": 6.8,
+            "y": 4,
+            "label": "Note B",
+            "kind": "data"
+          },
+          {
+            "id": "l3",
+            "x": 9.4,
+            "y": 4,
+            "label": "Note C",
+            "kind": "data"
+          }
+        ],
+        "edges": [
+          {
+            "from": "head",
+            "to": "l1"
+          },
+          {
+            "from": "l1",
+            "to": "l2",
+            "label": "next",
+            "packet": true
+          },
+          {
+            "from": "l2",
+            "to": "l3",
+            "label": "next",
+            "packet": true
+          }
+        ],
+        "notes": [
+          {
+            "id": "null-end",
+            "x": 11.1,
+            "y": 4,
+            "text": "→ null"
+          }
+        ]
+      }
+    },
+    {
+      "title": "Reverse a list without dropping it",
+      "chapter": "example",
+      "body": [
+        "The most asked linked list question: reverse it. Walk the chain once, flipping each <code>next</code> pointer to point backwards.",
+        "The trick is order. Save the next item <em>before</em> you overwrite the pointer, or you lose the rest of the chain. Three variables do it: <code>prev</code>, <code>curr</code>, <code>next</code>. <b>O(n) time, O(1) space.</b>"
+      ],
+      "code": {
+        "language": "ts",
+        "code": "function reverse(head: ListNode | null) {\n  let prev: ListNode | null = null;\n  let curr = head;\n  while (curr) {\n    const next = curr.next; // save first\n    curr.next = prev;       // flip\n    prev = curr;            // step forward\n    curr = next;\n  }\n  return prev; // the new head\n}"
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Every pointer now points backwards, and head moves to the old tail.",
+        "remove": [
+          "head>l1",
+          "l1>l2",
+          "l2>l3",
+          "null-end"
+        ],
+        "nodes": [
+          {
+            "id": "head",
+            "x": 9.4,
+            "y": 1.8,
+            "status": "ok"
+          },
+          {
+            "id": "l3",
+            "status": "ok"
+          },
+          {
+            "id": "l2",
+            "status": "ok"
+          },
+          {
+            "id": "l1",
+            "status": "ok"
+          }
+        ],
+        "edges": [
+          {
+            "from": "head",
+            "to": "l3"
+          },
+          {
+            "from": "l3",
+            "to": "l2",
+            "label": "next",
+            "status": "ok",
+            "packet": true
+          },
+          {
+            "from": "l2",
+            "to": "l1",
+            "label": "next",
+            "status": "ok",
+            "packet": true
+          }
+        ],
+        "notes": [
+          {
+            "id": "null-start",
+            "x": 2.4,
+            "y": 4,
+            "text": "null ←"
+          }
+        ]
+      }
+    },
+    {
+      "title": "Chat history is a queue",
+      "chapter": "example",
+      "body": [
+        "Notely adds \"chat with your notes\". Each request sends the conversation to Claude, but the model has a <span class=\"term\">context window</span>, and you also pay per token sent.",
+        "So you drop the <b>oldest</b> messages first until the rest fits a budget. First in, first out: a queue. Moving a start index forward, like the <code>head</code> trick, keeps it one pass."
+      ],
+      "code": {
+        "language": "ts",
+        "code": "function fitHistory(msgs: Msg[], budget: number) {\n  let total = msgs.reduce((sum, m) => sum + m.tokens, 0);\n  let start = 0;\n  while (total > budget && start < msgs.length - 1) {\n    total -= msgs[start].tokens; // drop the oldest\n    start++;\n  }\n  return msgs.slice(start); // always keep the newest\n}",
+        "caption": "Real code trims whole turns, so a question never loses its answer. The system prompt is sent separately and never trimmed."
+      },
+      "scene": {
+        "caption": "The oldest message leaves first so the newest ones fit the budget.",
+        "nodes": [
+          {
+            "id": "m1",
+            "x": 1.6,
+            "y": 4,
+            "label": "Msg 1",
+            "sublabel": "oldest",
+            "kind": "data",
+            "status": "dim",
+            "tags": [
+              "400 tok"
+            ]
+          },
+          {
+            "id": "m2",
+            "x": 3.8,
+            "y": 4,
+            "label": "Msg 2",
+            "kind": "data",
+            "tags": [
+              "250 tok"
+            ]
+          },
+          {
+            "id": "m3",
+            "x": 6,
+            "y": 4,
+            "label": "Msg 3",
+            "kind": "data",
+            "tags": [
+              "300 tok"
+            ]
+          },
+          {
+            "id": "m4",
+            "x": 8.2,
+            "y": 4,
+            "label": "Msg 4",
+            "sublabel": "newest",
+            "kind": "client",
+            "status": "active",
+            "tags": [
+              "200 tok"
+            ]
+          },
+          {
+            "id": "llm",
+            "x": 10.4,
+            "y": 1.6,
+            "label": "Claude API",
+            "sublabel": "budget: 800 tok",
+            "icon": "sparkle",
+            "kind": "ai",
+            "status": "ok"
+          },
+          {
+            "id": "bin",
+            "x": 1.6,
+            "y": 6.8,
+            "label": "Dropped",
+            "icon": "trash",
+            "kind": "neutral",
+            "status": "dim"
+          }
+        ],
+        "edges": [
+          {
+            "from": "m1",
+            "to": "bin",
+            "label": "first out",
+            "style": "dashed",
+            "packet": {
+              "label": "msg 1"
+            }
+          },
+          {
+            "from": "m4",
+            "to": "llm",
+            "label": "750 tok fit",
+            "status": "ok",
+            "packet": {
+              "label": "send",
+              "status": "ok"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "title": "Lost pointers and lost queues",
+      "chapter": "watch-out",
+      "body": [
+        "Linked list bugs are nearly always pointer order: overwriting <code>next</code> before saving it, or reading <code>.next</code> on <code>null</code>. Draw boxes and arrows before coding; interviewers like seeing that.",
+        "In real apps, the bigger trap is an in-memory array used as a job queue. A serverless function can stop at any time, and the queued jobs vanish with it."
+      ],
+      "callout": {
+        "type": "claude-code",
+        "text": "If Claude Code keeps pending work in an array (<code>jobs.push(…)</code>) inside an API route, ask: \"What happens to these jobs if the function restarts?\" Real background work needs a durable queue or a jobs table. Also grep for <code>shift()</code> inside large loops."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Same row, now as jobs in an in-memory array. When the function stops, every job disappears.",
+        "remove": [
+          "m1>bin",
+          "bin"
+        ],
+        "nodes": [
+          {
+            "id": "m1",
+            "status": "error",
+            "sublabel": "lost on restart",
+            "label": "Job 1",
+            "tags": null
+          },
+          {
+            "id": "m2",
+            "status": "error",
+            "label": "Job 2",
+            "tags": null
+          },
+          {
+            "id": "m3",
+            "status": "error",
+            "label": "Job 3",
+            "tags": null
+          },
+          {
+            "id": "m4",
+            "status": "error",
+            "label": "Job 4",
+            "tags": null,
+            "sublabel": "newest"
+          },
+          {
+            "id": "llm",
+            "status": "dim"
+          }
+        ],
+        "edges": [
+          {
+            "id": "m4>llm",
+            "status": "dim",
+            "packet": false,
+            "label": "never sent"
+          }
+        ],
+        "notes": [
+          {
+            "id": "restart",
+            "x": 4.9,
+            "y": 1.6,
+            "text": "Function restarted: array gone",
+            "status": "error"
+          }
+        ]
+      }
+    },
+    {
+      "title": "Recap in one breath",
+      "chapter": "recap",
+      "body": [
+        "A stack is last in, first out: undo, bracket matching, the call stack. A queue is first in, first out: jobs in order, chat history trimming, breadth-first search.",
+        "A linked list is a chain of pointers: O(1) to add at the head, O(n) to reach anything. Save <code>next</code> before you change it."
+      ]
+    }
+  ],
+  "quiz": [
+    {
+      "question": "Notely wants a \"back\" button inside its note viewer that returns to the previously opened note, then the one before that. Which structure fits?",
+      "options": [
+        {
+          "text": "A queue",
+          "why": "A queue would return the <em>oldest</em> note first, which is the opposite of how back should behave."
+        },
+        {
+          "text": "A stack",
+          "correct": true,
+          "why": "Back should return the most recently opened note first. Last in, first out. Browser history works the same way."
+        },
+        {
+          "text": "A hash map",
+          "why": "A map gives fast lookup by key, but it does not remember order the way back needs."
+        }
+      ]
+    },
+    {
+      "question": "Claude Code wrote a breadth-first search that dequeues with <code>queue.shift()</code>, and it runs over 200,000 items. What should you ask for?",
+      "options": [
+        {
+          "text": "Nothing, <code>shift()</code> is O(1).",
+          "why": "shift() removes index 0, so every remaining item moves. That is O(n) per call, and O(n²) over the whole search."
+        },
+        {
+          "text": "Switch to <code>pop()</code> so it is faster.",
+          "why": "pop() is fast, but it takes the newest item. That turns the queue into a stack and changes the algorithm into depth-first search."
+        },
+        {
+          "text": "Keep a head index that moves forward instead of shifting.",
+          "correct": true,
+          "why": "Reading <code>queue[head++]</code> is O(1) and keeps first-in, first-out order."
+        }
+      ]
+    },
+    {
+      "question": "While reversing a linked list, a candidate writes <code>curr.next = prev</code> as the first line inside the loop. What goes wrong?",
+      "options": [
+        {
+          "text": "The link to the rest of the list is overwritten before it was saved, so the loop cannot move forward.",
+          "correct": true,
+          "why": "After the flip, <code>curr.next</code> points backwards. Without saving the old next first, the rest of the chain is lost."
+        },
+        {
+          "text": "Nothing, the order of the lines does not matter.",
+          "why": "Order is the whole trick. Pointers must be saved before they are overwritten."
+        },
+        {
+          "text": "It makes the function O(n²).",
+          "why": "The problem is not speed. The function loses the rest of the list and returns a wrong result."
+        }
+      ]
+    }
+  ],
+  "takeaways": [
+    "A <b>stack</b> is last in, first out: <code>push()</code> and <code>pop()</code> at the end of an array, both O(1).",
+    "A <b>queue</b> is first in, first out. <code>shift()</code> is O(n); a moving head index is O(1).",
+    "A <b>linked list</b> is O(1) to add at the head, O(n) to reach an item. Save <code>next</code> before you overwrite it.",
+    "Trimming a chat history to fit a model's context window is a queue: drop the oldest first.",
+    "Real background jobs need a durable queue or table, not an array in a serverless function."
+  ]
+}

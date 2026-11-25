@@ -21,18 +21,40 @@ export const CODE_LANGUAGES = [
   'ts', 'tsx', 'js', 'jsx', 'sql', 'bash', 'json', 'http', 'env', 'yaml', 'toml', 'python', 'diff', 'text',
 ];
 
+// Glyph advance widths (tenths of a px) for printable ASCII 32..126, measured
+// in the browser with Inter Variable at the sizes the scene CSS uses:
+// node label 22px/600, node sublabel 16.5px/400, edge label 15.5px/550.
+// Other characters fall back to a typical width.
+const GLYPHS = {
+  label: [56,68,112,139,140,218,143,69,79,79,116,145,68,100,68,81,142,90,134,137,144,132,138,128,138,138,68,70,145,145,145,117,217,160,142,159,156,131,127,162,161,58,125,152,122,200,164,166,139,167,141,140,143,159,160,226,156,154,141,79,71,79,103,101,75,124,135,126,135,127,75,135,132,55,55,123,55,195,132,131,135,135,87,118,74,132,126,182,123,127,122,97,76,97,145],
+  sub: [43,47,77,105,106,162,106,50,60,60,83,109,48,76,48,60,104,67,101,102,107,98,102,96,102,102,48,50,109,109,109,84,159,116,108,121,119,99,97,123,123,44,94,111,93,149,124,126,105,126,106,106,107,123,116,166,113,112,104,60,52,60,78,75,53,93,101,94,101,96,55,101,98,40,40,91,40,145,98,99,101,101,64,87,54,98,93,135,90,93,91,70,55,70,109],
+  edge: [40,49,79,99,100,155,102,50,58,58,82,104,48,72,48,58,101,65,96,98,102,94,98,92,98,98,48,50,104,104,104,83,154,113,102,114,112,94,91,116,116,43,90,108,88,142,117,119,100,119,101,100,102,114,113,160,110,109,100,58,51,58,74,72,53,88,96,90,96,91,54,97,94,40,40,88,40,139,94,94,96,96,62,84,53,94,90,129,87,90,87,69,55,69,104],
+};
+const FALLBACK = { label: 150, sub: 110, edge: 105 };
+
+/** Approximate rendered width (px, scene units) of scene text. kind: 'label' | 'sub' | 'edge'. */
+export function textWidth(text, kind = 'label') {
+  const table = GLYPHS[kind];
+  let w = 0;
+  for (const ch of String(text ?? '')) {
+    const c = ch.codePointAt(0);
+    w += c >= 32 && c <= 126 ? table[c - 32] : FALLBACK[kind];
+  }
+  return w / 10;
+}
+
+/** Width (px) of the pill drawn behind an edge label. */
+export const edgeLabelWidth = (label) => (label ? Math.ceil(textWidth(label, 'edge')) + 24 : 0);
+
 /**
  * Rendered width of a node in grid units. Nodes grow automatically to fit
  * their label/sublabel; "w" sets a minimum width.
  */
 export function nodeWidth(n) {
   const hasIcon = !!n.icon;
-  const textPx = Math.max(
-    String(n.label ?? '').length * 11.8,
-    String(n.sublabel ?? '').length * 8.6,
-  );
-  const px = (hasIcon ? 58 : 18) + textPx + 16;
-  return Math.max(n.w ?? NODE_DEFAULT_W, Math.round(px / 10) / 10);
+  const textPx = Math.max(textWidth(n.label, 'label'), textWidth(n.sublabel, 'sub'));
+  const px = (hasIcon ? 58 : 18) + textPx + 20;
+  return Math.max(n.w ?? NODE_DEFAULT_W, Math.ceil(px / 10) / 10);
 }
 
 export const LESSON_FILE_RE = /^(\d{2})-([a-z0-9]+(?:-[a-z0-9]+)*)\.json$/;

@@ -1,0 +1,276 @@
+{
+  "id": "debugging-with-ai",
+  "title": "Debugging with AI the right way",
+  "summary": "Use Claude Code as a fast pair, not a slot machine: hand it evidence, ask for a diagnosis before a fix, break loops early, and verify every fix yourself.",
+  "minutes": 12,
+  "level": "beginner",
+  "youWillLearn": [
+    "Why Claude Code goes in circles, and how to spot the loop early",
+    "How to write a bug report it can actually solve, using the evidence from this module",
+    "Why to ask for a <b>diagnosis before a fix</b>",
+    "How to verify a fix yourself instead of trusting \"Fixed\""
+  ],
+  "glossary": {
+    "context": "Everything the model can see when it answers: your messages, the files it has read, and the earlier turns of the conversation.",
+    "hypothesis": "A possible cause stated so it can be tested: \"if X is the cause, then Y should be true\".",
+    "plan mode": "A Claude Code mode where it reads and plans but does not edit files, so you can review its reasoning first.",
+    "symptom": "What you see going wrong, such as a blank box. The cause is why it happens.",
+    "diff": "The exact lines a change added and removed, shown with <code>+</code> and <code>-</code>.",
+    "hallucination": "A confident answer from a model that is not true, such as a function or setting that does not exist."
+  },
+  "steps": [
+    {
+      "title": "\"Fixed!\" Still broken. \"Fixed!\"",
+      "chapter": "problem",
+      "body": [
+        "Maya types \"the summary is blank, fix it\". Claude Code edits two files and says it is fixed. Still blank. It tries again, then again, and the fourth attempt undoes the first.",
+        "Twenty minutes later, six files are changed and nobody knows why. This is the loop. It is not that the model is weak. It was given a <span class=\"term\">symptom</span> and no evidence, so it guessed."
+      ],
+      "scene": {
+        "caption": "A vague request goes in. Guesses come out. The loop keeps turning.",
+        "nodes": [
+          { "id": "you", "x": 2, "y": 4, "label": "Maya", "sublabel": "\"fix it\"", "icon": "user", "kind": "person" },
+          { "id": "cc", "x": 6.4, "y": 4, "label": "Claude Code", "sublabel": "guessing", "icon": "robot", "kind": "ai", "status": "warn" },
+          { "id": "repo", "x": 10.4, "y": 4, "label": "Notely code", "sublabel": "6 files changed", "icon": "code", "status": "error" }
+        ],
+        "edges": [
+          { "from": "you", "to": "cc", "label": "it's blank, fix it", "packet": true },
+          { "from": "cc", "to": "repo", "label": "edit", "packet": { "label": "try 4", "speed": "fast" } },
+          { "from": "repo", "to": "cc", "label": "still blank", "status": "error" }
+        ],
+        "notes": [
+          { "id": "loop", "x": 8.4, "y": 6.4, "text": "Round 4. Undoing round 1.", "status": "error" }
+        ]
+      }
+    },
+    {
+      "title": "You bring evidence, it brings speed",
+      "chapter": "idea",
+      "body": [
+        "Split the work. <b>You</b> own the evidence and the verdict: the error, the request, the logs, the repro, the bad commit. <b>Claude Code</b> owns speed: reading many files, proposing causes, typing the fix.",
+        "Everything in this module so far was about gathering that evidence. Now it pays off: a model with the facts rarely needs more than one or two tries."
+      ],
+      "callout": {
+        "type": "analogy",
+        "text": "A doctor gets far more from \"sharp pain on the left side since Tuesday, worse after eating\" than from \"I feel bad\". Same doctor, very different diagnosis."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Maya brings the facts. Claude Code works from them instead of guessing.",
+        "remove": ["loop", "repo>cc"],
+        "nodes": [
+          { "id": "you", "sublabel": "brings evidence", "status": "active", "tags": ["error + trace", "request + logs", "repro + commit"] },
+          { "id": "cc", "sublabel": "fast pair", "status": "normal" },
+          { "id": "repo", "sublabel": "untouched", "status": "normal" }
+        ],
+        "edges": [
+          { "id": "you>cc", "label": "evidence", "packet": { "label": "facts", "status": "active" } },
+          { "id": "cc>repo", "label": "reads", "style": "dashed", "packet": false }
+        ]
+      }
+    },
+    {
+      "title": "Write the bug report you'd want",
+      "chapter": "how",
+      "body": [
+        "Give it the same shape every time: what you did, what you expected, what happened, and the evidence you collected. Paste exact text, not your summary of it.",
+        "Then set limits: which files it may touch, and what it must not do yet. Good <span class=\"term\">context</span> is short and specific, not the whole terminal history."
+      ],
+      "code": {
+        "language": "text",
+        "filename": "Prompt to Claude Code",
+        "code": "Bug: AI summary is blank for every note since Monday.\nRepro: open any note, click \"AI summary\" (local + prod).\nExpected: a 3-line summary. Actual: empty box, no error.\nEvidence:\n- POST /api/summary -> 200, body {}\n- PROBE: Claude response has content[0].text\n- git bisect: first bad commit 9f2e1aa\nDo not edit yet. Explain the cause and how to prove it.\nOnly app/api/summary/route.ts should need changes."
+      },
+      "callout": {
+        "type": "tip",
+        "text": "Each evidence line comes from this module: the request from Network or curl, the probe and the bad commit from narrowing down. For a crash, add the error and first trace line that is yours; for a 500, the log line. If you cannot fill a line, that is the next thing to find."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "A structured report: repro, expected, actual, evidence, limits.",
+        "nodes": [
+          { "id": "you", "status": "normal" },
+          { "id": "cc", "status": "active", "sublabel": "has the facts" }
+        ],
+        "edges": [
+          { "id": "you>cc", "label": "bug report", "bend": 0.95, "packet": { "label": "report", "status": "active" } }
+        ]
+      }
+    },
+    {
+      "title": "Diagnosis first, fix second",
+      "chapter": "how",
+      "body": [
+        "Ask for the cause before any code. \"List the likely causes, the evidence for each, and one check that would prove or rule it out.\" Each answer is a <span class=\"term\">hypothesis</span> you can test.",
+        "In <span class=\"term\">plan mode</span>, Claude Code reads and reasons but cannot edit files. You read its explanation like a crit: does it match the evidence? Only then let it change code."
+      ],
+      "callout": {
+        "type": "claude-code",
+        "text": "Before approving a plan, ask: which file and line is the cause? Does the explanation account for <em>every</em> piece of evidence, like why there was no error? What single check would prove it? A cause that cannot be pointed at in the code is still a guess."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "No edits yet. Claude Code returns causes and checks, and Maya judges them.",
+        "nodes": [
+          { "id": "cc", "sublabel": "plan mode", "tags": ["no edits"] },
+          { "id": "repo", "status": "dim" }
+        ],
+        "edges": [
+          { "id": "you>cc", "packet": false },
+          { "from": "cc", "to": "you", "label": "3 hypotheses", "status": "active", "packet": { "label": "causes", "status": "active" } }
+        ]
+      }
+    },
+    {
+      "title": "Spot the loop and break it",
+      "chapter": "how",
+      "body": [
+        "Signs of a loop: the same fix comes back, the diff keeps growing, earlier changes get undone, or the fixes add <code>try/catch</code> and <code>?.</code> everywhere.",
+        "Stop after two failed attempts. Throw the attempts away with git, write down what you now know, and start a fresh session with <code>/clear</code>. A long, failed conversation is <span class=\"term\">context</span> full of wrong ideas."
+      ],
+      "callout": {
+        "type": "warn",
+        "text": "Commit before you start debugging with AI. Then <code>git stash -u</code> puts every attempt aside, new files included, and takes you back to a known state in one command. <code>git restore .</code> also works, but leaves new files behind."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "After two failed tries: reset the code, keep the facts, start a clean session.",
+        "remove": ["cc>you"],
+        "nodes": [
+          { "id": "cc", "status": "error", "sublabel": "2 failed tries", "tags": null },
+          { "id": "repo", "status": "normal", "sublabel": "git stash -u" },
+          { "id": "fresh", "x": 6.4, "y": 6.6, "label": "New session", "sublabel": "/clear + known facts", "icon": "refresh", "kind": "ai", "status": "ok" }
+        ],
+        "edges": [
+          { "id": "cc>repo", "status": "dim", "label": null },
+          { "id": "you>cc", "status": "dim", "label": null },
+          { "from": "you", "to": "fresh", "label": "what we know", "packet": { "label": "facts", "status": "ok" } }
+        ]
+      }
+    },
+    {
+      "title": "\"Fixed\" is a claim. Verify it",
+      "chapter": "how",
+      "body": [
+        "A fix is proven when <b>your repro steps</b> now pass, not when the model says so. Run them yourself.",
+        "Then read the <span class=\"term\">diff</span>. Does it change the cause it named, or only quiet the <span class=\"term\">symptom</span>? Is it about the size the bug deserves? Do the type check and tests still pass? After deploying, check the logs for the success line."
+      ],
+      "code": {
+        "language": "bash",
+        "filename": "Terminal",
+        "code": "git diff --stat     # how many files changed, and where?\ngit diff            # read every line\nnpx tsc --noEmit    # do the types still check?\nnpm test            # if the project has tests\n# then run the repro steps again, by hand"
+      },
+      "callout": {
+        "type": "tip",
+        "text": "Even better: before the fix, ask Claude Code for a small test that fails because of the bug. The fix is proven when that test passes, and the test keeps the bug from quietly coming back."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Maya checks the change herself: repro, diff, types, logs.",
+        "remove": ["fresh"],
+        "nodes": [
+          { "id": "cc", "status": "normal", "sublabel": "fast pair" },
+          { "id": "repo", "status": "active", "sublabel": "1 file changed" },
+          { "id": "checks", "x": 10.4, "y": 1.4, "label": "Checks", "sublabel": "repro, diff, types", "icon": "flask", "status": "ok" }
+        ],
+        "edges": [
+          { "id": "cc>repo", "status": "normal", "label": "small fix", "style": "solid", "packet": { "label": "diff" } },
+          { "id": "you>cc", "status": "normal" },
+          { "from": "repo", "to": "checks", "label": "verify" },
+          { "from": "checks", "to": "you", "label": "proof", "status": "ok", "packet": { "label": "pass", "status": "ok" } }
+        ]
+      }
+    },
+    {
+      "title": "Notely's blank summary, the good way",
+      "chapter": "example",
+      "body": [
+        "With the report from step 3, Claude Code answers in plan mode: the <code>SummaryBlock</code> type names a <code>value</code> field, the API sends <code>text</code>, and the <code>as</code> cast told TypeScript to trust the wrong shape.",
+        "Maya approves. The fix is three lines in one file, and it now fails loudly if the first block is ever not text. The curl from the repro returns a summary again."
+      ],
+      "code": {
+        "language": "diff",
+        "filename": "app/api/summary/route.ts",
+        "code": "-type SummaryBlock = { type: \"text\"; value: string };\n+type SummaryBlock = { type: \"text\"; text: string };\n\n   const block = data.content[0] as SummaryBlock;\n-  return Response.json({ summary: block.value });\n+  if (block.type !== \"text\") throw new Error(\"No text block\");\n+  return Response.json({ summary: block.text });"
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "One cause, one small diff, proven by the same repro that showed the bug.",
+        "nodes": [
+          { "id": "repo", "status": "ok", "sublabel": "3 lines, 1 file" },
+          { "id": "you", "sublabel": "repro passes", "tags": null, "status": "ok" }
+        ]
+      }
+    },
+    {
+      "title": "Confident is not the same as correct",
+      "chapter": "watch-out",
+      "body": [
+        "Models sound equally sure when they are right and when they are wrong. A <span class=\"term\">hallucination</span> in debugging looks like a config option that does not exist, or a cause that fits the symptom but not your evidence.",
+        "The sneakiest one: making a failing test pass by changing the test, or deleting the check that caught the bug."
+      ],
+      "callout": {
+        "type": "claude-code",
+        "text": "Ask it to quote the line in your code or the docs page behind each claim. Check whether the diff touches test files or removes a check. Watch for new packages or settings you did not ask for. If you cannot verify a claim, treat it as a hypothesis, not a fact."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "A confident claim gets checked against the docs and the code before it is accepted.",
+        "nodes": [
+          { "id": "you", "status": "active", "sublabel": "checks claims" },
+          { "id": "cc", "status": "warn", "tags": ["invented setting?"] },
+          { "id": "repo", "status": "normal" },
+          { "id": "checks", "status": "dim" },
+          { "id": "docs", "x": 6.4, "y": 1.4, "label": "Official docs", "sublabel": "the real API", "icon": "file", "kind": "external" }
+        ],
+        "edges": [
+          { "id": "checks>you", "status": "dim", "packet": false },
+          { "id": "repo>checks", "status": "dim" },
+          { "id": "cc>repo", "packet": false, "label": null },
+          { "from": "you", "to": "docs", "label": "look it up", "style": "dashed", "packet": true }
+        ]
+      }
+    },
+    {
+      "title": "Recap: evidence in, proof out",
+      "chapter": "recap",
+      "body": [
+        "Hand Claude Code evidence, not a symptom: repro, expected, actual, error, request, logs, bad commit. Ask for the cause before the code, and judge it against the evidence.",
+        "After two failed tries, reset and start fresh with what you learned. A fix counts when your repro passes and the diff makes sense to you."
+      ]
+    }
+  ],
+  "quiz": [
+    {
+      "question": "Claude Code has tried four fixes for a login bug. Each one fails, and the diff now touches nine files. What do you do?",
+      "options": [
+        { "text": "Ask it to try a fifth time, more carefully.", "why": "The conversation is now full of wrong ideas, and each new try builds on them. More tries in the same loop rarely converge." },
+        { "text": "Restore the code with git, write down what you learned, and start a fresh session with that summary and your evidence.", "correct": true, "why": "A clean codebase and a clean context, plus the facts you gathered, give the model a real chance instead of a pile of failed guesses." },
+        { "text": "Keep the nine-file diff, since some of the changes probably helped.", "why": "Unverified changes are a liability. You do not know which ones matter, and some may have created new bugs." }
+      ]
+    },
+    {
+      "question": "Which prompt is most likely to get a correct fix on the first try?",
+      "options": [
+        { "text": "\"Bookings are broken. Please fix them, it's urgent.\"", "why": "Only a symptom, with no evidence. The model has to guess where to look." },
+        { "text": "\"Here is my whole terminal history from today. Find the bug.\"", "why": "Lots of text, little signal. The key facts get lost, and the context fills with noise." },
+        { "text": "\"Booking a 9:00 slot returns 500. Log: <code>null value in column 'staff_id'</code>. Started after commit 3c1f. Explain the cause before editing.\"", "correct": true, "why": "Repro, exact error, where it started, and a request for diagnosis first. That is a report a model can solve." }
+      ]
+    },
+    {
+      "question": "Claude Code says a failing test now passes. What should you check in the diff first?",
+      "options": [
+        { "text": "Whether it changed the test file or removed the assertion that was failing.", "correct": true, "why": "Making the test agree with the bug is a classic false fix. A real fix changes the code under test, not the check." },
+        { "text": "Whether the code formatting is consistent.", "why": "Formatting matters little here. The question is whether the bug is actually gone." },
+        { "text": "Nothing. A passing test is proof.", "why": "Only if the test still checks the right thing. If it was edited to pass, it proves nothing." }
+      ]
+    }
+  ],
+  "takeaways": [
+    "Claude Code loops when it gets a <b>symptom</b> instead of <b>evidence</b>. Bring the error, the request, the logs, the repro and the bad commit.",
+    "Use a fixed bug report shape: repro, expected, actual, evidence, and what it may touch.",
+    "Ask for the <b>cause</b> before the code, in plan mode, and check it against every piece of evidence.",
+    "After two failed tries: <code>git stash -u</code>, write down what you know, <code>/clear</code>, start fresh.",
+    "A fix is proven by your repro steps and a diff you understand, never by the word \"Fixed\"."
+  ]
+}

@@ -1,0 +1,291 @@
+{
+  "id": "incident-response",
+  "title": "When things break: handling an incident calmly",
+  "summary": "A simple, repeatable order for the bad day: confirm, stop the damage with a rollback or a kill switch, tell people, fix it properly, and learn from it without blame.",
+  "minutes": 13,
+  "level": "beginner",
+  "youWillLearn": [
+    "Why you <b>stop the damage first</b> and look for the cause second",
+    "How a <b>rollback</b> and a <b>kill switch</b> buy you calm time",
+    "What to tell users and clients while it is still broken",
+    "How to run a short, blameless review so it does not happen again"
+  ],
+  "glossary": {
+    "incident": "Any unplanned problem that hurts users right now, like an outage, a broken feature or leaked data.",
+    "severity": "How bad an incident is, usually ranked: everyone blocked, some users blocked, or minor annoyance.",
+    "mitigate": "Reduce the harm quickly, even before you know the cause. Rolling back is the classic example.",
+    "rollback": "Putting the previous working version of the app back live, without building anything new.",
+    "kill switch": "A setting that turns one feature off instantly, without a deploy, while the rest of the app keeps working.",
+    "feature flag": "An on/off setting checked by the code at runtime, so a feature can be enabled or disabled without changing code.",
+    "status page": "A public page that tells users what is broken and when the next update will come.",
+    "root cause": "The underlying reason an incident happened, as opposed to the visible symptom.",
+    "postmortem": "A short written review after an incident: what happened, why, and what will change. Blameless means it looks at systems, not at people."
+  },
+  "steps": [
+    {
+      "title": "Friday, 18:40, the phone buzzes",
+      "chapter": "problem",
+      "body": [
+        "Sentry alert: <b>AI summary</b> errors, hundreds of users, starting right after the 18:25 deploy. Maya's heart rate jumps.",
+        "She opens the code and starts changing things directly on main. Three quick fixes in ten minutes. The third one breaks login as well. Panic turned one broken feature into a broken app."
+      ],
+      "scene": {
+        "caption": "Rushed fixes pushed straight to main make a small outage bigger.",
+        "nodes": [
+          { "id": "alert", "x": 2, "y": 4, "label": "Sentry alert", "sublabel": "summary errors", "icon": "bell", "kind": "external", "status": "error" },
+          { "id": "maya", "x": 6.4, "y": 4, "label": "Maya", "sublabel": "3 hotfixes in 10 min", "icon": "user", "kind": "person", "status": "warn" },
+          { "id": "prod", "x": 10.4, "y": 4, "label": "Production", "sublabel": "summary + login down", "icon": "rocket", "kind": "server", "status": "error" }
+        ],
+        "edges": [
+          { "from": "alert", "to": "maya", "label": "18:40" },
+          { "from": "maya", "to": "prod", "label": "push to main", "status": "error", "packet": { "label": "fix?", "status": "error", "speed": "fast" } }
+        ],
+        "notes": [
+          { "id": "worse", "x": 10.4, "y": 2.3, "text": "Now login is broken too", "status": "error" }
+        ]
+      }
+    },
+    {
+      "title": "A fixed order for bad days",
+      "chapter": "idea",
+      "body": [
+        "Calm comes from having a plan before you need it. Every <span class=\"term\">incident</span> follows the same order.",
+        "<b>Confirm</b> what is broken. <b>Stop the damage</b>. <b>Tell people</b>. <b>Fix</b> the cause properly. <b>Learn</b> from it. The key move: stopping the damage comes before understanding it."
+      ],
+      "callout": {
+        "type": "analogy",
+        "text": "First aid. You stop the bleeding before you ask how the accident happened. The diagnosis comes later, in a calmer room."
+      },
+      "scene": {
+        "caption": "Five steps, always in this order. Stopping the damage comes before the fix.",
+        "nodes": [
+          { "id": "confirm", "x": 2, "y": 2, "label": "Confirm", "sublabel": "what, how bad", "icon": "search", "kind": "neutral" },
+          { "id": "stop", "x": 6.4, "y": 2, "label": "Stop the damage", "sublabel": "rollback, switch off", "icon": "shield", "kind": "server" },
+          { "id": "tell", "x": 2, "y": 6, "label": "Tell people", "sublabel": "users, client", "icon": "chat", "kind": "person" },
+          { "id": "fix", "x": 10.2, "y": 2, "label": "Fix", "sublabel": "branch, test, PR", "icon": "code", "kind": "neutral" },
+          { "id": "learn", "x": 10.2, "y": 6, "label": "Learn", "sublabel": "blameless review", "icon": "pencil", "kind": "neutral" }
+        ],
+        "edges": [
+          { "from": "confirm", "to": "stop" },
+          { "from": "stop", "to": "fix" },
+          { "from": "fix", "to": "learn" },
+          { "from": "confirm", "to": "tell", "style": "dashed", "label": "in parallel" }
+        ]
+      }
+    },
+    {
+      "title": "Confirm: what broke, for whom, since when",
+      "chapter": "how",
+      "body": [
+        "Take two minutes to look before you act. Is it real? Which feature? How many users? When did it start, and what changed right before? A deploy, a config change, a provider outage?",
+        "Then give it a <span class=\"term\">severity</span>. Everyone blocked from their notes is top severity. Summaries failing but notes working is serious, not a catastrophe."
+      ],
+      "callout": {
+        "type": "tip",
+        "text": "Check your providers' status pages too. If the Claude API or Supabase is having an outage, your fix is a clear error message and patience, not a code change."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Confirm first: errors started at 18:25, the minute of the last deploy.",
+        "nodes": [
+          { "id": "confirm", "status": "active", "tags": ["since 18:25", "summary only"] }
+        ]
+      }
+    },
+    {
+      "title": "Stop the damage: roll back",
+      "chapter": "how",
+      "body": [
+        "The errors started with the 18:25 deploy, so the fastest way to <span class=\"term\">mitigate</span> is to put the 17:10 version back live. That is a <span class=\"term\">rollback</span>.",
+        "On Vercel, every deployment is kept. Instant Rollback points the domain back at an older one in seconds, no build needed. Users get a working app while you investigate at your own pace."
+      ],
+      "callout": {
+        "type": "warn",
+        "text": "The bad code is still on <code>main</code>. Revert it there too (lesson 1). Vercel also stops auto-promoting new production deploys after an Instant Rollback, so your fix goes live only when you promote it."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "The domain points back at the last good deployment. Users are fine again.",
+        "nodes": [
+          { "id": "confirm", "status": "ok" },
+          { "id": "stop", "status": "active" },
+          { "id": "dep-bad", "x": 4.3, "y": 4.4, "label": "Deploy 18:25", "sublabel": "broken", "icon": "rocket", "kind": "server", "status": "error" },
+          { "id": "dep-good", "x": 8.4, "y": 4.4, "label": "Deploy 17:10", "sublabel": "last good", "icon": "rocket", "kind": "server", "status": "ok" }
+        ],
+        "edges": [
+          { "from": "stop", "to": "dep-good", "label": "promote", "status": "ok", "packet": { "label": "rollback", "status": "ok" } },
+          { "from": "stop", "to": "dep-bad", "style": "dotted", "status": "error", "arrow": "none" }
+        ]
+      }
+    },
+    {
+      "title": "Or switch off only one feature",
+      "chapter": "how",
+      "body": [
+        "Sometimes rolling back is not an option: the bug is old, or the Claude API itself is failing. Then turn off only the broken part with a <span class=\"term\">kill switch</span>.",
+        "It is a <span class=\"term\">feature flag</span> the code checks on every request. Summaries pause with a friendly message, and notes keep working."
+      ],
+      "code": {
+        "language": "ts",
+        "filename": "app/api/summary/route.ts",
+        "code": "const enabled = await getFlag('ai_summary');\nif (!enabled) {\n  return Response.json(\n    { error: 'Summaries are paused. Your notes are safe.' },\n    { status: 503 },\n  );\n}",
+        "caption": "Store the flag in the database or a flag service. On Vercel, changing an env var only takes effect after a redeploy."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "One switch turns off summaries. The rest of Notely keeps running.",
+        "remove": ["dep-bad", "dep-good"],
+        "nodes": [
+          { "id": "switch", "x": 6.4, "y": 4.4, "label": "ai_summary", "sublabel": "flag: off", "icon": "gear", "kind": "server", "status": "warn" }
+        ],
+        "edges": [
+          { "from": "stop", "to": "switch", "label": "turn off", "packet": { "label": "off", "status": "warn" } }
+        ]
+      }
+    },
+    {
+      "title": "Tell people early, then on a schedule",
+      "chapter": "how",
+      "body": [
+        "Silence feels worse than bad news. Post a short update as soon as you have confirmed the problem, on a <span class=\"term\">status page</span> or in the app, and tell the client directly.",
+        "Say what is affected, what is safe, what you are doing, and when the next update comes. Then keep that promise, even if the update is \"still working on it\"."
+      ],
+      "code": {
+        "language": "text",
+        "filename": "Status update, 18:52",
+        "code": "AI summaries are failing for most users since 18:25.\nYour notes are safe and the rest of Notely works.\nWe have paused summaries and are working on a fix.\nNext update by 19:30.",
+        "caption": "Four sentences: what broke, what is safe, what you are doing, when you will speak again."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "While the fix is in progress, users and the client hear from Maya first.",
+        "nodes": [
+          { "id": "stop", "status": "ok" },
+          { "id": "switch", "status": "dim" },
+          { "id": "tell", "status": "active", "tags": ["next update 19:30"] }
+        ],
+        "edges": [
+          { "id": "stop>switch", "packet": false, "status": "dim" },
+          { "id": "confirm>tell", "status": "active", "packet": { "label": "update" } }
+        ]
+      }
+    },
+    {
+      "title": "Fix it properly, on a branch",
+      "chapter": "example",
+      "body": [
+        "Now there is time. Find the <span class=\"term\">root cause</span>, not only the symptom. The 18:25 deploy renamed a field, and the summary route still read the old name.",
+        "Fix it the normal way: a branch, a test that reproduces the bug (lesson 3), a pull request, a preview. Then turn summaries back on and watch Sentry for a few minutes."
+      ],
+      "callout": {
+        "type": "claude-code",
+        "text": "Paste the full stack trace and the time it started. Ask Claude Code to explain the cause before it changes code. Ask for the smallest fix, on a branch, with a test that failed before and passes after. Refuse pushes to <code>main</code> and unrelated cleanup during an incident."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "The real fix goes through the normal route: branch, test, PR, merge.",
+        "remove": ["switch"],
+        "nodes": [
+          { "id": "tell", "status": "ok", "tags": null },
+          { "id": "fix", "status": "active", "tags": ["test reproduces bug"] }
+        ],
+        "edges": [
+          { "id": "confirm>tell", "status": "normal", "packet": false },
+          { "id": "stop>fix", "status": "active", "packet": { "label": "PR #31" } }
+        ]
+      }
+    },
+    {
+      "title": "A rollback does not roll back data",
+      "chapter": "watch-out",
+      "body": [
+        "Rolling back swaps the code, not the database. If the bad deploy ran a migration, or wrote broken rows for twenty minutes, those are still there.",
+        "The old code may even crash on the new database shape. That is why migrations should be additive (add a column, stop using the old one later) and why the data needs checking after every incident."
+      ],
+      "callout": {
+        "type": "warn",
+        "text": "If a migration dropped or renamed a column, a rollback can make things worse. That is the case for point-in-time recovery from lesson 5, so know where your backups are before the bad day."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "The code went back to 17:10. The database did not.",
+        "nodes": [
+          { "id": "fix", "status": "normal", "tags": null },
+          { "id": "db", "x": 6.4, "y": 4.4, "label": "Production DB", "sublabel": "still migrated", "icon": "database", "kind": "data", "status": "warn" }
+        ],
+        "edges": [
+          { "id": "stop>fix", "status": "normal", "packet": false },
+          { "from": "stop", "to": "db", "label": "code only", "style": "dashed", "status": "warn" }
+        ]
+      }
+    },
+    {
+      "title": "Learn: a blameless postmortem",
+      "chapter": "how",
+      "body": [
+        "Within a few days, write a one-page <span class=\"term\">postmortem</span>: timeline, impact, root cause, what helped, and two or three concrete changes.",
+        "Blameless means asking \"what let this through?\", not \"who did it?\". Here: no test covered the summary route, and the rename shipped in one step. Both become tasks."
+      ],
+      "callout": {
+        "type": "tip",
+        "text": "For client work, a calm postmortem is a trust builder. Clients forgive outages. They do not forgive silence or the same outage twice."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "The review turns one bad evening into lasting fixes.",
+        "remove": ["db"],
+        "nodes": [
+          { "id": "confirm", "status": "ok" },
+          { "id": "stop", "status": "ok" },
+          { "id": "tell", "status": "ok" },
+          { "id": "fix", "status": "ok" },
+          { "id": "learn", "status": "active", "tags": ["add route test", "2-step renames"] }
+        ],
+        "edges": [
+          { "id": "fix>learn", "status": "active", "packet": { "label": "lessons" } }
+        ]
+      }
+    },
+    {
+      "title": "Recap: stop, tell, fix, learn",
+      "chapter": "recap",
+      "body": [
+        "When something breaks, follow the order: confirm, stop the damage, tell people, fix, learn. Roll back or flip a kill switch first; investigate once users are safe.",
+        "Remember that code rolls back but data does not. Fix through the normal branch and PR route, and write a short, blameless review."
+      ]
+    }
+  ],
+  "quiz": [
+    {
+      "question": "Errors spiked right after a deploy 15 minutes ago. You think you know which line is wrong. What do you do first?",
+      "options": [
+        { "text": "Push a fix to <code>main</code> right away, since you know the line.", "why": "You think you know. If you are wrong, you have added a second untested change to a live incident." },
+        { "text": "Roll back to the previous deployment, then fix it on a branch.", "correct": true, "why": "Rollback restores users in seconds and gives you calm time. The fix then goes through tests and a preview like any other change." },
+        { "text": "Wait to see if the errors stop on their own.", "why": "Errors that start right after a deploy are almost always caused by it. Waiting only extends the outage." }
+      ]
+    },
+    {
+      "question": "The Claude API is having an outage. Summaries fail, but the rest of Notely works. What is the best move?",
+      "options": [
+        { "text": "Roll back to last week's deployment.", "why": "Your code did not change; the provider is down. An older version calls the same failing API." },
+        { "text": "Ask Claude Code to rewrite the summary route.", "why": "Nothing is wrong with your code. Rewriting it during an outage adds risk and fixes nothing." },
+        { "text": "Turn summaries off with a kill switch, show a friendly message, post a status update.", "correct": true, "why": "You cannot fix their outage. You can make your app fail gracefully and keep users informed until it recovers." }
+      ]
+    },
+    {
+      "question": "You rolled back a deploy that also ran a migration renaming <code>notes.body</code> to <code>notes.content</code>. The app still crashes. Why?",
+      "options": [
+        { "text": "The rollback did not finish. Try it again.", "why": "The rollback worked. It only changes code." },
+        { "text": "The old code expects <code>body</code>, but the database now has <code>content</code>.", "correct": true, "why": "Rollbacks swap code, never data. Renames should happen in steps (add new column, copy, switch code, drop old later) so old and new code both work." },
+        { "text": "Vercel's cache is serving the new code.", "why": "Instant Rollback switches the deployment directly. The mismatch is between code and database." }
+      ]
+    }
+  ],
+  "takeaways": [
+    "Follow one order every time: <b>confirm</b>, <b>stop the damage</b>, <b>tell people</b>, <b>fix</b>, <b>learn</b>.",
+    "Mitigate before you investigate: a <b>rollback</b> or a <b>kill switch</b> buys calm time.",
+    "Post early updates with a promised time for the next one. Silence is worse than bad news.",
+    "Rollbacks swap code, not data. Keep migrations additive so old code still works.",
+    "Write a short, <b>blameless</b> postmortem with two or three concrete changes."
+  ]
+}

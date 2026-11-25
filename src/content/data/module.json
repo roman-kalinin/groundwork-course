@@ -2,6 +2,6 @@
   "id": "data",
   "title": "Data & SQL",
   "order": 1,
-  "summary": "How apps store, shape and query their data: tables, relations, SQL and the Postgres behind Supabase.",
+  "summary": "How apps store, shape and query their data: tables and keys, joins, SQL, schema design, safe migrations, and the Postgres features behind Supabase.",
   "color": "blue"
 }

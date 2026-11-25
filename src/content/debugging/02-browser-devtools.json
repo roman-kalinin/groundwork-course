@@ -1,0 +1,266 @@
+{
+  "id": "browser-devtools",
+  "title": "Browser DevTools: Console, Network, Storage",
+  "summary": "Use three DevTools panels to see what the page says, what it sends, and what it remembers, so a silent bug stops being silent.",
+  "minutes": 12,
+  "level": "beginner",
+  "youWillLearn": [
+    "What the <b>Console</b>, <b>Network</b> and <b>Application</b> panels each show you",
+    "How to read a request: status code, payload and response body",
+    "How to check whether the browser really holds a login cookie",
+    "What never to paste into a chat or an issue"
+  ],
+  "glossary": {
+    "DevTools": "The inspection tools built into every desktop browser. Open them with F12, or Cmd+Option+I on a Mac.",
+    "console": "The DevTools panel that shows errors, warnings and anything the page's code prints with console.log.",
+    "status code": "A three-digit number at the start of every HTTP response that says, in short, how it went: 200 fine, 404 not found, 500 server broke.",
+    "payload": "The data the browser sent with a request, for example the note's title and body.",
+    "response body": "The data the server sent back. For an error, it often contains the exact reason.",
+    "RLS": "Row Level Security: Postgres rules that decide which rows each user may read or write. Supabase relies on it to protect your tables.",
+    "localStorage": "A small key-value store in the browser, per website, that any script on the page can read.",
+    "HAR file": "A recording of every request in the Network panel, exported as one file. It can include headers, cookies, tokens and response data."
+  },
+  "steps": [
+    {
+      "title": "The spinner that never stops",
+      "chapter": "problem",
+      "body": [
+        "Maya types a note and clicks <b>Save</b>. The button shows a spinner. It keeps spinning. No red message, no crash, nothing in the terminal.",
+        "The page is talking to Supabase behind the scenes, and something in that conversation went wrong. You cannot see it on screen. You can see it in the browser's own inspection tools."
+      ],
+      "scene": {
+        "caption": "Maya clicks Save. Something happens between the browser and Supabase, but the screen shows nothing.",
+        "nodes": [
+          { "id": "browser", "x": 2, "y": 4, "label": "Notely tab", "sublabel": "Save: spinning", "icon": "browser", "kind": "client", "status": "warn" },
+          { "id": "api", "x": 6.4, "y": 4, "label": "Supabase API", "sublabel": "/rest/v1/notes", "icon": "api", "kind": "server" },
+          { "id": "db", "x": 10.4, "y": 4, "label": "notes table", "sublabel": "Postgres", "icon": "database", "kind": "data" }
+        ],
+        "edges": [
+          { "from": "browser", "to": "api", "label": "save note", "packet": { "label": "note" } },
+          { "from": "api", "to": "db", "label": "insert" }
+        ],
+        "notes": [
+          { "id": "quiet", "x": 2, "y": 6.2, "text": "No error on screen", "status": "warn" }
+        ]
+      }
+    },
+    {
+      "title": "Three panels, three questions",
+      "chapter": "idea",
+      "body": [
+        "Open <span class=\"term\">DevTools</span> with F12 (Cmd+Option+I on a Mac). Dozens of tabs, but three answer most bugs.",
+        "<b>Console</b>: what did the code say? <b>Network</b>: what did the page send, and what came back? <b>Application</b> (Storage in Firefox): what does the browser remember for this site, like cookies?"
+      ],
+      "callout": {
+        "type": "analogy",
+        "text": "A flight recorder with three channels: the cockpit voice (Console), the radio traffic with the tower (Network), and the cargo list (Application). Each answers a different question about the same flight."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Three DevTools panels, each watching a different part of the page's life.",
+        "remove": ["quiet"],
+        "nodes": [
+          { "id": "console", "x": 2, "y": 1.4, "label": "Console", "sublabel": "what code says", "icon": "terminal", "kind": "neutral" },
+          { "id": "network", "x": 6.4, "y": 1.4, "label": "Network", "sublabel": "what travels", "icon": "globe", "kind": "neutral" },
+          { "id": "storage", "x": 2, "y": 6.6, "label": "Application", "sublabel": "what is stored", "icon": "cookie", "kind": "neutral" }
+        ],
+        "edges": [
+          { "from": "console", "to": "browser", "style": "dotted", "label": "logs" },
+          { "from": "network", "to": "api", "style": "dotted", "label": "records" },
+          { "from": "storage", "to": "browser", "style": "dotted", "label": "cookies" }
+        ]
+      }
+    },
+    {
+      "title": "Console: what the code said",
+      "chapter": "how",
+      "body": [
+        "The <span class=\"term\">console</span> lists errors in red, warnings in yellow, and every <code>console.log</code>. Each line has a link on the right to the file and line that printed it. Click it to jump to the code.",
+        "Errors read the same way as in the last lesson: type, message, location. Here, Maya finds nothing red at all. That is a clue in itself: the code did not crash."
+      ],
+      "callout": {
+        "type": "tip",
+        "text": "A message containing <code>blocked by CORS policy</code> means the browser refused to let your page read another site's response. It is fixed on the server that answers, not in your page code."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "The Console is empty. Whatever went wrong did not throw an error in the page.",
+        "nodes": [
+          { "id": "console", "status": "active", "tags": ["0 errors"] },
+          { "id": "network", "status": "dim" },
+          { "id": "storage", "status": "dim" }
+        ],
+        "edges": [
+          { "id": "console>browser", "status": "active" },
+          { "id": "network>api", "status": "dim" },
+          { "id": "storage>browser", "status": "dim" }
+        ]
+      }
+    },
+    {
+      "title": "Network: every request, recorded",
+      "chapter": "how",
+      "body": [
+        "The Network panel lists every request the page makes. Click the <b>Fetch/XHR</b> filter to hide images and scripts and keep only data calls.",
+        "Click a row for the details. <b>Headers</b>: the URL, method and <span class=\"term\">status code</span>. <b>Payload</b>: the <span class=\"term\">payload</span> the page sent. <b>Response</b>: the <span class=\"term\">response body</span> that came back. Maya's save request is right there, and it is red."
+      ],
+      "callout": {
+        "type": "tip",
+        "text": "Tick <b>Preserve log</b> when a bug involves a redirect or reload, such as a login. Without it, the list is wiped on every page load."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "The Network panel catches the save request and the answer that came back.",
+        "nodes": [
+          { "id": "console", "status": "dim", "tags": null },
+          { "id": "network", "status": "active", "tags": ["Fetch/XHR"] },
+          { "id": "api", "status": "error" }
+        ],
+        "edges": [
+          { "id": "console>browser", "status": "dim" },
+          { "id": "network>api", "status": "active" },
+          { "from": "api", "to": "browser", "label": "403", "status": "error", "packet": { "label": "403", "status": "error" } }
+        ]
+      }
+    },
+    {
+      "title": "Read the status code first",
+      "chapter": "how",
+      "body": [
+        "The first digit tells you which side to blame. <b>2xx</b>: it worked. <b>4xx</b>: the server refused what was sent: <code>401</code> not logged in, <code>403</code> not allowed, <code>404</code> wrong URL, <code>400</code> or <code>422</code> bad data, <code>429</code> too many requests. <b>5xx</b>: the server itself broke, so the real error is in its logs.",
+        "A row stuck on <code>(pending)</code> never got an answer at all."
+      ],
+      "scene": {
+        "extends": "previous",
+        "caption": "403 is a 4xx: the server understood the request and refused it.",
+        "nodes": [
+          { "id": "api", "tags": ["403 Forbidden"] }
+        ],
+        "notes": [
+          { "id": "codes", "x": 8.4, "y": 6.6, "text": "4xx: request refused. 5xx: server broke.", "status": "active" }
+        ]
+      }
+    },
+    {
+      "title": "Application: what the browser keeps",
+      "chapter": "how",
+      "body": [
+        "A 401 or 403 makes you wonder: is Maya even logged in? The Application panel answers. Under <b>Storage</b> you see cookies, <span class=\"term\">localStorage</span> and session storage for this site.",
+        "Notely uses Supabase's server helpers, which keep the login in a cookie named like <code>sb-…-auth-token</code>. It is there, so the browser holds a session. The refusal has another cause."
+      ],
+      "callout": {
+        "type": "tip",
+        "text": "<b>Clear site data</b> in the Storage section wipes cookies and storage for this site. Use it to test as a brand-new visitor, or to rule out stale data from an old version."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "The auth cookie is present. Maya is logged in, so the 403 is about something else.",
+        "remove": ["codes"],
+        "nodes": [
+          { "id": "network", "status": "dim", "tags": null },
+          { "id": "storage", "status": "ok", "tags": ["sb-…-auth-token"] }
+        ],
+        "edges": [
+          { "id": "network>api", "status": "dim" },
+          { "id": "storage>browser", "status": "ok", "packet": { "label": "cookie", "status": "ok" } }
+        ]
+      }
+    },
+    {
+      "title": "Notely's stuck spinner, solved",
+      "chapter": "example",
+      "body": [
+        "Back in Network, the <b>Response</b> tab of the 403 reads: <em>new row violates row-level security policy for table \"notes\"</em>. The <span class=\"term\">RLS</span> rule only allows inserts where <code>user_id</code> is the logged-in user. The insert never sent a <code>user_id</code>.",
+        "Two bugs, really: the missing field, and code that ignored <code>error</code>, so the spinner never stopped."
+      ],
+      "code": {
+        "language": "ts",
+        "filename": "app/notes/save.ts",
+        "code": "const { error } = await supabase\n  .from(\"notes\")\n  .insert({ title, body, user_id: user.id });\n\nif (error) {\n  console.error(\"Save failed\", error);\n  setStatus(\"error\");\n  return;\n}",
+        "caption": "supabase-js does not throw on a refused request. It returns error, and your code must check it."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "The response body names the real cause: the RLS policy refused a row with no user_id.",
+        "nodes": [
+          { "id": "storage", "status": "dim", "tags": null },
+          { "id": "browser", "sublabel": "shows the error", "status": "normal" },
+          { "id": "db", "status": "error", "tags": ["policy: auth.uid()"] }
+        ],
+        "edges": [
+          { "id": "storage>browser", "status": "dim", "packet": false },
+          { "id": "api>db", "status": "error", "label": "refused" },
+          { "id": "api>browser", "label": "403 + reason" }
+        ]
+      }
+    },
+    {
+      "title": "Copy as cURL copies your login too",
+      "chapter": "watch-out",
+      "body": [
+        "Right-click a request and DevTools offers <b>Copy as cURL</b> or a HAR export. Handy for sharing a bug. But the cURL command includes the request headers: cookies, <code>Authorization</code> tokens, sometimes API keys.",
+        "A <span class=\"term\">HAR file</span> can hold the same, plus every response. Some browsers now strip logins from HAR exports; do not count on it. Pasted into a chat or Slack, either can hand over a working login."
+      ],
+      "callout": {
+        "type": "claude-code",
+        "text": "Give Claude Code the method, URL, status code and response body, plus the Console error with its file and line. Remove <code>Cookie</code> and <code>Authorization</code> headers first. When it adds a fix for a failed request, check it also handles <code>error</code> so the UI cannot hang again."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Copying a request copies the login cookie with it. Strip it before you share.",
+        "nodes": [
+          { "id": "db", "status": "normal", "tags": null },
+          { "id": "api", "status": "normal", "tags": null },
+          { "id": "network", "status": "active" },
+          { "id": "paste", "x": 10.4, "y": 1.4, "label": "Shared paste", "sublabel": "chat, issue, Slack", "icon": "chat", "kind": "external", "status": "error" }
+        ],
+        "edges": [
+          { "id": "api>db", "status": "normal", "label": "insert" },
+          { "id": "api>browser", "status": "normal", "label": "201", "packet": false },
+          { "from": "network", "to": "paste", "label": "Copy as cURL", "status": "error", "packet": { "label": "token", "status": "error" } }
+        ]
+      }
+    },
+    {
+      "title": "Recap: look before you guess",
+      "chapter": "recap",
+      "body": [
+        "<b>Console</b>: errors with a link to the line. <b>Network</b>: every request, with status code, payload and response body. <b>Application</b>: cookies and storage, so you know if the user is really logged in.",
+        "A silent bug is usually a failed request that nobody checked. The response body often names the cause word for word."
+      ]
+    }
+  ],
+  "quiz": [
+    {
+      "question": "Notely's Save button spins forever. The Console is empty. What do you check next?",
+      "options": [
+        { "text": "The Network panel: find the save request and read its status and response.", "correct": true, "why": "An empty Console means nothing crashed in the page. A request that failed or never answered shows up in Network, with the reason in its response body." },
+        { "text": "Reinstall the dependencies, since the Console would show any real problem.", "why": "Many failures never reach the Console, for example a refused request whose <code>error</code> the code ignores." },
+        { "text": "Clear the browser cache and try again.", "why": "That may change nothing and teaches you nothing. Look at what was sent and what came back first." }
+      ]
+    },
+    {
+      "question": "A request to <code>/api/summary</code> returns <code>500</code>. Where is the most useful next clue?",
+      "options": [
+        { "text": "In the request payload, since 5xx means the browser sent bad data.", "why": "Bad input usually gets a 4xx. A 5xx means the server itself failed while handling the request." },
+        { "text": "In the Application panel, since it is probably a cookie issue.", "why": "A missing login normally comes back as 401 or 403, not 500." },
+        { "text": "In the server logs, since a 5xx means the server crashed.", "correct": true, "why": "The browser only sees \"something broke\". The stack trace and real message are in the server's logs, which is the next lesson." }
+      ]
+    },
+    {
+      "question": "A client asks you to look into a login bug and offers to send a HAR file of their session. What is the main risk?",
+      "options": [
+        { "text": "HAR files are too large to open.", "why": "They can be big, but size is not the danger." },
+        { "text": "It can contain their cookies and tokens, so whoever reads it can act as them.", "correct": true, "why": "A HAR can record full request headers and responses. Ask for an export without cookies if their browser offers one, keep it private, and delete it when you are done." },
+        { "text": "HAR files only work in the browser that made them.", "why": "Any DevTools or HAR viewer can open them. That portability is part of why leaked HAR files are dangerous." }
+      ]
+    }
+  ],
+  "takeaways": [
+    "<b>Console</b> answers \"what did the code say?\", <b>Network</b> \"what was sent and what came back?\", <b>Application</b> \"what does the browser remember?\".",
+    "In Network, filter by <code>Fetch/XHR</code>, then read the status code, then the <b>Response</b> tab. The reason is often written there.",
+    "4xx: the server refused the request. 5xx: the server broke, so go to its logs.",
+    "<code>supabase-js</code> returns <code>error</code> instead of throwing. Code that ignores it leaves the UI hanging.",
+    "Copy as cURL and HAR files can contain logins. Strip <code>Cookie</code> and <code>Authorization</code> before sharing."
+  ]
+}

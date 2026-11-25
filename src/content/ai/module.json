@@ -2,6 +2,6 @@
   "id": "ai",
   "title": "AI engineering",
   "order": 5,
-  "summary": "Build reliable features on top of LLMs: prompts, tools, retrieval, evals, streaming and cost control.",
+  "summary": "Build AI features that hold up in production: how LLM APIs work, streaming, prompts, structured output and tools, RAG, agents, evals, cost and safety.",
   "color": "violet"
 }

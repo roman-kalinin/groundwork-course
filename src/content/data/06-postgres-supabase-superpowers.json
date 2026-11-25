@@ -1,0 +1,306 @@
+{
+  "id": "postgres-supabase-superpowers",
+  "title": "Postgres and Supabase superpowers",
+  "summary": "How Supabase builds auth, file storage, live updates, AI search and server logic around one Postgres database, and the one rule that keeps it all safe.",
+  "minutes": 14,
+  "level": "intermediate",
+  "youWillLearn": [
+    "How Supabase Auth and Storage keep their data in your Postgres database, and Realtime streams its changes",
+    "How to link your own tables to <code>auth.users</code> with a <code>profiles</code> table",
+    "How <b>pgvector</b> lets Notely search notes by meaning",
+    "When to use a Postgres function, and when an Edge Function",
+    "Why <b>row level security</b> is the price of all this power"
+  ],
+  "glossary": {
+    "Supabase": "A hosted platform built around one Postgres database, adding auth, file storage, realtime updates, an API and serverless functions.",
+    "Postgres schema": "A named folder of tables inside one Postgres database, like auth, storage or public.",
+    "auth.users": "The table where Supabase Auth keeps one row per account. Managed by Supabase; you link to it, you do not edit it.",
+    "bucket": "A named container for files in Supabase Storage, like a top-level folder with its own access rules.",
+    "Realtime": "The Supabase service that pushes database changes and messages to connected browsers as they happen.",
+    "extension": "An add-on that gives Postgres new types and functions, switched on with create extension.",
+    "pgvector": "A Postgres extension that adds a vector column type and fast search for the closest vectors.",
+    "embedding": "A long list of numbers an AI model produces from a text, placed so that texts with similar meaning get similar numbers.",
+    "RPC": "Remote procedure call: the app calls a named function on the server, here a Postgres function, through supabase.rpc().",
+    "Edge Function": "A small TypeScript function Supabase runs on its servers, outside the database, for things like calling a paid API with a secret key.",
+    "RLS": "Row level security: Postgres rules that decide, row by row, which rows each user may read or change.",
+    "service role key": "A Supabase server key (newer projects call it the secret key) with full access that skips row level security. For trusted server code only."
+  },
+  "steps": [
+    {
+      "title": "Four features, four services?",
+      "chapter": "problem",
+      "body": [
+        "Maya's wish list for Notely: sign in with email, attach photos to notes, see edits from her other devices live, and ask the AI \"find my notes about Lisbon\".",
+        "The obvious plan is four services: an auth provider, a file host, a realtime server, a vector database. Four bills, four dashboards, and four copies of \"who is Maya\" to keep in sync."
+      ],
+      "scene": {
+        "caption": "Four separate services, each with its own idea of who Maya is.",
+        "nodes": [
+          { "id": "app", "x": 1.8, "y": 4.2, "label": "Notely app", "sublabel": "Next.js on Vercel", "icon": "browser", "kind": "client" },
+          { "id": "auth", "x": 4.4, "y": 1.6, "label": "Auth provider", "sublabel": "service 1", "icon": "key", "kind": "external", "status": "warn" },
+          { "id": "storage", "x": 4.4, "y": 6.8, "label": "File host", "sublabel": "service 2", "icon": "folder", "kind": "external", "status": "warn" },
+          { "id": "realtime", "x": 10.2, "y": 1.6, "label": "Live server", "sublabel": "service 3", "icon": "bolt", "kind": "external", "status": "warn" },
+          { "id": "vector", "x": 10.2, "y": 6.8, "label": "Vector DB", "sublabel": "service 4", "icon": "vector", "kind": "external", "status": "warn" }
+        ],
+        "edges": [
+          { "from": "app", "to": "auth", "style": "dashed" },
+          { "from": "app", "to": "storage", "style": "dashed" },
+          { "from": "app", "to": "realtime", "style": "dashed" },
+          { "from": "app", "to": "vector", "style": "dashed" }
+        ],
+        "notes": [
+          { "id": "n-bills", "x": 7.2, "y": 4.2, "text": "4 bills, 4 copies of Maya", "status": "warn" }
+        ]
+      }
+    },
+    {
+      "title": "One Postgres, with services around it",
+      "chapter": "idea",
+      "body": [
+        "<span class=\"term\">Supabase</span> takes a different route: one Postgres database in the middle, with services wrapped around it. Auth and Storage keep their data in tables of that same database, and Realtime listens to its changes.",
+        "So \"who is Maya\" lives in one place, and one set of rules, written in SQL, can protect all of it."
+      ],
+      "callout": {
+        "type": "analogy",
+        "text": "A house with one fuse box. Lights, oven and heating are separate rooms, but the wiring meets in one place, and one switch can cut them all."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Every service is built on the same Postgres database.",
+        "remove": ["n-bills", "app>auth", "app>storage", "app>realtime", "app>vector"],
+        "nodes": [
+          { "id": "pg", "x": 7.2, "y": 4.2, "label": "Postgres", "sublabel": "one database", "icon": "database", "kind": "data", "status": "active" },
+          { "id": "auth", "label": "Supabase Auth", "sublabel": "sign-in", "icon": "shield", "kind": "server", "status": "normal" },
+          { "id": "storage", "label": "Storage", "sublabel": "files", "kind": "server", "status": "normal" },
+          { "id": "realtime", "label": "Realtime", "sublabel": "live updates", "kind": "server", "status": "normal" },
+          { "id": "vector", "label": "pgvector", "sublabel": "inside Postgres", "kind": "data", "status": "normal" }
+        ],
+        "edges": [
+          { "from": "app", "to": "pg", "label": "supabase-js", "packet": { "label": "query" } },
+          { "from": "auth", "to": "pg", "style": "dashed" },
+          { "from": "storage", "to": "pg", "style": "dashed" },
+          { "from": "realtime", "to": "pg", "style": "dashed" },
+          { "from": "vector", "to": "pg", "style": "dashed" }
+        ]
+      }
+    },
+    {
+      "title": "Auth: your users are rows in a table",
+      "chapter": "how",
+      "body": [
+        "When Maya signs up, Supabase Auth adds a row to <span class=\"term\">auth.users</span>, in a separate <span class=\"term\" data-term=\"Postgres schema\">schema</span> called <code>auth</code>. Do not edit that table yourself.",
+        "Your own user data goes in a <code>profiles</code> table whose primary key is also a foreign key to <code>auth.users</code>. Inside SQL, <code>auth.uid()</code> returns the id of whoever is making the request."
+      ],
+      "code": {
+        "language": "sql",
+        "code": "create table public.profiles (\n  id uuid primary key\n    references auth.users (id) on delete cascade,\n  display_name text\n);\n\nalter table public.profiles enable row level security;\n\ncreate policy \"Read own profile\" on public.profiles\n  for select using ((select auth.uid()) = id);",
+        "caption": "From here on, Notely's user ids are uuids from auth.users, not the small numbers of lesson 1."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Sign-in writes to auth.users. Notely's profiles table points at it.",
+        "nodes": [
+          { "id": "pg", "status": "normal", "tags": ["auth.users", "public.profiles"] },
+          { "id": "auth", "status": "active" }
+        ],
+        "edges": [
+          { "id": "app>pg", "packet": false },
+          { "from": "app", "to": "auth", "label": "sign in", "packet": { "label": "email" } },
+          { "id": "auth>pg", "style": "solid", "status": "active", "packet": { "label": "row" } }
+        ]
+      }
+    },
+    {
+      "title": "Storage: files outside, facts inside",
+      "chapter": "how",
+      "body": [
+        "Photos do not belong in table rows. Supabase Storage keeps files in <span class=\"term\" data-term=\"bucket\">buckets</span>, and records each file's path and owner in <code>storage.objects</code>, a regular Postgres table.",
+        "Your <code>notes</code> table stores only the file path. Who may upload or read a file is decided by policies on <code>storage.objects</code>, in the same SQL as everything else."
+      ],
+      "code": {
+        "language": "ts",
+        "code": "const path = `${user.id}/${noteId}/photo.png`;\n\nconst { error } = await supabase.storage\n  .from('attachments')\n  .upload(path, file);",
+        "caption": "Starting the path with the user's id makes \"only your own folder\" policies easy to write."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "The photo goes to a bucket. Its path and owner become a row in Postgres.",
+        "remove": ["app>auth"],
+        "nodes": [
+          { "id": "auth", "status": "normal" },
+          { "id": "storage", "status": "active" },
+          { "id": "pg", "tags": ["storage.objects", "notes.photo_path"] }
+        ],
+        "edges": [
+          { "id": "auth>pg", "style": "dashed", "status": null, "packet": false },
+          { "from": "app", "to": "storage", "label": "upload", "packet": { "label": "photo" } },
+          { "id": "storage>pg", "style": "solid", "status": "active", "packet": { "label": "path" } }
+        ]
+      }
+    },
+    {
+      "title": "Realtime: the table taps you on the shoulder",
+      "chapter": "how",
+      "body": [
+        "<span class=\"term\">Realtime</span> lets the browser subscribe to changes. When Maya adds a note on her phone, her laptop hears about it within moments and updates the list.",
+        "You switch it on per table, then subscribe in the client. Realtime checks your security rules, so Maya only hears about rows she is allowed to read."
+      ],
+      "code": {
+        "language": "ts",
+        "code": "supabase\n  .channel('my-notes')\n  .on('postgres_changes',\n    { event: 'INSERT', schema: 'public', table: 'notes' },\n    (payload) => addToList(payload.new))\n  .subscribe();",
+        "caption": "First, in a migration: alter publication supabase_realtime add table notes;"
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "A new row in notes is pushed to every open Notely tab that may see it.",
+        "remove": ["app>storage"],
+        "nodes": [
+          { "id": "storage", "status": "normal" },
+          { "id": "realtime", "status": "active" },
+          { "id": "pg", "tags": ["notes"] }
+        ],
+        "edges": [
+          { "id": "storage>pg", "style": "dashed", "status": null, "packet": false },
+          { "from": "pg", "to": "realtime", "label": "row inserted", "packet": { "label": "change" } },
+          { "from": "realtime", "to": "app", "label": "push", "status": "active", "packet": { "label": "INSERT" } }
+        ]
+      }
+    },
+    {
+      "title": "pgvector: search by meaning",
+      "chapter": "how",
+      "body": [
+        "<span class=\"term\">pgvector</span> is a Postgres <span class=\"term\">extension</span> that adds a <code>vector</code> column type. An AI model turns each note into an <span class=\"term\">embedding</span>: a long list of numbers that captures its meaning.",
+        "Store it next to the note. To search, embed the question, then sort notes by distance. \"Trips to Portugal\" finds the Lisbon note, though no word matches."
+      ],
+      "code": {
+        "language": "sql",
+        "code": "create extension if not exists vector;\n\nalter table notes add column embedding vector(1024);\n\nselect id, title\nfrom notes\norder by embedding <=> $1  -- cosine distance\nlimit 5;",
+        "caption": "The number in vector(1024) must match your embedding model's output size."
+      },
+      "callout": {
+        "type": "tip",
+        "text": "Your notes and their embeddings live in one database, so one query can filter by owner, skip deleted notes and rank by meaning. This is the retrieval half of RAG, which you will use in the AI module."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "The question becomes a vector. Postgres returns the closest notes.",
+        "remove": ["pg>realtime", "realtime>app"],
+        "nodes": [
+          { "id": "realtime", "status": "normal" },
+          { "id": "vector", "status": "active" },
+          { "id": "pg", "tags": ["notes.embedding"] }
+        ],
+        "edges": [
+          { "id": "app>pg", "label": "nearest 5", "packet": { "label": "vector" } },
+          { "id": "vector>pg", "style": "solid", "status": "active" }
+        ]
+      }
+    },
+    {
+      "title": "Functions: SQL the app can call by name",
+      "chapter": "example",
+      "body": [
+        "A Postgres function packs SQL into a named command. Notely wraps the search in <code>match_notes</code>, and the app calls it with <code>supabase.rpc()</code>, an <span class=\"term\">RPC</span>.",
+        "An <span class=\"term\">Edge Function</span> is different: TypeScript on Supabase's servers, outside the database. Like a Next.js API route, it can hold secrets and call outside APIs such as Claude. Use Postgres functions for data work."
+      ],
+      "code": {
+        "language": "sql",
+        "code": "create function match_notes(query vector(1024), n int)\nreturns setof notes\nlanguage sql stable\nas $$\n  select * from notes\n  where deleted_at is null\n  order by embedding <=> query\n  limit n;\n$$;\n\n-- from Next.js:\n-- supabase.rpc('match_notes', { query: embedding, n: 5 })",
+        "caption": "It runs as the caller by default, so RLS still limits it to Maya's own notes."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "The app calls one named function. It runs the search inside Postgres.",
+        "nodes": [
+          { "id": "vector", "status": "normal" },
+          { "id": "fn", "x": 7.2, "y": 1.2, "label": "Functions", "sublabel": "rpc + Edge Functions", "icon": "function", "kind": "server", "status": "active" }
+        ],
+        "edges": [
+          { "id": "app>pg", "label": "supabase-js", "packet": false },
+          { "id": "vector>pg", "style": "dashed", "status": null },
+          { "from": "app", "to": "fn", "label": "rpc('match_notes')", "packet": { "label": "call" } },
+          { "from": "fn", "to": "pg", "label": "runs SQL", "status": "active" }
+        ]
+      }
+    },
+    {
+      "title": "Superpowers need row level security",
+      "chapter": "watch-out",
+      "body": [
+        "Tables in the <code>public</code> schema are normally reachable from the browser through Supabase's API, with your project's public key. Without <span class=\"term\">RLS</span>, anyone who opens dev tools can read every note.",
+        "Turn RLS on for every public table and write a policy for each action. Keep the <span class=\"term\">service role key</span> on the server only: it skips RLS entirely."
+      ],
+      "callout": {
+        "type": "claude-code",
+        "text": "Ask Claude Code to list every table and whether RLS is on, then read each policy: does it compare to <code>auth.uid()</code>? Is the service role key only in server code, never behind <code>NEXT_PUBLIC_</code>? Is every <code>security definer</code> function intended? Supabase's Security Advisor flags many of these."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Without RLS, the public key opens every row to anyone.",
+        "nodes": [
+          { "id": "fn", "status": "normal" },
+          { "id": "pg", "status": "warn", "tags": ["RLS off?"] },
+          { "id": "anyone", "x": 1.8, "y": 7.0, "label": "Anyone", "sublabel": "public key", "icon": "incognito", "kind": "threat", "status": "error" }
+        ],
+        "edges": [
+          { "id": "app>fn", "packet": false },
+          { "id": "fn>pg", "status": null },
+          { "from": "anyone", "to": "pg", "label": "select * from notes", "status": "error", "packet": { "label": "all rows", "status": "error" } }
+        ]
+      }
+    },
+    {
+      "title": "Recap in one breath",
+      "chapter": "recap",
+      "body": [
+        "Supabase is one Postgres database with services around it. Auth users and file records are rows in it, and Realtime streams its changes. pgvector adds search by meaning, Postgres functions run data logic by name, and Edge Functions handle secrets outside the database.",
+        "One database means one set of rules: turn on RLS everywhere."
+      ],
+      "scene": {
+        "extends": "previous",
+        "caption": "With RLS on, the public key only ever reaches the rows a policy allows.",
+        "nodes": [
+          { "id": "pg", "status": "ok", "tags": ["RLS on"] },
+          { "id": "anyone", "status": "dim" }
+        ],
+        "edges": [
+          { "id": "anyone>pg", "label": "0 rows", "status": "ok", "packet": false }
+        ]
+      }
+    }
+  ],
+  "quiz": [
+    {
+      "question": "Notely needs each user's display name and avatar path. Where should they live?",
+      "options": [
+        { "text": "New columns added to <code>auth.users</code>.", "why": "Supabase Auth manages that table. Changing it yourself can break sign-in and future updates." },
+        { "text": "A <code>profiles</code> table whose <code>id</code> references <code>auth.users (id)</code>.", "correct": true, "why": "Your data stays in your own table, one-to-one with each account, protected by your own RLS policies." },
+        { "text": "The browser's <code>localStorage</code>.", "why": "It lives on one device only, so Maya's phone would never see what she set on her laptop." }
+      ]
+    },
+    {
+      "question": "Maya types \"trips to Portugal\" and wants her Lisbon note back, though neither word appears in it. Which piece do you reach for?",
+      "options": [
+        { "text": "Realtime", "why": "Realtime pushes changes as they happen. It does not search anything." },
+        { "text": "A <code>where body ilike '%portugal%'</code> filter", "why": "That matches letters, not meaning. The Lisbon note never says Portugal, so it is not found." },
+        { "text": "pgvector with embeddings", "correct": true, "why": "Embeddings place similar meanings close together, so the question lands near the Lisbon note even with no shared words." }
+      ]
+    },
+    {
+      "question": "Saving a note fails with <code>new row violates row-level security policy for table \"notes\"</code>. Claude Code suggests exposing the service role key as <code>NEXT_PUBLIC_SUPABASE_SERVICE_KEY</code>. What do you do?",
+      "options": [
+        { "text": "Refuse. Keep the key server-only, rotate it if it leaked, and write the missing RLS policy.", "correct": true, "why": "The error means no policy allows this insert. A <code>NEXT_PUBLIC_</code> variable ships to every browser, and that key skips RLS for anyone who finds it." },
+        { "text": "Accept, but only for the production deploy.", "why": "Production is exactly where a public, all-powerful key does the most damage." },
+        { "text": "Turn RLS off on <code>notes</code> so the error goes away.", "why": "Then the public key can read every user's notes. The error was RLS doing its job." }
+      ]
+    }
+  ],
+  "takeaways": [
+    "Supabase is <b>one Postgres database</b> with services around it. Auth and Storage keep their data in it; Realtime streams its changes.",
+    "Link your own user data to <code>auth.users</code> through a <code>profiles</code> table. Never edit <code>auth.users</code> directly.",
+    "<b>pgvector</b> stores embeddings next to your rows, so one query can filter by owner and rank by meaning.",
+    "Postgres functions (<code>rpc</code>) for data work, <b>Edge Functions</b> for secrets and outside APIs.",
+    "Turn on <b>RLS</b> for every public table, and keep the service role key out of the browser."
+  ]
+}

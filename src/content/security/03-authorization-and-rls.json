@@ -1,0 +1,300 @@
+{
+  "id": "authorization-and-rls",
+  "title": "Authorization and Row Level Security",
+  "summary": "Logging in says who you are. Authorization decides what you may touch. Here is how Supabase Row Level Security makes the database enforce it, row by row.",
+  "minutes": 13,
+  "level": "beginner",
+  "youWillLearn": [
+    "The difference between <b>authentication</b> and <b>authorization</b>",
+    "Why a check in the browser is not a check",
+    "How to write Supabase <b>RLS policies</b> with <code>using</code> and <code>with check</code>",
+    "The three common ways RLS gets skipped, and how to test it"
+  ],
+  "glossary": {
+    "authorization": "Deciding what a known user may see or change. It comes after authentication, which only proves who they are.",
+    "authentication": "Proving who you are, for example with a password or Sign in with Google.",
+    "Data API": "The web API Supabase puts in front of your Postgres tables, so browser code can query them with the anon key and the user's token.",
+    "Row Level Security": "A Postgres feature that filters every query row by row, using rules you attach to the table. Called RLS for short.",
+    "policy": "One RLS rule on a table: for which action (select, insert, update, delete), for which users, and which rows pass.",
+    "auth.uid()": "A Supabase SQL function that returns the logged-in user's id, read from the verified JWT sent with the request.",
+    "default deny": "When RLS is on and no policy allows something, it is refused. Nothing is visible until you say so.",
+    "with check": "The part of a policy that tests the new version of a row on insert or update, so users cannot write rows they should not own.",
+    "service role key": "A Supabase key that skips RLS entirely. It is for trusted server code only, never the browser.",
+    "view": "A saved query that looks like a table. In Postgres it runs with its creator's rights by default, which can skip RLS."
+  },
+  "steps": [
+    {
+      "title": "Logged in is not the same as allowed",
+      "chapter": "problem",
+      "body": [
+        "Notely's browser code asks Supabase for notes: <code>from('notes').select('*')</code>. Maya is logged in, so the request carries her token.",
+        "The answer: every note from every user. Logging in proved who Maya is. Nothing yet decides which rows she may see."
+      ],
+      "scene": {
+        "caption": "Maya asks for notes and gets everyone's. Nothing filters the rows.",
+        "nodes": [
+          { "id": "browser", "x": 2, "y": 4, "label": "Browser", "sublabel": "Maya, logged in", "icon": "browser", "kind": "client", "status": "error" },
+          { "id": "api", "x": 6.4, "y": 4, "label": "Supabase API", "sublabel": "Data API", "icon": "api", "kind": "server" },
+          { "id": "notes", "x": 10.4, "y": 4, "label": "notes table", "icon": "table", "kind": "data", "status": "warn", "tags": ["maya: 12 rows", "ben: 30 rows"] }
+        ],
+        "edges": [
+          { "from": "browser", "to": "api", "label": "select * from notes", "packet": { "label": "JWT" } },
+          { "from": "api", "to": "notes", "packet": true },
+          { "from": "api", "to": "browser", "label": "all 42 notes", "status": "error", "packet": { "label": "42 rows", "status": "error" } }
+        ]
+      }
+    },
+    {
+      "title": "Who you are vs what you may do",
+      "chapter": "idea",
+      "body": [
+        "Two separate questions. <span class=\"term\">Authentication</span>: who are you? The last two lessons answered that. <span class=\"term\">Authorization</span>: now that we know, what may you touch?",
+        "For Notely the rule is short: Maya sees and edits her own notes, nobody else's. The job is to make that rule impossible to skip."
+      ],
+      "callout": {
+        "type": "analogy",
+        "text": "At a hotel, the front desk checks your ID once: authentication. Your key card then opens room 214 and nothing else: authorization."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Maya's identity is known. The missing piece is a rule about which rows are hers.",
+        "nodes": [
+          { "id": "browser", "status": "ok", "tags": ["who: Maya"] },
+          { "id": "api", "status": "active" }
+        ],
+        "edges": [
+          { "id": "api>browser", "packet": false, "status": "dim", "label": "which rows?" }
+        ],
+        "notes": [
+          { "id": "q", "x": 6.4, "y": 1.8, "text": "Known: Maya. Allowed: ?", "status": "warn" }
+        ]
+      }
+    },
+    {
+      "title": "A check in the browser is not a check",
+      "chapter": "how",
+      "body": [
+        "Filtering Ben's notes out in React only hides them. Anyone can open DevTools, take their own token, and query the API directly.",
+        "With Supabase, the browser talks straight to the database through the <span class=\"term\">Data API</span>. So the database itself has to enforce the rule. That is <span class=\"term\">Row Level Security</span>, or RLS."
+      ],
+      "callout": {
+        "type": "tip",
+        "text": "The same goes for your own API routes. The server decides what each user may do. The UI only reflects that decision."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Anyone can skip your UI and call the API directly. The rule must live in the database.",
+        "remove": ["q"],
+        "nodes": [
+          { "id": "browser", "tags": null, "status": "normal" },
+          { "id": "api", "status": "normal" },
+          { "id": "curious", "x": 2, "y": 6.6, "label": "DevTools", "sublabel": "same token, own query", "icon": "incognito", "kind": "threat", "status": "error" }
+        ],
+        "edges": [
+          { "id": "api>browser", "status": "normal", "label": "UI hides Ben's" },
+          { "from": "curious", "to": "api", "label": "select * from notes", "status": "error", "packet": { "label": "query", "status": "error" } }
+        ]
+      }
+    },
+    {
+      "title": "Turn RLS on: everything locks",
+      "chapter": "how",
+      "body": [
+        "One line switches RLS on for a table. From then on, every query from the browser is filtered by rules called <span class=\"term\" data-term=\"policy\">policies</span>.",
+        "With RLS on and no policies, users get zero rows. That is <span class=\"term\">default deny</span>: nothing is visible until a policy allows it. A safe starting point."
+      ],
+      "code": {
+        "language": "sql",
+        "filename": "supabase/migrations/…_notes_rls.sql",
+        "code": "alter table notes enable row level security;"
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "RLS is on and there are no policies yet. Every request gets an empty list.",
+        "remove": ["curious"],
+        "nodes": [
+          { "id": "notes", "status": "ok", "tags": ["RLS on", "0 policies"] }
+        ],
+        "edges": [
+          { "id": "api>browser", "label": "0 rows", "status": "warn", "packet": { "label": "[]", "status": "warn" } }
+        ]
+      }
+    },
+    {
+      "title": "A policy: only your own rows",
+      "chapter": "how",
+      "body": [
+        "A policy says which rows pass. <span class=\"term\">auth.uid()</span> returns the user id from the verified JWT you met in lesson 02. Postgres compares it with each row's <code>user_id</code>.",
+        "This happens inside the database, on every query, whatever the browser asked for. Maya gets her 12 notes. A <code>select *</code> from DevTools gets the same 12."
+      ],
+      "code": {
+        "language": "sql",
+        "code": "create policy \"read own notes\"\non notes for select\nto authenticated\nusing ( (select auth.uid()) = user_id );",
+        "caption": "Wrapping auth.uid() in (select …) lets Postgres compute it once per query, not once per row."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "The policy filters rows inside the database. Maya gets exactly her own notes.",
+        "nodes": [
+          { "id": "notes", "tags": ["RLS on", "1 policy"] },
+          { "id": "policy", "x": 10.4, "y": 1.4, "label": "Policy", "sublabel": "auth.uid() = user_id", "icon": "shield", "kind": "server", "status": "active" }
+        ],
+        "edges": [
+          { "from": "policy", "to": "notes", "label": "filters rows", "style": "dashed" },
+          { "id": "api>browser", "label": "Maya's 12 notes", "status": "ok", "packet": { "label": "12 rows", "status": "ok" } }
+        ]
+      }
+    },
+    {
+      "title": "Writes need with check",
+      "chapter": "how",
+      "body": [
+        "<code>using</code> decides which existing rows you can see or touch. <span class=\"term\">with check</span> tests the row you are about to write.",
+        "Without it, Maya could insert a note with <code>user_id</code> set to Ben's id, or move her own note into his account. Inserts need <code>with check</code>. Updates need both parts."
+      ],
+      "code": {
+        "language": "sql",
+        "code": "create policy \"insert own notes\" on notes\nfor insert to authenticated\nwith check ( (select auth.uid()) = user_id );\n\ncreate policy \"update own notes\" on notes\nfor update to authenticated\nusing ( (select auth.uid()) = user_id )\nwith check ( (select auth.uid()) = user_id );"
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "A write with someone else's user_id fails the with check test.",
+        "nodes": [
+          { "id": "policy", "sublabel": "using + with check" }
+        ],
+        "edges": [
+          { "id": "browser>api", "label": "insert user_id=ben", "status": "error", "packet": { "label": "insert", "status": "error" } },
+          { "id": "api>browser", "label": "rejected", "status": "error", "packet": false }
+        ]
+      }
+    },
+    {
+      "title": "Sharing a note with Ben",
+      "chapter": "example",
+      "body": [
+        "Maya wants Ben to read one note. Notely adds a <code>note_shares</code> table: which note, shared with whom.",
+        "The read policy now lets a row through if you own it <em>or</em> a share row points at you. Still one rule in the database, so every screen and every API call obeys it."
+      ],
+      "code": {
+        "language": "sql",
+        "code": "create policy \"read own or shared notes\"\non notes for select to authenticated\nusing (\n  (select auth.uid()) = user_id\n  or exists (\n    select 1 from note_shares s\n    where s.note_id = notes.id\n      and s.shared_with = (select auth.uid())\n  )\n);",
+        "caption": "This replaces \"read own notes\". note_shares needs RLS too, with a policy letting users read shares that involve them: the subquery obeys it."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Ben sees the one note Maya shared, because a share row points at him.",
+        "nodes": [
+          { "id": "browser", "label": "Ben's browser", "sublabel": "logged in as Ben" },
+          { "id": "policy", "sublabel": "own or shared", "status": "normal" },
+          { "id": "shares", "x": 10.4, "y": 6.6, "label": "note_shares", "sublabel": "note 7 → Ben", "icon": "link", "kind": "data", "status": "active" }
+        ],
+        "edges": [
+          { "id": "browser>api", "label": "select * from notes", "status": "normal", "packet": { "label": "JWT" } },
+          { "id": "api>browser", "label": "30 own + 1 shared", "status": "ok", "packet": { "label": "31 rows", "status": "ok" } },
+          { "from": "shares", "to": "notes", "label": "also allows", "style": "dashed" }
+        ]
+      }
+    },
+    {
+      "title": "Three ways RLS gets skipped",
+      "chapter": "watch-out",
+      "body": [
+        "1. The <span class=\"term\">service role key</span> ignores RLS completely. Fine in trusted server code, a disaster if it reaches the browser (next lesson).",
+        "2. A <span class=\"term\">view</span> runs with its creator's rights unless you create it <code>with (security_invoker = true)</code>.",
+        "3. Tables created with SQL, including Claude Code's migrations, start with RLS <b>off</b>. One forgotten migration line and the table is open to anyone with the anon key."
+      ],
+      "callout": {
+        "type": "warn",
+        "text": "Never base a policy on <code>user_metadata</code> in the JWT. Users can edit their own metadata. Use a table you control, or <code>app_metadata</code>, which only the server can set."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Server code with the service role key goes straight past the policy.",
+        "remove": ["shares"],
+        "nodes": [
+          { "id": "browser", "label": "Browser", "sublabel": "anon key + JWT" },
+          { "id": "policy", "status": "dim" },
+          { "id": "admin", "x": 6.4, "y": 6.6, "label": "Server code", "sublabel": "service role key", "icon": "function", "kind": "server", "status": "warn" }
+        ],
+        "edges": [
+          { "id": "api>browser", "label": "filtered rows", "status": "normal", "packet": false },
+          { "from": "admin", "to": "notes", "label": "bypasses RLS", "status": "warn", "packet": { "label": "all rows", "status": "warn" } }
+        ]
+      }
+    },
+    {
+      "title": "Test it as two different users",
+      "chapter": "example",
+      "body": [
+        "Do not trust a policy because it reads well. Log in as Maya, then as Ben, and try to read, edit and delete each other's notes. Every attempt should fail or return nothing.",
+        "Then list every table and check that RLS is on for each one. Supabase's Security Advisor in the dashboard flags open tables too."
+      ],
+      "code": {
+        "language": "sql",
+        "code": "select tablename, rowsecurity\nfrom pg_tables\nwhere schemaname = 'public'\norder by rowsecurity, tablename;",
+        "caption": "Any row with rowsecurity = false is likely open to anyone with the anon key, for reads and writes."
+      },
+      "callout": {
+        "type": "claude-code",
+        "text": "After Claude Code adds a table, ask: is RLS enabled in the same migration? Which policies exist for select, insert, update and delete? Does every insert and update policy have <code>with check</code>? Is the service role key used anywhere a user's request can reach?"
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Two accounts, same query, different answers. That is what a working policy looks like.",
+        "remove": ["admin"],
+        "nodes": [
+          { "id": "browser", "label": "Maya", "sublabel": "browser", "status": "ok", "icon": "user", "kind": "person" },
+          { "id": "ben", "x": 2, "y": 6.6, "label": "Ben", "sublabel": "browser", "icon": "user", "kind": "person", "status": "ok" },
+          { "id": "policy", "status": "active" },
+          { "id": "notes", "status": "ok" }
+        ],
+        "edges": [
+          { "id": "browser>api", "label": "read Ben's note", "packet": { "label": "JWT" } },
+          { "id": "api>browser", "label": "0 rows", "status": "ok", "packet": false },
+          { "from": "ben", "to": "api", "label": "delete Maya's", "packet": { "label": "JWT" } }
+        ]
+      }
+    },
+    {
+      "title": "Recap in one breath",
+      "chapter": "recap",
+      "body": [
+        "Authentication says who you are. Authorization says what you may touch, and it must live where nobody can skip it. With Supabase that is the database: turn RLS on for every table, write a policy per action with <code>auth.uid()</code>, add <code>with check</code> on writes.",
+        "Keep the service role key on the server, and test with two real accounts."
+      ]
+    }
+  ],
+  "quiz": [
+    {
+      "question": "Claude Code built a Notely dashboard that hides other users' notes with a <code>.filter()</code> in React. RLS is off. Is the data safe?",
+      "options": [
+        { "text": "Yes, because users only see what the UI shows.", "why": "The UI is not the only way in. Anyone can call the Supabase API from DevTools with their own token and read every row." },
+        { "text": "No. Turn on RLS and add policies so the database filters the rows.", "correct": true, "why": "Authorization must happen where the user cannot skip it. With Supabase, that is RLS in the database." },
+        { "text": "Yes, as long as the anon key stays secret.", "why": "The anon key is meant to be in the browser, so it is not a secret. RLS is what makes it safe to publish." }
+      ]
+    },
+    {
+      "question": "A table has RLS enabled and a <code>select</code> policy, but no other policies. What happens when Maya tries to insert a row from the browser?",
+      "options": [
+        { "text": "It succeeds, because she is logged in.", "why": "Being logged in is authentication. With RLS on, an action without a matching policy is refused." },
+        { "text": "It succeeds, but only for her own rows.", "why": "No insert policy means no rule saying which rows are hers to insert, so nothing passes." },
+        { "text": "It fails. With no insert policy, inserts are denied.", "correct": true, "why": "RLS is default deny. Each action needs its own policy, and writes need <code>with check</code>." }
+      ]
+    },
+    {
+      "question": "Notely adds an admin page. Which of these policy checks could a regular user cheat to get admin rights?",
+      "options": [
+        { "text": "One that checks <code>auth.jwt() -&gt; 'user_metadata' -&gt;&gt; 'role'</code>.", "correct": true, "why": "Users can update their own <code>user_metadata</code>, so they can give themselves any role. Base roles on <code>app_metadata</code> or a table only the server writes." },
+        { "text": "One that checks a <code>roles</code> table that only server code can write.", "why": "This is the safe pattern. Users cannot change a table they have no write policy on." },
+        { "text": "One that checks <code>(select auth.uid()) = user_id</code>.", "why": "This only matches rows the user owns. It does not hand out any role." }
+      ]
+    }
+  ],
+  "takeaways": [
+    "<b>Authentication</b> is who you are. <b>Authorization</b> is what you may touch. Logging in does not answer the second question.",
+    "Checks in the browser only hide data. Enforce rules on the server, or with Supabase, in the database with <b>RLS</b>.",
+    "Turn RLS on in the same migration that creates the table, then write a policy per action using <code>(select auth.uid())</code>.",
+    "Insert and update policies need <code>with check</code>, or users can write rows that belong to someone else.",
+    "The service role key, views without <code>security_invoker</code>, and <code>user_metadata</code> are the classic holes. Test with two accounts."
+  ]
+}

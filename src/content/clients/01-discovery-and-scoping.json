@@ -1,0 +1,286 @@
+{
+  "id": "discovery-and-scoping",
+  "title": "Discovery and scoping",
+  "summary": "How to turn a client's vague app idea into a small, signed, testable MVP before you quote or write a line of code.",
+  "minutes": 12,
+  "level": "beginner",
+  "youWillLearn": [
+    "Why you never quote or build straight from a client's first description",
+    "How <b>discovery</b> finds the real problem behind a feature wish",
+    "How to write <b>user stories</b> with acceptance criteria a client can test",
+    "How to cut a wishlist down to an <b>MVP</b> and write the scope on one page"
+  ],
+  "glossary": {
+    "discovery": "A short phase before the build where you learn the client's real problem, users and limits, and turn them into a plan.",
+    "MVP": "Minimum viable product: the smallest version of the app that solves the core problem well enough to launch to real users.",
+    "user story": "A one-line need written from a user's view: as a [who], I want [what], so that [why].",
+    "acceptance criteria": "Concrete checks that prove a user story is done. If all pass, the story is finished; if not, it is not.",
+    "MoSCoW": "A way to sort features into Must have, Should have, Could have and Won't have (this time).",
+    "assumption": "Something the plan takes as true without proof yet. Writing it down makes the risk visible to both sides.",
+    "scope creep": "A project growing slowly through many small additions that nobody estimated or agreed to pay for.",
+    "change request": "A written request for work outside the agreed scope, estimated and approved before anyone builds it.",
+    "spike": "A short, throwaway experiment to learn how hard an unknown part is before you commit to a price."
+  },
+  "steps": [
+    {
+      "title": "A wish is not a spec",
+      "chapter": "problem",
+      "body": [
+        "Sam owns a small hair salon. On your first call she says: \"I want an app where clients book, pay and get reminders. Maybe some AI too.\"",
+        "That sentence could be a two-week build or a six-month one. Quote it now and you are guessing. Start building now and you will probably build the wrong half."
+      ],
+      "callout": {
+        "type": "analogy",
+        "text": "A client tells an architect: \"a house with a nice kitchen\". Nobody pours concrete yet. First come questions, then drawings, then a price."
+      },
+      "scene": {
+        "caption": "Sam's idea arrives as one vague sentence. Its real size is unknown.",
+        "nodes": [
+          { "id": "sam", "x": 2, "y": 4, "label": "Sam", "sublabel": "salon owner", "icon": "user", "kind": "person" },
+          { "id": "idea", "x": 6.4, "y": 4, "label": "\"An app\"", "sublabel": "book, pay, remind, AI?", "icon": "chat", "kind": "neutral", "status": "warn" },
+          { "id": "you", "x": 10.4, "y": 4, "label": "You", "sublabel": "builder", "icon": "laptop", "kind": "person" }
+        ],
+        "edges": [
+          { "from": "sam", "to": "idea", "label": "first call", "packet": { "label": "wish" } },
+          { "from": "idea", "to": "you", "label": "how big?", "style": "dashed" }
+        ],
+        "notes": [
+          { "id": "size", "x": 6.4, "y": 2.2, "text": "2 weeks or 6 months?", "status": "warn" }
+        ]
+      }
+    },
+    {
+      "title": "Discovery turns a wish into an MVP",
+      "chapter": "idea",
+      "body": [
+        "Before any estimate comes <span class=\"term\">discovery</span>: one or two sessions where you find the real problem behind the wish.",
+        "The output is an <span class=\"term\">MVP</span>: the smallest version that solves that problem for real users. Not a demo, and not every idea. The first thing worth launching."
+      ],
+      "callout": {
+        "type": "tip",
+        "text": "You already do this as a designer: research, problem framing, prioritizing. Discovery is the same craft, with a technical plan and a price at the end. Many freelancers charge for it as a small first project."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Discovery sits between the wish and the build. What comes out is small and clear.",
+        "remove": ["size", "you"],
+        "nodes": [
+          { "id": "idea", "label": "Discovery", "sublabel": "1-2 sessions", "icon": "search", "status": "active" },
+          { "id": "mvp", "x": 10.4, "y": 4, "label": "MVP", "sublabel": "smallest useful launch", "icon": "rocket", "kind": "neutral", "status": "ok" }
+        ],
+        "edges": [
+          { "id": "sam>idea", "label": "wish" },
+          { "from": "idea", "to": "mvp", "label": "clear scope", "status": "ok", "packet": { "label": "plan", "status": "ok" } }
+        ]
+      }
+    },
+    {
+      "title": "Ask about today, not about features",
+      "chapter": "how",
+      "body": [
+        "Ask what happens today. Sam answers the phone between haircuts. Clients call while she is cutting, and roughly one in ten forgets their appointment.",
+        "Now you have real problems: <b>missed calls</b> and <b>no-shows</b>. Keep asking: who books, how often, what does a no-show cost, and what would make this a success in three months?"
+      ],
+      "callout": {
+        "type": "tip",
+        "text": "Write answers as numbers when you can. \"About 1 in 10 no-shows\" becomes your success metric later: did reminders bring it down?"
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Questions about today reveal two concrete problems behind the wish.",
+        "nodes": [
+          { "id": "calls", "x": 2, "y": 1.6, "label": "Phone calls", "sublabel": "during haircuts", "icon": "phone", "kind": "neutral", "status": "warn" },
+          { "id": "noshow", "x": 6.4, "y": 1.6, "label": "No-shows", "sublabel": "empty chairs", "icon": "calendar", "kind": "neutral", "status": "error", "tags": ["~1 in 10"] }
+        ],
+        "edges": [
+          { "from": "calls", "to": "sam", "label": "interrupts", "style": "dashed", "status": "warn" },
+          { "from": "noshow", "to": "idea", "label": "real problem", "status": "error", "style": "dashed" }
+        ]
+      }
+    },
+    {
+      "title": "User stories make features testable",
+      "chapter": "how",
+      "body": [
+        "Turn each need into a <span class=\"term\">user story</span>: as a [who], I want [what], so that [why]. Then add <span class=\"term\">acceptance criteria</span>: the checks that prove it is done.",
+        "Criteria end arguments. \"Reminders work\" is a feeling. \"A text goes out 24 hours before each booking\" is a test that you and Sam can both run."
+      ],
+      "code": {
+        "language": "text",
+        "filename": "scope/stories.md",
+        "code": "Story: As a client, I want to book online,\n  so that I don't have to call during work hours.\n\nAcceptance criteria:\n- I see free slots for the next 4 weeks\n- I pick a service, a stylist, then a slot\n- A slot can never be booked twice\n- I get an email confirmation within a minute",
+        "caption": "Each criterion is something Sam can check herself on her phone."
+      },
+      "scene": {
+        "caption": "Three needs become three stories. Each story gets checks that prove it is done.",
+        "nodes": [
+          { "id": "s-book", "x": 2.2, "y": 1.6, "label": "Book online", "sublabel": "user story", "icon": "list", "kind": "neutral", "status": "active" },
+          { "id": "s-remind", "x": 2.2, "y": 4, "label": "Get reminders", "sublabel": "user story", "icon": "list", "kind": "neutral" },
+          { "id": "s-cal", "x": 2.2, "y": 6.4, "label": "Owner calendar", "sublabel": "user story", "icon": "list", "kind": "neutral" },
+          { "id": "ac", "x": 7.4, "y": 1.6, "label": "Acceptance", "sublabel": "4 checks", "icon": "check", "kind": "neutral", "status": "ok", "tags": ["no double booking"] }
+        ],
+        "edges": [
+          { "from": "s-book", "to": "ac", "label": "proven by", "packet": { "label": "test", "status": "ok" } }
+        ]
+      }
+    },
+    {
+      "title": "Must, should, could, won't",
+      "chapter": "how",
+      "body": [
+        "Sam's list will grow. Sort it with <span class=\"term\">MoSCoW</span>: <b>must</b> have for launch, should have soon, could have someday, <b>won't</b> have this time.",
+        "The MVP is the Must column only. Writing down the Won't column matters as much: it is the line you point to when someone says \"I thought that was included\"."
+      ],
+      "callout": {
+        "type": "analogy",
+        "text": "Packing a carry-on. Everything you want is on the bed. Only what fits goes in the bag, and you decide that at home, not at the gate."
+      },
+      "scene": {
+        "extends": "previous",
+        "remove": ["ac"],
+        "caption": "Stories slide into columns. Only the Must column gets built first.",
+        "zones": [
+          { "id": "z-must", "x": 0.3, "y": 0.4, "w": 3.8, "h": 7.2, "label": "Must (MVP)", "status": "ok" },
+          { "id": "z-should", "x": 4.3, "y": 0.4, "w": 3.6, "h": 7.2, "label": "Should / could" },
+          { "id": "z-wont", "x": 8.1, "y": 0.4, "w": 3.6, "h": 7.2, "label": "Won't (this time)", "status": "warn" }
+        ],
+        "nodes": [
+          { "id": "s-book", "x": 2.2, "y": 2, "status": "ok" },
+          { "id": "s-remind", "x": 2.2, "y": 4.2, "status": "ok" },
+          { "id": "s-cal", "x": 2.2, "y": 6.4, "status": "ok" },
+          { "id": "w-pay", "x": 6.1, "y": 2.4, "label": "Pay deposit", "sublabel": "should", "icon": "money", "kind": "neutral" },
+          { "id": "w-ai", "x": 6.1, "y": 4.8, "label": "AI rebooking", "sublabel": "could", "icon": "sparkle", "kind": "neutral" },
+          { "id": "w-loyal", "x": 9.9, "y": 2.4, "label": "Loyalty points", "icon": "cart", "kind": "neutral", "status": "dim" },
+          { "id": "w-app", "x": 9.9, "y": 4.8, "label": "Native app", "icon": "phone", "kind": "neutral", "status": "dim" }
+        ]
+      }
+    },
+    {
+      "title": "Sketch the system behind the stories",
+      "chapter": "how",
+      "body": [
+        "Each Must story implies screens, data and outside services. Sketch them now, roughly. Booking needs a bookings table. Reminders need a scheduled job and an SMS or email provider.",
+        "This is where hidden size shows up. \"Reminders\" sounds like one feature, but it is three parts: a schedule, a message template and a provider account."
+      ],
+      "code": {
+        "language": "sql",
+        "filename": "sketch: bookings table",
+        "code": "create table bookings (\n  id uuid primary key default gen_random_uuid(),\n  client_id uuid not null references clients(id),\n  stylist_id uuid not null references stylists(id),\n  starts_at timestamptz not null,\n  status text not null default 'confirmed',\n  reminder_sent_at timestamptz\n);",
+        "caption": "A first sketch, not the final schema. It is enough to see the work and spot the unknowns."
+      },
+      "scene": {
+        "caption": "The Must stories, drawn as parts. Payments are faded: not in the MVP.",
+        "nodes": [
+          { "id": "site", "x": 2, "y": 4, "label": "Booking site", "sublabel": "clients' phones", "icon": "browser", "kind": "client" },
+          { "id": "api", "x": 6.4, "y": 4, "label": "Next.js API", "sublabel": "on Vercel", "icon": "server", "kind": "server" },
+          { "id": "db", "x": 10.4, "y": 4, "label": "Supabase", "sublabel": "bookings, clients", "icon": "database", "kind": "data" },
+          { "id": "cron", "x": 6.4, "y": 1.6, "label": "Scheduled job", "sublabel": "every hour", "icon": "clock", "kind": "server", "status": "active" },
+          { "id": "sms", "x": 10.4, "y": 1.6, "label": "SMS / email", "sublabel": "provider account", "icon": "mail", "kind": "external", "status": "warn" },
+          { "id": "pay", "x": 10.4, "y": 6.4, "label": "Payments", "sublabel": "later, not MVP", "icon": "money", "kind": "external", "status": "dim" }
+        ],
+        "edges": [
+          { "from": "site", "to": "api", "label": "book slot", "packet": { "label": "booking" } },
+          { "from": "api", "to": "db", "label": "insert" },
+          { "from": "cron", "to": "sms", "label": "reminder", "packet": { "label": "SMS" } },
+          { "from": "cron", "to": "db", "label": "due in 24 h?", "style": "dashed" }
+        ]
+      }
+    },
+    {
+      "title": "One page that Sam signs",
+      "chapter": "example",
+      "body": [
+        "Wrap discovery in one page: the problem, a success metric, the Must stories with criteria, the Won't list, and each <span class=\"term\">assumption</span>.",
+        "Assumptions are bets you say out loud: one location, English only, Sam supplies prices and photos. If one turns out false, the scope changes, and both of you saw it coming."
+      ],
+      "code": {
+        "language": "text",
+        "filename": "scope/salon-mvp.md",
+        "code": "Problem:  missed calls, ~1 in 10 no-shows\nSuccess:  bookings online, fewer no-shows in 3 months\n\nMust:     online booking, SMS reminders, owner calendar\nWon't v1: loyalty points, native mobile app\n\nAssumptions:\n- One location, 4 stylists, English only\n- Sam supplies services, prices and photos\n- The salon pays SMS costs directly"
+      },
+      "callout": {
+        "type": "claude-code",
+        "text": "Claude Code can turn your call notes into stories and a scope doc in minutes. Then check: did it add features nobody asked for? Ask it to list assumptions and open questions separately. Does every Must story have criteria a non-developer can test?"
+      },
+      "scene": {
+        "caption": "Discovery ends with one signed page that both sides can point to.",
+        "nodes": [
+          { "id": "sam", "x": 2, "y": 4, "label": "Sam", "sublabel": "salon owner", "icon": "user", "kind": "person", "status": "ok" },
+          { "id": "doc", "x": 6.4, "y": 4, "label": "Scope doc", "sublabel": "one page", "icon": "file", "kind": "neutral", "status": "active", "tags": ["Must", "Won't", "Assumptions"] },
+          { "id": "you", "x": 10.4, "y": 4, "label": "You", "sublabel": "builder", "icon": "laptop", "kind": "person" }
+        ],
+        "edges": [
+          { "from": "you", "to": "doc", "label": "writes", "packet": { "label": "draft" } },
+          { "from": "sam", "to": "doc", "label": "signs", "status": "ok", "packet": { "label": "OK", "status": "ok" } }
+        ]
+      }
+    },
+    {
+      "title": "Scope creep and the vague AI feature",
+      "chapter": "watch-out",
+      "body": [
+        "<span class=\"term\">Scope creep</span> rarely arrives as one big ask. It comes as ten small ones: \"could it also…\". Each sounds reasonable. Together they double the project.",
+        "AI features creep fastest, because \"add some AI\" has no finish line. Pin it down: what goes in, what comes out, and three real examples of a good answer. New ideas go through a <span class=\"term\">change request</span>."
+      ],
+      "callout": {
+        "type": "warn",
+        "text": "Never touch a risky integration for the first time after you quote. If the SMS provider or a calendar sync is unknown, run a short <span class=\"term\">spike</span> during discovery: a throwaway test to learn how hard it really is."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Small asks pile onto the signed scope. A change request gives each one a price first.",
+        "nodes": [
+          { "id": "doc", "status": "warn" },
+          { "id": "ask1", "x": 2, "y": 1.6, "label": "Could it also…", "sublabel": "small ask #7", "icon": "chat", "kind": "person", "status": "warn" },
+          { "id": "ask2", "x": 2, "y": 6.6, "label": "\"Add some AI\"", "sublabel": "no finish line", "icon": "sparkle", "kind": "person", "status": "warn" },
+          { "id": "cr", "x": 7.6, "y": 6.6, "label": "Change request", "sublabel": "written, priced", "icon": "pencil", "kind": "neutral", "status": "ok" }
+        ],
+        "edges": [
+          { "from": "ask1", "to": "doc", "label": "creeps in", "style": "dashed", "status": "error" },
+          { "from": "ask2", "to": "cr", "label": "estimate first", "status": "ok", "packet": { "label": "CR", "status": "ok" } }
+        ]
+      }
+    },
+    {
+      "title": "Recap in one breath",
+      "chapter": "recap",
+      "body": [
+        "A wish is not a spec. Discovery finds the real problem and shrinks it to an <b>MVP</b>: Must stories with acceptance criteria, a written Won't list and stated assumptions, on one page Sam signs.",
+        "Everything after that is a change request with its own estimate. Estimating is the next lesson."
+      ]
+    }
+  ],
+  "quiz": [
+    {
+      "question": "On the first call Sam says: \"Build me an app like the big booking platforms. How much?\" What is the best next move?",
+      "options": [
+        { "text": "Give a ballpark now so she does not lose interest.", "why": "A number said out loud sticks. With no scope behind it, it is either too low (you lose money) or too high (you lose the deal)." },
+        { "text": "Propose a short discovery phase, then a written estimate.", "correct": true, "why": "Discovery turns \"like the big platforms\" into a small, specific MVP. Then the estimate has something real to rest on." },
+        { "text": "Start a prototype with Claude Code tonight to impress her.", "why": "Fast building of the wrong thing is still the wrong thing. You do not know yet which problem she most needs solved." }
+      ]
+    },
+    {
+      "question": "Which of these is a usable acceptance criterion for \"clients get reminders\"?",
+      "options": [
+        { "text": "Reminders are sent reliably.", "why": "\"Reliably\" cannot be tested. You and Sam could each read it differently." },
+        { "text": "Reminders use a modern SMS API.", "why": "That describes how it is built, not what the client experiences. It does not prove the story is done." },
+        { "text": "Each client with a booking gets a text 24 hours before it.", "correct": true, "why": "It is concrete and checkable: make a booking, wait, see if the text arrives at the right time." }
+      ]
+    },
+    {
+      "question": "Halfway through the build, Sam asks: \"Could the app also suggest the best time to rebook, with AI?\" What do you do?",
+      "options": [
+        { "text": "Write it up as a change request: inputs, outputs, examples, estimate.", "correct": true, "why": "It is outside the signed scope. A change request makes the new work visible and priced before anyone builds it." },
+        { "text": "Add it quietly; it is only one API call.", "why": "The API call is the easy part. Prompting, edge cases, testing and running costs add up, and you are now working unpaid." },
+        { "text": "Refuse: the scope is locked.", "why": "The scope protects both sides; it is not a wall. Good ideas are welcome through the change process." }
+      ]
+    }
+  ],
+  "takeaways": [
+    "Never quote or build from the first description. Run <b>discovery</b> first, ideally as a small paid step.",
+    "Ask about what happens today and capture numbers. They become your success metric.",
+    "Write <b>user stories</b> with acceptance criteria a non-developer can test.",
+    "The MVP is the Must column. Write the Won't list and your assumptions down too.",
+    "Anything new after sign-off is a <b>change request</b>: written, estimated, approved."
+  ]
+}

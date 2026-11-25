@@ -1,0 +1,277 @@
+{
+  "id": "costs-and-spend-limits",
+  "title": "Costs: serverless, databases and AI spend",
+  "summary": "The three meters running under every AI app (functions, database, tokens), what makes each one jump, and the limits and alerts that stop a surprise bill.",
+  "minutes": 13,
+  "level": "beginner",
+  "youWillLearn": [
+    "How <b>serverless</b> hosting, a <b>database plan</b> and an <b>AI API</b> each count what you owe",
+    "Why AI tokens are usually the meter that runs fastest",
+    "Three cheap fixes: a smaller model, an output cap, and not asking twice",
+    "Which <b>spend limits</b> and alerts to set on day one, and who should pay the bill"
+  ],
+  "glossary": {
+    "serverless function": "Code that runs only when a request arrives, on servers the host manages. You pay per use, not per machine.",
+    "invocation": "One run of a serverless function, triggered by one request.",
+    "egress": "Data sent out of a service to the internet or your app. Many providers bill for it after a free amount.",
+    "quota": "The amount of something a plan includes before extra charges or limits start.",
+    "token": "The unit AI models read and write in, roughly a short word or part of a word. AI APIs bill per token.",
+    "input tokens": "The tokens you send to the model: instructions, the note, any history.",
+    "output tokens": "The tokens the model writes back. They cost several times more per token than input tokens.",
+    "max_tokens": "A setting on each AI request that caps how many output tokens the model may write.",
+    "spend limit": "A hard ceiling on what a provider may charge you in a period. Past it, requests are refused or the service pauses.",
+    "budget alert": "An email or message sent when spending passes a threshold you chose, like 50% of the monthly budget."
+  },
+  "steps": [
+    {
+      "title": "The invoice that ruins a good month",
+      "chapter": "problem",
+      "body": [
+        "Notely gets mentioned in a popular newsletter. Great week. Then the invoices arrive, and the Claude API bill is thirty times last month's.",
+        "Popularity was only part of it. A component Claude Code wrote asks for a new summary every time a note is opened, even when the note has not changed. Nobody set a limit, so nothing stopped it."
+      ],
+      "scene": {
+        "caption": "Every page view triggers a fresh AI call, and every call costs money.",
+        "nodes": [
+          { "id": "users", "x": 2, "y": 4, "label": "Users", "sublabel": "newsletter traffic", "icon": "users", "kind": "person", "status": "active" },
+          { "id": "fn", "x": 6.4, "y": 4, "label": "Vercel function", "sublabel": "/api/summary", "icon": "function", "kind": "server" },
+          { "id": "claude", "x": 10.4, "y": 4, "label": "Claude API", "sublabel": "paid per token", "icon": "sparkle", "kind": "ai", "status": "error", "tags": ["30× last month"] }
+        ],
+        "edges": [
+          { "from": "users", "to": "fn", "label": "open note", "packet": { "speed": "fast" } },
+          { "from": "fn", "to": "claude", "label": "summarize again", "status": "error", "packet": { "label": "$", "status": "error", "speed": "fast" } }
+        ]
+      }
+    },
+    {
+      "title": "Three meters under every AI app",
+      "chapter": "idea",
+      "body": [
+        "Most small AI apps pay three kinds of bills, and each counts something different.",
+        "<b>Hosting</b> counts requests and compute time. The <b>database</b> charges a monthly plan, plus extras when you go past what it includes. The <b>AI API</b> counts tokens, every single call. Know what each meter counts, and you know what makes it spin."
+      ],
+      "callout": {
+        "type": "analogy",
+        "text": "A flat with three meters: electricity, water, gas. Leave one tap running all night and only that bill explodes. You need to know which tap."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Three providers, three meters: compute, database plan, tokens.",
+        "nodes": [
+          { "id": "users", "status": "normal" },
+          { "id": "fn", "tags": ["requests", "compute time"] },
+          { "id": "claude", "status": "normal", "tags": ["input tokens", "output tokens"] },
+          { "id": "db", "x": 6.4, "y": 6.8, "label": "Supabase", "sublabel": "monthly plan", "icon": "database", "kind": "data", "tags": ["plan + extras"] }
+        ],
+        "edges": [
+          { "id": "users>fn", "packet": true },
+          { "id": "fn>claude", "label": "summarize", "status": "normal", "packet": { "label": "tokens" } },
+          { "from": "fn", "to": "db", "label": "read note" }
+        ]
+      }
+    },
+    {
+      "title": "Serverless: pay per run",
+      "chapter": "how",
+      "body": [
+        "A <span class=\"term\">serverless function</span> only runs when a request arrives. You pay per <span class=\"term\">invocation</span>, for compute time and memory, and for data sent out. No traffic costs almost nothing; a spike scales the bill with it.",
+        "AI calls are slow, so time matters. Platforms count differently: some bill the whole time the function is open, others mostly active CPU time."
+      ],
+      "callout": {
+        "type": "tip",
+        "text": "Check how your host counts the seconds a function spends waiting on Claude. A streamed summary that takes 20 seconds can cost far more on one billing model than another."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Each request is one run. Slow AI calls keep it running longer.",
+        "nodes": [
+          { "id": "fn", "status": "active" },
+          { "id": "claude", "tags": null },
+          { "id": "db", "tags": null, "status": "dim" }
+        ],
+        "edges": [
+          { "id": "users>fn", "label": "1 request = 1 run", "packet": { "label": "run", "speed": "fast" } },
+          { "id": "fn>claude", "label": "waiting 20 s", "packet": { "label": "wait", "speed": "slow" } },
+          { "id": "fn>db", "status": "dim" }
+        ]
+      }
+    },
+    {
+      "title": "Databases: a plan, then extras",
+      "chapter": "how",
+      "body": [
+        "Supabase and most hosted databases sell a monthly plan with a <span class=\"term\">quota</span>: database size, compute size, file storage and <span class=\"term\">egress</span>, the data sent out.",
+        "Bills jump when you outgrow one of these. Typical causes: a query that loads every row on every page, logs or AI outputs piling up in a table, or a bigger compute size that nobody scaled back down."
+      ],
+      "callout": {
+        "type": "tip",
+        "text": "You met indexing and caching in system design. Here they also save money: fewer rows read means less compute and less egress."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "The database bill grows with size, compute and data sent out.",
+        "nodes": [
+          { "id": "fn", "status": "normal", "tags": null },
+          { "id": "db", "status": "warn", "tags": ["size", "compute", "egress"] }
+        ],
+        "edges": [
+          { "id": "users>fn", "label": "open note", "packet": true },
+          { "id": "fn>claude", "label": "summarize", "packet": false },
+          { "id": "fn>db", "status": "warn", "label": "select * (all rows)", "packet": { "label": "MBs", "status": "warn" } }
+        ]
+      }
+    },
+    {
+      "title": "AI: you pay for every token",
+      "chapter": "how",
+      "body": [
+        "AI APIs bill per <span class=\"term\">token</span>. <span class=\"term\">Input tokens</span> are what you send: instructions plus the whole note. <span class=\"term\">Output tokens</span> are what Claude writes, and cost several times more each.",
+        "Three levers: a smaller model for simple jobs like summaries, a <span class=\"term\">max_tokens</span> cap on output, and trimming what you send (lesson 3's <code>buildPrompt()</code>)."
+      ],
+      "code": {
+        "language": "ts",
+        "filename": "lib/claude.ts",
+        "code": "const res = await anthropic.messages.create({\n  model: process.env.SUMMARY_MODEL!, // small, fast model\n  max_tokens: 300,                   // hard cap on output\n  messages: [\n    { role: 'user', content: buildPrompt(note.body) },\n  ],\n});\n// res.usage.input_tokens, res.usage.output_tokens",
+        "caption": "Log res.usage on every call (lesson 4). That is your cost per feature, per user."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Every call is priced by tokens in and tokens out.",
+        "nodes": [
+          { "id": "db", "status": "dim", "tags": null },
+          { "id": "claude", "status": "active", "tags": ["in: note", "out: ≤ 300"] }
+        ],
+        "edges": [
+          { "id": "fn>db", "status": "dim", "label": "read note", "packet": false },
+          { "id": "fn>claude", "label": "prompt", "status": "active", "packet": { "label": "tokens" } }
+        ]
+      }
+    },
+    {
+      "title": "The cheapest call is the one you skip",
+      "chapter": "example",
+      "body": [
+        "Notely's bug was asking the same question twice. A note that has not changed has the same summary. So save the summary with a fingerprint of the note text, and only call Claude when the text changes.",
+        "Then add a daily limit per user, so one account or script cannot run up the bill alone."
+      ],
+      "code": {
+        "language": "ts",
+        "filename": "app/api/summary/route.ts",
+        "code": "const hash = sha256(note.body);\nif (note.summary && note.summary_hash === hash) {\n  return Response.json({ summary: note.summary }); // free\n}\nif (await usedToday(user.id) >= 20) {\n  return Response.json({ error: 'Daily limit' }, { status: 429 });\n}\nconst summary = await summarize(note.body);\nawait saveSummary(note.id, summary, hash);",
+        "caption": "Reopening an unchanged note now costs nothing on the AI meter."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Unchanged notes get the saved summary. Claude is only called for new text.",
+        "nodes": [
+          { "id": "fn", "status": "ok", "tags": ["20 / user / day"] },
+          { "id": "claude", "status": "normal", "tags": null },
+          { "id": "db", "status": "ok", "sublabel": "summary saved", "tags": ["summary_hash"] }
+        ],
+        "edges": [
+          { "id": "fn>db", "status": "ok", "label": "saved summary", "packet": { "label": "cached", "status": "ok" } },
+          { "id": "fn>claude", "label": "only if changed", "status": "normal", "style": "dashed", "packet": false }
+        ]
+      }
+    },
+    {
+      "title": "Limits and alerts on day one",
+      "chapter": "how",
+      "body": [
+        "Code fixes help, but a bug or a leaked key can still spend money overnight. So set guardrails at every provider.",
+        "A <span class=\"term\">budget alert</span> warns you at, say, 50% and 80% of the monthly budget. A <span class=\"term\">spend limit</span> is a hard ceiling. Check what the Claude Console, Vercel and Supabase each let you set. Then decide per provider: is a paused feature worse than a big bill?"
+      ],
+      "callout": {
+        "type": "tip",
+        "text": "For client builds, create the hosting, database and AI accounts in the client's name, with the client's card. You stay an invited member. The bill, the limits and the data belong to them."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Each provider gets an alert and a ceiling. Maya hears before the bill gets big.",
+        "nodes": [
+          { "id": "fn", "status": "normal", "tags": ["alert 80%"] },
+          { "id": "claude", "status": "ok", "tags": ["monthly limit", "alert 50%"] },
+          { "id": "db", "status": "normal", "sublabel": "monthly plan", "tags": ["spend cap"] },
+          { "id": "maya", "x": 2, "y": 1.6, "label": "Maya", "sublabel": "budget alerts", "icon": "bell", "kind": "person", "status": "active" }
+        ],
+        "edges": [
+          { "id": "fn>db", "status": "normal", "label": "read note", "packet": false },
+          { "from": "claude", "to": "maya", "label": "50% used", "style": "dashed", "status": "warn", "packet": { "label": "alert", "status": "warn" } }
+        ]
+      }
+    },
+    {
+      "title": "Runaway loops spend while you sleep",
+      "chapter": "watch-out",
+      "body": [
+        "The scariest bills come from code that calls the AI in a loop. A <code>useEffect</code> that re-runs on every render. Retries with no limit. An agent that keeps calling tools. A key in browser code that someone else finds.",
+        "Each one runs at machine speed, all night. That is exactly what limits are for."
+      ],
+      "code": {
+        "language": "diff",
+        "code": "- useEffect(() => { fetchSummary(note) });\n+ useEffect(() => { fetchSummary(note) }, [note.id]);",
+        "caption": "No dependency array: it runs after every render, and saving the summary causes another render. Add one, and keep the server cache too."
+      },
+      "callout": {
+        "type": "claude-code",
+        "text": "Search the code for every AI call (<code>messages.create</code>). Is each one on the server, behind a login? Does it set <code>max_tokens</code>? Is there a per-user limit and a cache? Are retries capped? Does any <code>useEffect</code> fetch without a dependency array?"
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "A loop in the browser calls the summary route again and again.",
+        "remove": ["maya"],
+        "nodes": [
+          { "id": "users", "label": "Browser", "sublabel": "useEffect loop", "icon": "browser", "kind": "client", "status": "error" },
+          { "id": "fn", "status": "warn", "tags": null },
+          { "id": "claude", "status": "warn", "tags": ["limit protects you"] },
+          { "id": "db", "tags": null }
+        ],
+        "edges": [
+          { "id": "users>fn", "label": "every render", "status": "error", "packet": { "label": "again", "status": "error", "speed": "fast" } },
+          { "id": "fn>claude", "style": "solid", "status": "warn", "label": "summarize", "packet": { "label": "$", "status": "warn", "speed": "fast" } }
+        ]
+      }
+    },
+    {
+      "title": "Recap: know the meters, cap them",
+      "chapter": "recap",
+      "body": [
+        "Hosting counts runs and compute time, the database counts plan quotas, and the AI API counts every token. AI is usually the fastest meter.",
+        "Pick a smaller model, cap <code>max_tokens</code>, and never ask the same question twice. Then set alerts and spend limits at every provider, in the client's name."
+      ]
+    }
+  ],
+  "quiz": [
+    {
+      "question": "Notely's AI bill doubled, but the number of users did not change. What is the most likely cause to check first?",
+      "options": [
+        { "text": "The database plan quietly got more expensive.", "why": "That would show on the database invoice, not on the AI bill." },
+        { "text": "More AI calls per user, like re-summarizing unchanged notes or a loop.", "correct": true, "why": "Same users but more tokens means each user triggers more or bigger calls. Logged token usage per request will show where." },
+        { "text": "Serverless functions are slower this month.", "why": "Slower functions raise the hosting bill, not the per-token AI bill." }
+      ]
+    },
+    {
+      "question": "Which change cuts the cost of each summary without changing how often summaries happen?",
+      "options": [
+        { "text": "A smaller model and a <code>max_tokens</code> cap.", "correct": true, "why": "A smaller model costs less per token, and the cap limits the expensive output tokens. Each call gets cheaper." },
+        { "text": "Moving the Claude call into the browser.", "why": "The tokens cost the same wherever the call starts, and your API key would be exposed to everyone." },
+        { "text": "A bigger serverless function memory size.", "why": "More memory can make hosting more expensive. It does not change what Claude charges." }
+      ]
+    },
+    {
+      "question": "You are handing over Sam's salon app. Whose card should the Claude, Vercel and Supabase accounts use?",
+      "options": [
+        { "text": "Yours, and you add a markup to your monthly invoice.", "why": "It can work as a service, but you carry the risk of a runaway bill, and the client does not own their accounts or data." },
+        { "text": "The cheapest free tiers, so there is no card at all.", "why": "Free tiers have limits that can pause a live business app, and often no backups. Fine for a demo, risky for a salon taking bookings." },
+        { "text": "Sam's, with spend limits and alerts set, and you as an invited member.", "correct": true, "why": "The client owns the bill and the data, the limits protect them, and you keep the access you need to support the app." }
+      ]
+    }
+  ],
+  "takeaways": [
+    "Three meters: <b>hosting</b> (runs and compute time), <b>database</b> (plan quotas), <b>AI</b> (every token).",
+    "Output tokens cost more than input. Use a smaller model where it is good enough, and always set <code>max_tokens</code>.",
+    "The cheapest AI call is the one you skip: save results and only regenerate when the input changes.",
+    "Set <b>budget alerts</b> and <b>spend limits</b> at every provider on day one.",
+    "For client work, accounts and cards belong to the client. You are an invited member."
+  ]
+}

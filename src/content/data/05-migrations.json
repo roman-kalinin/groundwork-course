@@ -1,0 +1,292 @@
+{
+  "id": "migrations",
+  "title": "Migrations: changing a live database safely",
+  "summary": "How schema changes travel from your laptop to production as files in git, and how to change a table without breaking the app that is using it.",
+  "minutes": 13,
+  "level": "intermediate",
+  "youWillLearn": [
+    "Why \"works locally, breaks in production\" happens with databases",
+    "What a <b>migration</b> file is, and how the database remembers which ones ran",
+    "Why you never edit an applied migration or click changes into production",
+    "The <b>expand and contract</b> pattern for renames and removals without downtime"
+  ],
+  "glossary": {
+    "migration": "A small file, usually SQL, that changes the database schema one step, kept in git and run in order on every database.",
+    "Supabase CLI": "Supabase's command-line tool. It runs a local copy of your project and manages migration files.",
+    "migration history": "A table inside the database that lists which migration files have already been applied.",
+    "schema drift": "When a database's real shape no longer matches what the migration files describe, usually after a manual change.",
+    "expand and contract": "A way to change a schema in safe stages: add the new thing, move code and data over, then remove the old thing later.",
+    "backfill": "Filling a new column for rows that already existed before it was added.",
+    "lock": "A database making other queries wait while it changes a table, so they do not see a half-finished change."
+  },
+  "steps": [
+    {
+      "title": "Works on my machine, breaks in production",
+      "chapter": "problem",
+      "body": [
+        "Maya asks for pinned notes. Claude Code adds a <code>pinned</code> column to your local database, builds the feature, and it works. You push to GitHub. Vercel deploys.",
+        "Production breaks: <code>column notes.pinned does not exist</code>. The new code shipped, but the production database never got the column. Two copies of the database, two different shapes."
+      ],
+      "scene": {
+        "caption": "The code reached production. The column did not.",
+        "nodes": [
+          { "id": "local", "x": 2, "y": 4, "label": "Local database", "sublabel": "your laptop", "icon": "database", "kind": "data", "status": "ok", "tags": ["pinned ✓"] },
+          { "id": "git", "x": 6.2, "y": 1.6, "label": "GitHub", "sublabel": "code only", "icon": "git", "kind": "external" },
+          { "id": "vercel", "x": 6.2, "y": 6.4, "label": "Vercel deploy", "sublabel": "new code", "icon": "rocket", "kind": "server", "status": "active" },
+          { "id": "prod", "x": 10.2, "y": 4, "label": "Production DB", "sublabel": "Supabase project", "icon": "database", "kind": "data", "status": "error", "tags": ["no pinned"] }
+        ],
+        "edges": [
+          { "from": "git", "to": "vercel", "label": "deploy", "packet": { "label": "code" } },
+          { "from": "vercel", "to": "prod", "label": "select pinned", "status": "error", "packet": { "label": "query", "status": "error" } }
+        ]
+      }
+    },
+    {
+      "title": "Schema changes as files, in git",
+      "chapter": "idea",
+      "body": [
+        "The fix: never change a database's shape by hand. Write each change as a small SQL file, a <span class=\"term\">migration</span>. Name the files by time, commit them next to the code, and run them in order on every database.",
+        "Same files, same order, same result. Local, preview and production end up with the same shape."
+      ],
+      "callout": {
+        "type": "analogy",
+        "text": "A logbook of recipe changes. Instead of cooking from memory, you write each change on a dated card. Any kitchen that follows the cards in order makes the same dish."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Migration files live in git and flow to every database in the same order.",
+        "remove": ["vercel>prod"],
+        "nodes": [
+          { "id": "git", "sublabel": "code + migrations", "status": "active", "tags": ["…_create_notes.sql", "…_add_pinned.sql"] },
+          { "id": "vercel", "status": "dim" },
+          { "id": "prod", "status": "warn", "tags": ["pending: add_pinned"] }
+        ],
+        "edges": [
+          { "id": "git>vercel", "status": "dim", "packet": false },
+          { "from": "git", "to": "local", "label": "apply in order", "packet": { "label": "sql" } },
+          { "from": "git", "to": "prod", "label": "apply in order", "packet": { "label": "sql" } }
+        ]
+      }
+    },
+    {
+      "title": "One change, one file",
+      "chapter": "how",
+      "body": [
+        "The <span class=\"term\">Supabase CLI</span> creates the file for you, with a timestamp in its name so files sort in order: <code>supabase migration new add_pinned</code>.",
+        "Inside is plain SQL that moves the schema one step forward. Keep each file small and about one thing. Claude Code can write the SQL; the file is what makes the change repeatable."
+      ],
+      "code": {
+        "language": "sql",
+        "filename": "supabase/migrations/20261125093000_add_pinned.sql",
+        "code": "alter table notes\n  add column pinned boolean not null default false;",
+        "caption": "Existing rows get false, so nothing breaks for notes made before the change."
+      }
+    },
+    {
+      "title": "The database remembers what ran",
+      "chapter": "how",
+      "body": [
+        "How does a database know which files it already has? It keeps a <span class=\"term\">migration history</span>: a small table listing every migration applied. Supabase keeps it in <code>supabase_migrations.schema_migrations</code>.",
+        "When you push, the CLI compares your folder with that list and runs only the new files, in order. Run it twice and the second run does nothing."
+      ],
+      "code": {
+        "language": "bash",
+        "code": "# rebuild your local database from every migration\nsupabase db reset\n\n# apply new migrations to the linked project\nsupabase db push"
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Production runs only the file it has not seen. Now the deploy works.",
+        "nodes": [
+          { "id": "git", "status": "normal" },
+          { "id": "prod", "status": "ok", "tags": ["…_create_notes ✓", "…_add_pinned ✓"] },
+          { "id": "vercel", "status": "ok" }
+        ],
+        "edges": [
+          { "id": "git>local", "packet": false },
+          { "id": "git>prod", "label": "db push", "status": "ok", "packet": { "label": "new only", "status": "ok" } },
+          { "id": "git>vercel", "status": "normal" },
+          { "from": "vercel", "to": "prod", "label": "select pinned", "status": "ok", "packet": { "label": "query", "status": "ok" } }
+        ]
+      }
+    },
+    {
+      "title": "Never edit history, never click-ops",
+      "chapter": "watch-out",
+      "body": [
+        "Two habits break migrations. Editing a file that already ran: production will not run it again, so your change never arrives. Write a new migration instead.",
+        "Changing production in the dashboard: now production has a shape no file describes. That gap is <span class=\"term\">schema drift</span>, and the next fresh database, preview branch or teammate will not have your change."
+      ],
+      "callout": {
+        "type": "tip",
+        "text": "Already clicked a change into the dashboard? Bring it back into git: <code>supabase db pull</code> writes the remote schema into a new migration file. Then commit it."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "A dashboard edit changes production but no file. The copies drift apart.",
+        "nodes": [
+          { "id": "prod", "status": "warn", "tags": ["…_add_pinned ✓", "+ manual change"] },
+          { "id": "dash", "x": 10.2, "y": 1.4, "label": "Dashboard edit", "sublabel": "not in any file", "icon": "pencil", "kind": "external", "status": "warn" }
+        ],
+        "edges": [
+          { "id": "git>prod", "status": "normal", "packet": false },
+          { "id": "vercel>prod", "packet": false },
+          { "from": "dash", "to": "prod", "label": "click", "style": "dashed", "status": "warn" }
+        ]
+      }
+    },
+    {
+      "title": "Old code and new schema overlap",
+      "chapter": "how",
+      "body": [
+        "A migration and a code deploy never land at the same instant. For a while, old Notely code runs against the new schema, or new code against the old one.",
+        "So each migration must work with the code before it <em>and</em> the code after it. Changes that add things are safe. Changes that rename or remove break whichever version did not expect them."
+      ],
+      "scene": {
+        "caption": "Renaming title to heading in one go: the code still running breaks.",
+        "nodes": [
+          { "id": "old", "x": 2.2, "y": 2.2, "label": "Old code", "sublabel": "still running", "icon": "server", "kind": "server", "status": "error" },
+          { "id": "new", "x": 2.2, "y": 5.8, "label": "New code", "sublabel": "rolling out", "icon": "server", "kind": "server", "status": "active" },
+          { "id": "prod", "x": 10.2, "y": 4, "label": "Production DB", "sublabel": "Supabase project", "icon": "database", "kind": "data", "status": "warn", "tags": ["title → heading"] }
+        ],
+        "edges": [
+          { "from": "old", "to": "prod", "label": "select title", "status": "error", "packet": { "label": "query", "status": "error" } },
+          { "from": "new", "to": "prod", "label": "select heading", "status": "ok", "packet": { "label": "query", "status": "ok" } }
+        ],
+        "notes": [
+          { "id": "n-gone", "x": 6.2, "y": 1.0, "text": "column \"title\" does not exist", "status": "error" }
+        ]
+      }
+    },
+    {
+      "title": "Expand, then contract",
+      "chapter": "how",
+      "body": [
+        "The safe pattern is <span class=\"term\">expand and contract</span>. Expand: add the new column, keep the old. Ship code that writes both. <span class=\"term\">Backfill</span>: copy old values into the new column, then switch reads over. Contract: once no running code uses the old column, drop it in a later migration.",
+        "More steps, no downtime."
+      ],
+      "scene": {
+        "caption": "Four small, safe steps instead of one risky one.",
+        "nodes": [
+          { "id": "s1", "x": 1.6, "y": 4, "label": "1. Expand", "sublabel": "add heading", "icon": "upload", "kind": "neutral", "status": "active" },
+          { "id": "s2", "x": 4.5, "y": 4, "label": "2. Dual write", "sublabel": "code writes both", "icon": "code", "kind": "neutral" },
+          { "id": "s3", "x": 7.4, "y": 4, "label": "3. Backfill", "sublabel": "copy old rows", "icon": "refresh", "kind": "neutral" },
+          { "id": "s4", "x": 10.3, "y": 4, "label": "4. Contract", "sublabel": "drop title", "icon": "trash", "kind": "neutral" }
+        ],
+        "edges": [
+          { "from": "s1", "to": "s2" },
+          { "from": "s2", "to": "s3" },
+          { "from": "s3", "to": "s4" }
+        ],
+        "notes": [
+          { "id": "n-safe", "x": 6, "y": 6.2, "text": "Each step is safe to deploy alone", "status": "ok" }
+        ]
+      }
+    },
+    {
+      "title": "Renaming a column, the safe way",
+      "chapter": "example",
+      "body": [
+        "Here are the database halves of Notely's <code>title</code> → <code>heading</code> rename. Each block is its own migration file, shipped with its own deploy.",
+        "Between them, the app code changes: first it writes both columns, then it reads only <code>heading</code>. Only when that version is fully live does the last file run."
+      ],
+      "code": {
+        "language": "sql",
+        "code": "-- …_expand_add_heading.sql\nalter table notes add column heading text;\n\n-- …_backfill_heading.sql\nupdate notes set heading = title\nwhere heading is null;\n\n-- …_contract_drop_title.sql (a later deploy)\nalter table notes drop column title;"
+      },
+      "callout": {
+        "type": "claude-code",
+        "text": "When Claude Code changes the schema, check: is there a new file in <code>supabase/migrations</code>, not a dashboard click or an edited old file? Does it rename or drop anything that running code still uses? Did it test with <code>supabase db reset</code>? Ask: \"Is this safe while the old code is still live?\""
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Expand, dual write and backfill are done. Contract waits for a later deploy.",
+        "nodes": [
+          { "id": "s1", "status": "ok" },
+          { "id": "s2", "status": "ok" },
+          { "id": "s3", "status": "ok" },
+          { "id": "s4", "status": "active" }
+        ],
+        "edges": [
+          { "id": "s1>s2", "status": "ok", "packet": true },
+          { "id": "s2>s3", "status": "ok", "packet": true },
+          { "id": "s3>s4", "packet": true }
+        ]
+      }
+    },
+    {
+      "title": "Big tables, long locks",
+      "chapter": "watch-out",
+      "body": [
+        "Some changes make Postgres take a <span class=\"term\">lock</span>: while it scans or rewrites a table, other queries wait. On a small table, nobody notices. With millions of rows, Notely freezes.",
+        "Usual suspects: building an index (use <code>create index concurrently</code>), adding <code>not null</code> to an existing column, changing a column's type. And <code>drop</code> is forever, so have a backup first."
+      ],
+      "callout": {
+        "type": "warn",
+        "text": "Supabase migrations only move forward: there is no automatic undo. To reverse a change, you write a new migration. Dropped data does not come back that way, so try destructive changes on a copy first."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "The last step is the dangerous one: it locks, and it cannot be undone.",
+        "remove": ["n-safe"],
+        "nodes": [
+          { "id": "s4", "status": "warn", "tags": ["lock?", "backup first"] }
+        ],
+        "notes": [
+          { "id": "n-lock", "x": 6, "y": 6.4, "text": "Big table: other queries wait", "status": "warn" }
+        ]
+      }
+    },
+    {
+      "title": "Recap in one breath",
+      "chapter": "recap",
+      "body": [
+        "Every schema change is a migration file in git, run in order on every database. The database's migration history makes sure each file runs once. Never edit an applied file, never click changes into production.",
+        "Old and new code overlap during a deploy, so expand first, contract later, and watch for locks on big tables."
+      ],
+      "scene": {
+        "extends": "previous",
+        "caption": "Small, ordered steps that each keep the app working.",
+        "remove": ["n-lock"],
+        "nodes": [
+          { "id": "s4", "status": "ok", "tags": null }
+        ],
+        "edges": [
+          { "id": "s3>s4", "status": "ok" }
+        ]
+      }
+    }
+  ],
+  "quiz": [
+    {
+      "question": "Right after a deploy, Notely's logs show <code>column notes.pinned does not exist</code>. It works locally. What is the most likely cause?",
+      "options": [
+        { "text": "Vercel cached an old build of the code.", "why": "The error comes from the database, not the code: the new code is running, and the column is missing." },
+        { "text": "The migration that adds <code>pinned</code> was never applied to production.", "correct": true, "why": "Local and production have different shapes. Apply the migration (<code>supabase db push</code>) and make that part of every deploy." },
+        { "text": "Postgres does not allow boolean columns named <code>pinned</code>.", "why": "It does. The same query works locally, which points at a difference between the two databases." }
+      ]
+    },
+    {
+      "question": "You spot a mistake in a migration file that already ran on production last week. What do you do?",
+      "options": [
+        { "text": "Fix the old file and push again.", "why": "Production's migration history says that file already ran, so it will not run it again. The fix never arrives." },
+        { "text": "Fix it in the production dashboard.", "why": "That creates schema drift: production now differs from what your files describe." },
+        { "text": "Write a new migration that corrects it.", "correct": true, "why": "History only moves forward. A new file reaches every database, in order, the same way." }
+      ]
+    },
+    {
+      "question": "Claude Code proposes one migration, <code>alter table notes rename column title to heading;</code>, shipped in the same deploy as code that reads <code>heading</code>. What is the risk?",
+      "options": [
+        { "text": "During the rollout, the old code still asks for <code>title</code> and fails.", "correct": true, "why": "Old and new code overlap. Add <code>heading</code>, write both, backfill, switch reads, then drop <code>title</code> later." },
+        { "text": "Postgres cannot rename columns that contain data.", "why": "It can, and quickly. The danger is the running code that still expects the old name." },
+        { "text": "There is no risk, because migrations run before the deploy.", "why": "Even then, the old version keeps serving requests until the new one is fully live." }
+      ]
+    }
+  ],
+  "takeaways": [
+    "Every schema change is a <b>migration</b> file in git, applied in order to every database.",
+    "The database keeps a <b>migration history</b>, so each file runs exactly once.",
+    "Never edit an applied migration and never click changes into production. Write a new migration.",
+    "Old and new code overlap during deploys: <b>expand</b> first, <b>contract</b> in a later deploy.",
+    "On big tables, ask about <b>locks</b>, and take a backup before any <code>drop</code>."
+  ]
+}

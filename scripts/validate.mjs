@@ -8,8 +8,8 @@ import { join, relative, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   ICON_NAMES, GRID, LEVELS, CHAPTERS, CALLOUT_TYPES, NODE_KINDS, STATUSES, EDGE_STYLES, ARROWS,
-  PACKET_DIRECTIONS, PACKET_SPEEDS, MODULE_COLORS, CODE_LANGUAGES, LESSON_FILE_RE,
-  resolveLessonScenes, sanitizeInline, wordCount, plainText, nodeWidth,
+  PACKET_DIRECTIONS, PACKET_SPEEDS, MODULE_COLORS, CODE_LANGUAGES, LESSON_FILE_RE, NODE_H,
+  resolveLessonScenes, sanitizeInline, wordCount, plainText, nodeWidth, edgeLabelWidth,
 } from '../shared/schema.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -229,6 +229,24 @@ function checkResolvedScene(path, scene, stepSpec) {
     enumField(p, e, 'style', EDGE_STYLES);
     enumField(p, e, 'status', STATUSES);
     enumField(p, e, 'arrow', ARROWS);
+    {
+      const a = scene.nodes.find((n) => n.id === e.from);
+      const b = scene.nodes.find((n) => n.id === e.to);
+      const pair = scene.edges.some((o) => o.from === e.to && o.to === e.from);
+      if (e.label && a && b && !e.bend && !pair && [a.x, a.y, b.x, b.y].every(isNum)) {
+        const U = GRID.unit;
+        const dx = Math.abs(a.x - b.x) * U, dy = Math.abs(a.y - b.y) * U;
+        const lw = edgeLabelWidth(e.label);
+        if (dy <= 50) {
+          const gap = dx - ((nodeWidth(a) + nodeWidth(b)) / 2) * U - 20;
+          if (lw > gap + 12) warn(`${p}.label`, `label "${e.label}" (${lw}px) is wider than the ${Math.max(0, Math.round(gap))}px gap between "${a.id}" and "${b.id}" and will cover them. Shorten it or move the nodes apart.`);
+        } else if (dx <= 50) {
+          const tags = a.y < b.y ? (a.tags?.length ? 36 : 0) : (b.tags?.length ? 36 : 0);
+          const gap = dy - NODE_H * U - 20 - tags;
+          if (gap < 36) warn(`${p}.label`, `label "${e.label}" has only ${Math.max(0, Math.round(gap))}px between "${a.id}" and "${b.id}" vertically and will cover them. Move the nodes further apart.`);
+        }
+      }
+    }
     opt(p, e, 'bend', (v) => isNum(v) && v >= -3 && v <= 3, 'a number from -3 to 3 (curve amount in grid units; 0 = straight)');
     if ('packet' in e) {
       const pk = e.packet;

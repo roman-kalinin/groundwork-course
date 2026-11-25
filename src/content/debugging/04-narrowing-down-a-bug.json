@@ -1,0 +1,289 @@
+{
+  "id": "narrowing-down-a-bug",
+  "title": "Narrowing down a bug",
+  "summary": "When there is no error to read, reproduce the bug, cut the system in half, and let git bisect find the commit that broke it.",
+  "minutes": 13,
+  "level": "beginner",
+  "youWillLearn": [
+    "How to turn \"it's broken sometimes\" into steps that fail every time",
+    "How to <b>isolate</b> a bug by testing one half of the system at a time",
+    "Binary search with log probes inside your own code",
+    "How <code>git bisect</code> finds the exact commit that broke something"
+  ],
+  "glossary": {
+    "reproduce": "To find exact steps that make the bug happen every time you follow them.",
+    "isolate": "To test one part of the system on its own, so a result can only be explained by that part.",
+    "binary search": "Finding something by checking the middle, keeping the half that contains it, and repeating. Each check halves what is left.",
+    "probe": "A temporary log line placed at one point in the code to check whether the data is still correct there.",
+    "commit": "A saved snapshot of the code in git, with an id like <code>9f2e1aa</code> and a message describing the change.",
+    "git bisect": "A git command that runs a binary search through your commit history to find the first commit where a bug appears.",
+    "regression": "A bug in something that used to work, introduced by a later change."
+  },
+  "steps": [
+    {
+      "title": "Blank summaries, and no error anywhere",
+      "chapter": "problem",
+      "body": [
+        "Since sometime this week, Notely's AI summaries come back blank. No red in the Console. Network shows a <code>200</code>. The Vercel logs show no errors.",
+        "Nothing to read, so the last three lessons do not point anywhere. The bug could be in the page, the route, the database or the Claude call. You need a method, not a guess."
+      ],
+      "scene": {
+        "caption": "No errors anywhere. Every part of the system is a suspect.",
+        "nodes": [
+          { "id": "browser", "x": 2, "y": 4, "label": "Notely tab", "sublabel": "summary is blank", "icon": "browser", "kind": "client", "status": "warn" },
+          { "id": "api", "x": 6.4, "y": 4, "label": "Summary route", "sublabel": "/api/summary", "icon": "function", "kind": "server", "status": "warn" },
+          { "id": "db", "x": 10.4, "y": 1.8, "label": "notes table", "sublabel": "Supabase", "icon": "database", "kind": "data", "status": "warn" },
+          { "id": "claude", "x": 10.4, "y": 6.2, "label": "Claude API", "sublabel": "summaries", "icon": "sparkle", "kind": "ai", "status": "warn" }
+        ],
+        "edges": [
+          { "from": "browser", "to": "api", "label": "200 OK", "packet": true },
+          { "from": "api", "to": "db", "label": "load note" },
+          { "from": "api", "to": "claude", "label": "summarize" }
+        ],
+        "notes": [
+          { "id": "where", "x": 4.2, "y": 1.6, "text": "Where is the bug?", "status": "warn" }
+        ]
+      }
+    },
+    {
+      "title": "Shrink the haystack, half at a time",
+      "chapter": "idea",
+      "body": [
+        "Do not search for the bug. Search for where it is <em>not</em>. Pick a test whose answer rules out a big part of the system, ideally half.",
+        "Each test cuts the suspects down. A handful of good tests corners almost any bug, even in a codebase you did not write yourself, which with Claude Code is often the case."
+      ],
+      "callout": {
+        "type": "analogy",
+        "text": "A string of fairy lights goes dark. You do not test every bulb. You check the middle of the string: power there? Then the fault is in the second half. Check its middle. Repeat."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "One test at the right point clears half the suspects at once.",
+        "remove": ["where"],
+        "zones": [
+          { "id": "z-front", "x": 0.4, "y": 2.6, "w": 3.6, "h": 2.8, "label": "Half A" },
+          { "id": "z-back", "x": 4.4, "y": 0.6, "w": 7.4, "h": 6.8, "label": "Half B" }
+        ],
+        "notes": [
+          { "id": "split", "x": 2.2, "y": 6.6, "text": "Test here first", "status": "active" }
+        ]
+      }
+    },
+    {
+      "title": "Step one: make it fail on demand",
+      "chapter": "how",
+      "body": [
+        "A bug you cannot <span class=\"term\">reproduce</span> is a bug you cannot prove fixed. Write down the exact steps, and vary one thing at a time: another note, another user, another browser, local instead of production.",
+        "Maya finds it fails for <b>every</b> note, for every user, locally too. Good news: not about data, not about Vercel settings, and she can test on her laptop."
+      ],
+      "code": {
+        "language": "text",
+        "filename": "Repro notes",
+        "code": "1. Log in as maya@example.com (local or prod)\n2. Open any note, e.g. n_81\n3. Click \"AI summary\"\nExpected: 3-line summary\nActual:   empty box, status 200, no error\nSince:    worked last Monday"
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Reliable repro: every note, every user, locally too. Data and hosting settings are ruled out.",
+        "remove": ["split"],
+        "nodes": [
+          { "id": "browser", "status": "active", "tags": ["any note", "local + prod"] },
+          { "id": "db", "status": "dim" }
+        ],
+        "edges": [
+          { "id": "api>db", "status": "dim" }
+        ]
+      }
+    },
+    {
+      "title": "Isolate: skip the page entirely",
+      "chapter": "how",
+      "body": [
+        "Now <span class=\"term\">isolate</span>: test half A without half B. Call the route directly from the terminal, with no page involved. If the raw answer is already wrong, the page is innocent.",
+        "It is: the route returns <code>{}</code>, with no <code>summary</code> field at all. The page was faithfully showing nothing. The bug lives on the server side."
+      ],
+      "code": {
+        "language": "bash",
+        "filename": "Terminal",
+        "code": "curl -s -X POST http://localhost:3000/api/summary \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"noteId\":\"n_81\"}'\n\n# {}",
+        "caption": "If the route needs a login, add your local cookie from DevTools with -H \"Cookie: …\". Never share that command."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Called directly, the route already returns an empty object. The page is cleared.",
+        "remove": ["z-front"],
+        "nodes": [
+          { "id": "browser", "status": "ok", "tags": null, "sublabel": "innocent" },
+          { "id": "api", "status": "error", "tags": ["returns {}"] }
+        ],
+        "edges": [
+          { "id": "browser>api", "status": "dim", "packet": false, "label": null }
+        ],
+        "notes": [
+          { "id": "curl", "x": 6.4, "y": 6.6, "text": "curl → {}", "status": "error" }
+        ]
+      }
+    },
+    {
+      "title": "Binary search inside the route",
+      "chapter": "how",
+      "body": [
+        "The route has three stages: load the note, call Claude, build the reply. Put a <span class=\"term\">probe</span> in the middle: log the raw Claude response, then run the same curl.",
+        "The response has <code>content[0].text</code> with a full summary. So loading and calling work. The bug is in the last stage. That is <span class=\"term\">binary search</span>: test the middle, keep the bad half."
+      ],
+      "code": {
+        "language": "ts",
+        "filename": "app/api/summary/route.ts",
+        "code": "const data = await res.json();\nconsole.log(\"PROBE claude raw\", JSON.stringify(data.content));\n// PROBE claude raw [{\"type\":\"text\",\"text\":\"Maya plans...\"}]",
+        "caption": "Mark probes with PROBE so they are easy to find. This one prints note content: run it locally only and delete it before committing."
+      },
+      "scene": {
+        "caption": "A probe after the Claude call shows good data, so the bug is in building the reply.",
+        "zones": [
+          { "id": "z-route", "x": 0.4, "y": 2, "w": 11.2, "h": 4, "label": "Summary route" }
+        ],
+        "nodes": [
+          { "id": "load", "x": 2.2, "y": 4, "label": "Load note", "sublabel": "Supabase", "icon": "database", "kind": "data", "status": "ok" },
+          { "id": "call", "x": 6.2, "y": 4, "label": "Call Claude", "sublabel": "fetch /v1/messages", "icon": "sparkle", "kind": "ai", "status": "ok", "tags": ["text present"] },
+          { "id": "reply", "x": 10, "y": 4, "label": "Build reply", "sublabel": "Response.json", "icon": "code", "kind": "server", "status": "error" }
+        ],
+        "edges": [
+          { "from": "load", "to": "call", "packet": { "label": "note" } },
+          { "from": "call", "to": "reply", "packet": { "label": "text", "status": "ok" } }
+        ],
+        "notes": [
+          { "id": "probe", "x": 6.2, "y": 1.2, "text": "PROBE: data is fine here", "status": "ok" }
+        ]
+      }
+    },
+    {
+      "title": "git bisect: binary search through time",
+      "chapter": "how",
+      "body": [
+        "It worked last Monday, so this is a <span class=\"term\">regression</span>: some <span class=\"term\">commit</span> since then broke it. <span class=\"term\">Git bisect</span> finds which one.",
+        "You name one good commit and one bad one. Git checks out the commit halfway between. You test it and say <code>good</code> or <code>bad</code>. Git halves again. Even 100 commits take only about 7 tests."
+      ],
+      "code": {
+        "language": "bash",
+        "filename": "Terminal",
+        "code": "git bisect start\ngit bisect bad              # the current commit is broken\ngit bisect good a1b2c3d     # last Monday's commit worked\n# git checks out a commit in the middle. Test it, then:\ngit bisect good             # or: git bisect bad\n# ...repeat until git prints \"is the first bad commit\"\ngit bisect reset            # back to where you started",
+        "caption": "If a script can tell good from bad, git bisect run &lt;script&gt; does the testing for you."
+      },
+      "scene": {
+        "caption": "The commits since Monday. Git checks out the one in the middle for you to test.",
+        "nodes": [
+          { "id": "c1", "x": 1.4, "y": 4, "label": "a1b2c3d", "sublabel": "Monday", "icon": "git", "status": "ok" },
+          { "id": "c2", "x": 3.8, "y": 4, "label": "5d0e7b2", "icon": "git" },
+          { "id": "c3", "x": 6.2, "y": 4, "label": "c48f019", "icon": "git", "status": "active", "tags": ["test me"] },
+          { "id": "c4", "x": 8.6, "y": 4, "label": "9f2e1aa", "icon": "git" },
+          { "id": "c5", "x": 11, "y": 4, "label": "e77a3d4", "sublabel": "today", "icon": "git", "status": "error" }
+        ],
+        "edges": [
+          { "from": "c1", "to": "c2" },
+          { "from": "c2", "to": "c3" },
+          { "from": "c3", "to": "c4" },
+          { "from": "c4", "to": "c5" }
+        ],
+        "notes": [
+          { "id": "good", "x": 1.4, "y": 2.4, "text": "good", "status": "ok" },
+          { "id": "bad", "x": 11, "y": 2.4, "text": "bad", "status": "error" }
+        ]
+      }
+    },
+    {
+      "title": "The first bad commit, found",
+      "chapter": "example",
+      "body": [
+        "<code>c48f019</code> works: mark it good. Git jumps to <code>9f2e1aa</code>. Blank summary: mark it bad. Git prints: <em>9f2e1aa is the first bad commit</em>, \"refactor summary types\".",
+        "The diff is one line. The refactor read <code>.value</code>, a field that does not exist. <code>undefined</code> silently drops out of JSON, so the route sent <code>{}</code>."
+      ],
+      "callout": {
+        "type": "tip",
+        "text": "Vercel keeps every deployment at its own URL. Opening an older deployment is a quick way to confirm which commit was still good before you start bisecting."
+      },
+      "code": {
+        "language": "diff",
+        "filename": "9f2e1aa  refactor summary types",
+        "code": "- return Response.json({ summary: data.content[0].text });\n+ const block = data.content[0] as SummaryBlock;\n+ return Response.json({ summary: block.value });",
+        "caption": "SummaryBlock said value, but the API sends text. res.json() gives untyped data, so TypeScript trusts whatever shape the as cast claims."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Two tests later, git names the first bad commit: 9f2e1aa.",
+        "nodes": [
+          { "id": "c2", "status": "ok" },
+          { "id": "c3", "status": "ok", "tags": null },
+          { "id": "c4", "status": "error", "tags": ["first bad"], "sublabel": "refactor types" },
+          { "id": "c5", "status": "dim" }
+        ],
+        "edges": [
+          { "id": "c3>c4", "status": "error", "packet": { "label": "bug in", "status": "error" } }
+        ]
+      }
+    },
+    {
+      "title": "Change one thing, then test",
+      "chapter": "watch-out",
+      "body": [
+        "Narrowing only works if each test changes <b>one</b> thing. Edit three files, restart, and it works? You no longer know which edit fixed it, or whether one of them broke something else.",
+        "Same while bisecting: no fixes until git has named the commit. Then run <code>git bisect reset</code>, make the fix on your normal branch, and re-run the repro steps from the start."
+      ],
+      "callout": {
+        "type": "claude-code",
+        "text": "Claude Code likes to change several files at once. Ask it to reproduce first, then propose <b>one</b> change and say what result would prove it right. Check <code>git diff --stat</code>: a one-line bug should get a small diff. And ask it to remove every <code>PROBE</code> line before committing."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "One small fix on top of today's code, tested with the same repro steps.",
+        "nodes": [
+          { "id": "c5", "status": "normal" },
+          { "id": "fix", "x": 11, "y": 6.4, "label": "Fix", "sublabel": "1 line: .text", "icon": "check", "kind": "neutral", "status": "ok" }
+        ],
+        "edges": [
+          { "id": "c3>c4", "packet": false },
+          { "from": "c5", "to": "fix", "label": "one change", "status": "ok" }
+        ]
+      }
+    },
+    {
+      "title": "Recap: a method beats a hunch",
+      "chapter": "recap",
+      "body": [
+        "<b>Reproduce</b> until it fails every time. <b>Isolate</b> by testing one half of the system, like calling the route without the page. <b>Binary search</b> inside the code with probes.",
+        "When it used to work, let <code>git bisect</code> find the first bad commit. Change one thing per test, and prove the fix with the same repro steps."
+      ]
+    }
+  ],
+  "quiz": [
+    {
+      "question": "A client says bookings \"sometimes\" fail. You cannot make it happen. What is the best first move?",
+      "options": [
+        { "text": "Ask Claude Code to add retries to every database call.", "why": "That guesses at a cause you have not found, and may hide the real one." },
+        { "text": "Collect exact cases: which user, which time slot, which device, and what they saw.", "correct": true, "why": "\"Sometimes\" usually means \"under conditions we have not noticed yet\". Finding them is how you get a reliable repro." },
+        { "text": "Rewrite the booking flow, since it is clearly fragile.", "why": "A rewrite without knowing the cause can carry the same bug over, and you cannot prove it is gone." }
+      ]
+    },
+    {
+      "question": "The page shows a wrong price. You call the API route with <code>curl</code> and the price in the response is correct. What have you learned?",
+      "options": [
+        { "text": "The bug is on the server side, in how the price is calculated.", "why": "The server sent the right price, so its calculation is fine." },
+        { "text": "Nothing, since curl and the browser behave differently.", "why": "The route's answer does not depend on who asks, unless login or headers differ. A matching request is a fair test." },
+        { "text": "The bug is in the page: how it reads or displays the price.", "correct": true, "why": "The server half is cleared. Whatever goes wrong happens after the response arrives in the browser." }
+      ]
+    },
+    {
+      "question": "A feature worked 120 commits ago and is broken now. Roughly how many tests does <code>git bisect</code> need to find the first bad commit?",
+      "options": [
+        { "text": "About 7.", "correct": true, "why": "Each test halves the range: 120, 60, 30, 15, 8, 4, 2, 1. That is about 7 tests." },
+        { "text": "About 60, half of them.", "why": "That would be a straight walk through history. Bisect jumps to the middle each time instead." },
+        { "text": "120, one per commit.", "why": "Testing every commit is exactly the slow path bisect saves you from." }
+      ]
+    }
+  ],
+  "takeaways": [
+    "First <b>reproduce</b>: exact steps that fail every time. Without them you cannot prove a fix.",
+    "<b>Isolate</b> by testing one half of the system, for example <code>curl</code> the route to skip the page.",
+    "Inside the code, place a <code>PROBE</code> log in the middle and keep the half where the data goes wrong.",
+    "When it used to work, <code>git bisect</code> finds the first bad commit in a handful of tests.",
+    "Change one thing per test, and remove probes before you commit."
+  ]
+}

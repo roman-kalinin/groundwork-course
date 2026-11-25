@@ -1,0 +1,278 @@
+{
+  "id": "environments-ci-cd",
+  "title": "Environments and CI/CD",
+  "summary": "Why Notely runs in three places (local, preview, production), how each gets its own settings and data, and how automatic checks stop broken code before it deploys.",
+  "minutes": 12,
+  "level": "beginner",
+  "youWillLearn": [
+    "The three <b>environments</b> and what each one is for",
+    "How <b>environment variables</b> let the same code talk to different databases",
+    "What <b>CI</b> runs on every pull request, and how a red check blocks a merge",
+    "Why production secrets must never reach preview builds"
+  ],
+  "glossary": {
+    "environment": "One place your app runs, with its own settings and data: your laptop, a preview URL, or the live site.",
+    "environment variable": "A named setting given to the app from outside the code, like a database URL or an API key.",
+    "preview deployment": "A temporary copy of the app built from one branch, with its own URL, for checking before merging.",
+    "staging": "A shared test environment set up like production but filled with fake data.",
+    "CI": "Continuous integration: a robot that runs your checks (lint, types, tests) on every push.",
+    "CD": "Continuous deployment: every merge to main is built and released automatically.",
+    "pipeline": "The fixed sequence of steps code goes through from push to live: install, check, build, deploy.",
+    "required check": "A CI job that must pass before GitHub lets anyone merge a pull request.",
+    "lint": "An automatic read-through of the code that flags likely mistakes and style problems."
+  },
+  "steps": [
+    {
+      "title": "One database for everything",
+      "chapter": "problem",
+      "body": [
+        "Maya is testing a new delete-all-notes feature on her laptop. Her <code>.env.local</code> holds the same database URL as the live app.",
+        "She clicks the button to try it. Real users' notes disappear. Nothing was wrong with her laptop. It was talking to the one database that mattered."
+      ],
+      "callout": {
+        "type": "analogy",
+        "text": "Rehearsing a play on the real stage, during the real show, in front of the paying audience."
+      },
+      "scene": {
+        "caption": "Laptop, preview and live app all share the production database.",
+        "nodes": [
+          { "id": "local", "x": 2, "y": 1.6, "label": "Laptop", "sublabel": "npm run dev", "icon": "laptop", "kind": "client", "status": "warn" },
+          { "id": "preview", "x": 2, "y": 4, "label": "Preview", "sublabel": "branch URL", "icon": "globe", "kind": "client" },
+          { "id": "prod", "x": 2, "y": 6.4, "label": "Production", "sublabel": "notely.app", "icon": "rocket", "kind": "server" },
+          { "id": "db", "x": 8.4, "y": 4, "label": "Production DB", "sublabel": "real users' notes", "icon": "database", "kind": "data", "status": "error" }
+        ],
+        "edges": [
+          { "from": "local", "to": "db", "label": "delete all", "status": "error", "packet": { "label": "DELETE", "status": "error" } },
+          { "from": "preview", "to": "db" },
+          { "from": "prod", "to": "db" }
+        ]
+      }
+    },
+    {
+      "title": "Three places, three sets of data",
+      "chapter": "idea",
+      "body": [
+        "The fix is to run the same code in separate <span class=\"term\" data-term=\"environment\">environments</span>, each with its own data.",
+        "<b>Local</b>: your laptop, with a local or throwaway database. <b>Preview</b>: a URL per branch, using test data. <b>Production</b>: the real app and the only place with real users. A mistake in the first two costs nothing."
+      ],
+      "scene": {
+        "caption": "Each environment has its own database. Only production touches real data.",
+        "zones": [
+          { "id": "z-local", "x": 0.4, "y": 0.6, "w": 11.2, "h": 2.1, "label": "Local" },
+          { "id": "z-preview", "x": 0.4, "y": 3, "w": 11.2, "h": 2.1, "label": "Preview" },
+          { "id": "z-prod", "x": 0.4, "y": 5.4, "w": 11.2, "h": 2.1, "label": "Production", "status": "ok" }
+        ],
+        "nodes": [
+          { "id": "local", "x": 2.4, "y": 1.7, "label": "Laptop", "sublabel": "npm run dev", "icon": "laptop", "kind": "client", "status": "ok" },
+          { "id": "preview", "x": 2.4, "y": 4.1, "label": "Preview", "sublabel": "branch URL", "icon": "globe", "kind": "client" },
+          { "id": "prod", "x": 2.4, "y": 6.5, "label": "Production", "sublabel": "notely.app", "icon": "rocket", "kind": "server" },
+          { "id": "db-local", "x": 9.2, "y": 1.7, "label": "Local DB", "sublabel": "supabase start", "icon": "database", "kind": "data" },
+          { "id": "db-test", "x": 9.2, "y": 4.1, "label": "Test DB", "sublabel": "fake data", "icon": "database", "kind": "data" },
+          { "id": "db-prod", "x": 9.2, "y": 6.5, "label": "Production DB", "sublabel": "real users' notes", "icon": "database", "kind": "data", "status": "ok" }
+        ],
+        "edges": [
+          { "from": "local", "to": "db-local", "packet": true },
+          { "from": "preview", "to": "db-test" },
+          { "from": "prod", "to": "db-prod" }
+        ]
+      }
+    },
+    {
+      "title": "Same code, different settings",
+      "chapter": "how",
+      "body": [
+        "How does one codebase know which database to use? <span class=\"term\" data-term=\"environment variable\">Environment variables</span>. The code reads <code>process.env.SUPABASE_URL</code>, and each environment fills in a different value.",
+        "On your laptop they live in <code>.env.local</code>, which is never committed. On Vercel you set them per environment: Development, Preview and Production."
+      ],
+      "code": {
+        "language": "env",
+        "filename": ".env.local (laptop only)",
+        "code": "NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321\nNEXT_PUBLIC_SUPABASE_ANON_KEY=local-anon-key\nANTHROPIC_API_KEY=sk-ant-dev-...",
+        "caption": "vercel env pull .env.local copies the Development values from Vercel to your laptop."
+      },
+      "callout": {
+        "type": "warn",
+        "text": "In Next.js, any variable starting with <code>NEXT_PUBLIC_</code> is copied into the browser bundle, where anyone can read it. Only public values go there. Never the Claude API key or the Supabase service role key."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "The same code reads a different database URL in each environment.",
+        "nodes": [
+          { "id": "local", "tags": ["URL=127.0.0.1"], "status": "normal" },
+          { "id": "preview", "tags": ["URL=test…"] },
+          { "id": "prod", "tags": ["URL=prod…"] }
+        ],
+        "edges": [
+          { "id": "local>db-local", "packet": false }
+        ]
+      }
+    },
+    {
+      "title": "A preview for every branch",
+      "chapter": "how",
+      "body": [
+        "Each pull request gets a <span class=\"term\">preview deployment</span>: a real build of that branch at its own URL. Send it to a client, test on your phone, click every state.",
+        "Previews should point at test data. That can be one shared <span class=\"term\">staging</span> database, or a fresh database branch per PR if your Supabase plan offers branching."
+      ],
+      "callout": {
+        "type": "tip",
+        "text": "For client work, the preview link is your review tool. Sam approves the booking flow on the preview, then you merge. No \"it looked different on my screen\" surprises."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Maya's branch gets its own URL, wired to the test database.",
+        "nodes": [
+          { "id": "preview", "status": "active", "sublabel": "own URL per branch" },
+          { "id": "db-test", "status": "ok" }
+        ],
+        "edges": [
+          { "id": "preview>db-test", "packet": { "label": "test", "status": "active" } }
+        ]
+      }
+    },
+    {
+      "title": "CI: a robot checks every push",
+      "chapter": "idea",
+      "body": [
+        "Separate environments protect data. <span class=\"term\">CI</span> protects code. On every push, a machine installs the app and runs the same checks every time: <span class=\"term\">lint</span>, type check, tests, build.",
+        "Then <span class=\"term\">CD</span> takes over: merge to main and production deploys on its own. The whole route, push to live, is the <span class=\"term\">pipeline</span>."
+      ],
+      "callout": {
+        "type": "analogy",
+        "text": "A preflight checklist. The pilot is experienced, and still runs the same list before every take-off, because forgetting one item once is enough."
+      },
+      "scene": {
+        "caption": "Push, check, build, deploy. Every change takes the same route.",
+        "nodes": [
+          { "id": "push", "x": 1.8, "y": 4, "label": "git push", "sublabel": "feature/tags", "icon": "git", "kind": "client" },
+          { "id": "ci", "x": 5.2, "y": 4, "label": "GitHub Actions", "sublabel": "lint, types, tests", "icon": "gear", "kind": "server", "status": "active" },
+          { "id": "preview", "x": 9.6, "y": 1.6, "label": "Preview", "sublabel": "branch URL", "icon": "globe", "kind": "client" },
+          { "id": "prod", "x": 9.6, "y": 6.4, "label": "Production", "sublabel": "notely.app", "icon": "rocket", "kind": "server", "status": "dim" }
+        ],
+        "edges": [
+          { "from": "push", "to": "ci", "packet": { "label": "commit" } },
+          { "from": "ci", "to": "preview", "label": "on PR", "style": "dashed" },
+          { "from": "ci", "to": "prod", "label": "on merge", "style": "dotted", "status": "dim" }
+        ]
+      }
+    },
+    {
+      "title": "The CI file, line by line",
+      "chapter": "example",
+      "body": [
+        "On GitHub, CI is a YAML file in <code>.github/workflows/</code>. This one runs on every pull request and every push to main.",
+        "Each <code>run</code> line is a command you could type yourself. If any command fails, the job turns red and the rest stop. Vercel builds and deploys separately, through its GitHub integration."
+      ],
+      "code": {
+        "language": "yaml",
+        "filename": ".github/workflows/ci.yml",
+        "code": "name: CI\non:\n  pull_request:\n  push:\n    branches: [main]\njobs:\n  check:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v5\n      - uses: actions/setup-node@v5\n        with: { node-version: lts/*, cache: npm }\n      - run: npm ci\n      - run: npm run lint\n      - run: npx tsc --noEmit\n      - run: npm test",
+        "caption": "npm ci installs exactly what the lockfile says, so CI matches your laptop."
+      },
+      "callout": {
+        "type": "claude-code",
+        "text": "Ask Claude Code to add this file, then check: does every script it calls exist in <code>package.json</code>? Does it run on <code>pull_request</code>? Are secrets read from <code>${{ secrets.NAME }}</code>, never pasted in? Push a deliberately broken commit once to see it turn red."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Every check in the file runs in order. All green: the preview goes up.",
+        "nodes": [
+          { "id": "ci", "status": "ok", "tags": ["lint ✓", "types ✓", "tests ✓"] },
+          { "id": "preview", "status": "ok" }
+        ],
+        "edges": [
+          { "id": "ci>preview", "style": "solid", "status": "ok", "packet": { "status": "ok" } }
+        ]
+      }
+    },
+    {
+      "title": "Red check, locked door",
+      "chapter": "how",
+      "body": [
+        "A check that only warns gets ignored on busy days. Make it a <span class=\"term\">required check</span>: in the repo settings, add a branch protection rule (or ruleset) on <code>main</code> that requires the CI job to pass.",
+        "Now a pull request with a failing test cannot be merged, by you, a teammate, or Claude Code. Broken code stops before production, not after."
+      ],
+      "scene": {
+        "extends": "previous",
+        "caption": "One test fails. The merge button is locked, so production never sees the bug.",
+        "nodes": [
+          { "id": "ci", "status": "error", "tags": ["lint ✓", "types ✓", "tests ✗"] },
+          { "id": "preview", "status": "normal" },
+          { "id": "prod", "status": "normal" },
+          { "id": "lock", "x": 9.6, "y": 4, "label": "Merge blocked", "sublabel": "required check", "icon": "lock", "kind": "server", "status": "warn" }
+        ],
+        "edges": [
+          { "id": "ci>preview", "status": "normal", "packet": false },
+          { "id": "ci>prod", "status": "error", "label": "blocked", "style": "dashed" }
+        ]
+      }
+    },
+    {
+      "title": "Production secrets stay in production",
+      "chapter": "watch-out",
+      "body": [
+        "A tempting shortcut: copy every production variable into Preview \"so it works\". Now every preview URL, the ones you send to clients and testers, reads and writes real data with full-power keys.",
+        "Give Preview its own test database and its own API keys with low limits. If a preview leaks, nothing real is exposed."
+      ],
+      "callout": {
+        "type": "warn",
+        "text": "Vercel's Preview variables apply to every branch. A half-finished branch with a bug and a production service role key is a data breach waiting for a link to be shared."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "A preview holding production keys reaches straight into real data.",
+        "remove": ["lock"],
+        "nodes": [
+          { "id": "ci", "status": "normal", "tags": null },
+          { "id": "preview", "status": "error", "tags": ["prod keys"] },
+          { "id": "prod", "status": "normal" },
+          { "id": "db-prod", "x": 9.6, "y": 4, "label": "Production DB", "sublabel": "real users' notes", "icon": "database", "kind": "data", "status": "warn" }
+        ],
+        "edges": [
+          { "id": "ci>prod", "status": "normal", "label": "on merge", "style": "dotted" },
+          { "from": "preview", "to": "db-prod", "label": "should not reach", "status": "error", "style": "dashed" }
+        ]
+      }
+    },
+    {
+      "title": "Recap: separate places, automatic gates",
+      "chapter": "recap",
+      "body": [
+        "Run the same code in three environments: local, preview, production. Environment variables point each one at its own data and keys, and only production touches real users.",
+        "CI runs the same checks on every push. Make them required, and a red check blocks the merge. Merging to main is then the only way to deploy."
+      ]
+    }
+  ],
+  "quiz": [
+    {
+      "question": "Maya wants to try a migration that drops a column. Where should she run it first?",
+      "options": [
+        { "text": "On production, late at night when traffic is low.", "why": "Low traffic does not make a dropped column come back. Try destructive changes where data is fake." },
+        { "text": "Locally or on a preview database, then production after it works.", "correct": true, "why": "That is what non-production environments are for. A mistake there costs a reset, not real users' data." },
+        { "text": "Anywhere. Supabase can undo it.", "why": "Backups help you recover, but restoring is slow and loses recent changes. Prevention is far cheaper." }
+      ]
+    },
+    {
+      "question": "Claude Code added <code>NEXT_PUBLIC_ANTHROPIC_API_KEY</code> so the browser can call Claude directly. What is wrong?",
+      "options": [
+        { "text": "Nothing, as long as the variable is set on Vercel and not committed.", "why": "Where it is stored does not matter. The <code>NEXT_PUBLIC_</code> prefix copies the value into the JavaScript every visitor downloads." },
+        { "text": "The name is too long for Vercel.", "why": "The name is fine. The prefix is the problem." },
+        { "text": "The key is shipped to every browser. Call Claude from a server route with a private variable.", "correct": true, "why": "Anyone can open the bundle and spend your credits. The key must stay on the server, behind your own API route." }
+      ]
+    },
+    {
+      "question": "Your CI runs tests on every pull request, but last week someone merged a PR with a failing test anyway. What fixes this?",
+      "options": [
+        { "text": "Make the CI job a required check on <code>main</code>.", "correct": true, "why": "A required check turns the result into a gate. GitHub will not allow a merge until the job passes." },
+        { "text": "Run the tests again after the merge.", "why": "That finds the bug after it is already on its way to production." },
+        { "text": "Ask everyone to look at the checks before merging.", "why": "Good intentions fail on busy days. A rule the machine enforces does not." }
+      ]
+    }
+  ],
+  "takeaways": [
+    "Run the same code in three <b>environments</b>: local, preview, production. Only production touches real data.",
+    "<b>Environment variables</b> carry the differences. <code>NEXT_PUBLIC_</code> values are public; secrets never get that prefix.",
+    "Every pull request gets a <b>preview URL</b>. Point it at test data, never at production keys.",
+    "<b>CI</b> runs lint, types and tests on every push. Make it a <b>required check</b> so red blocks the merge."
+  ]
+}

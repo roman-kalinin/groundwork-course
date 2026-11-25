@@ -1,0 +1,280 @@
+{
+  "id": "monitoring-alerts",
+  "title": "Monitoring and alerts",
+  "summary": "How to find out your app is broken before your users tell you: error tracking, uptime checks, logs, analytics, and alerts that wake you only when it matters.",
+  "minutes": 12,
+  "level": "beginner",
+  "youWillLearn": [
+    "The four signals of a live app and the question each one answers",
+    "How <b>error tracking</b> like Sentry turns a crash into a readable report",
+    "What to log for an AI feature, and what never to log",
+    "How to set <b>alerts</b> that are rare, clear and worth waking up for"
+  ],
+  "glossary": {
+    "monitoring": "Watching a live app with tools, so problems show up on a dashboard or as an alert instead of in an angry email.",
+    "error tracking": "A service that catches crashes in your app, groups identical ones, and shows where in the code they happened.",
+    "stack trace": "The list of function calls that led to an error, file by file and line by line. It points at where things broke.",
+    "uptime check": "An outside service that visits a URL of your app every minute or so and alerts you if it does not answer correctly.",
+    "health check": "A small endpoint, like /api/health, that answers whether the app and its key parts are working.",
+    "log": "A line of text your app writes when something happens, with a timestamp, kept so you can read it later.",
+    "structured logging": "Writing logs as JSON with named fields, so you can filter and count them instead of reading walls of text.",
+    "product analytics": "Counting what users do (sign-ups, clicks, features used) to see whether the app is used as intended.",
+    "alert fatigue": "When alerts fire so often that people stop reacting to them, including the one that matters.",
+    "PII": "Personally identifiable information: anything that points to a real person, like an email, a name or a note's content."
+  },
+  "steps": [
+    {
+      "title": "Your users find out first",
+      "chapter": "problem",
+      "body": [
+        "On Tuesday, Notely's <b>AI summary</b> button starts failing for every user. The page shows a spinner forever.",
+        "Maya finds out three hours later, from an email titled \"is this broken??\". She has no idea when it started, how many people were hit, or what the error even says."
+      ],
+      "callout": {
+        "type": "analogy",
+        "text": "A shop with no smoke detector. You learn about the fire when a neighbor knocks on your door."
+      },
+      "scene": {
+        "caption": "Users hit the error for hours. Nothing tells Maya.",
+        "nodes": [
+          { "id": "users", "x": 2, "y": 4, "label": "Users", "sublabel": "spinner forever", "icon": "users", "kind": "person", "status": "warn" },
+          { "id": "app", "x": 6.4, "y": 4, "label": "Notely", "sublabel": "/api/summary", "icon": "server", "kind": "server", "status": "error" },
+          { "id": "maya", "x": 10.4, "y": 4, "label": "Maya", "sublabel": "no idea yet", "icon": "phone", "kind": "person", "status": "dim" }
+        ],
+        "edges": [
+          { "from": "users", "to": "app", "label": "AI summary", "packet": { "label": "click", "speed": "fast" } }
+        ],
+        "notes": [
+          { "id": "silent", "x": 8.4, "y": 2.3, "text": "Three hours of silence", "status": "error" }
+        ]
+      }
+    },
+    {
+      "title": "Four signals, four questions",
+      "chapter": "idea",
+      "body": [
+        "<span class=\"term\">Monitoring</span> gives a live app eyes. Four signals cover most of it.",
+        "<b>Errors</b>: what broke, and where in the code? <b>Uptime</b>: can anyone reach the app at all? <b>Logs</b>: what exactly happened on that request? <b>Analytics</b>: are people using it the way you expect? Each one answers a question the others cannot."
+      ],
+      "scene": {
+        "caption": "The app sends signals to four tools. Each one watches something different.",
+        "nodes": [
+          { "id": "app", "x": 6.4, "y": 4, "label": "Notely", "sublabel": "live app", "icon": "server", "kind": "server", "status": "normal" },
+          { "id": "errors", "x": 2, "y": 1.6, "label": "Errors", "sublabel": "Sentry", "icon": "bug", "kind": "external" },
+          { "id": "uptime", "x": 2, "y": 6.4, "label": "Uptime", "sublabel": "pings every minute", "icon": "clock", "kind": "external" },
+          { "id": "logs", "x": 10.4, "y": 1.6, "label": "Logs", "sublabel": "per request", "icon": "log", "kind": "external" },
+          { "id": "analytics", "x": 10.4, "y": 6.4, "label": "Analytics", "sublabel": "what users do", "icon": "chart", "kind": "external" }
+        ],
+        "edges": [
+          { "from": "app", "to": "errors", "style": "dashed" },
+          { "from": "uptime", "to": "app", "style": "dashed" },
+          { "from": "app", "to": "logs", "style": "dashed" },
+          { "from": "app", "to": "analytics", "style": "dashed" }
+        ]
+      }
+    },
+    {
+      "title": "Error tracking: crashes become reports",
+      "chapter": "how",
+      "body": [
+        "An <span class=\"term\">error tracking</span> tool like Sentry catches every unhandled error, in the browser and on the server. It groups identical ones and shows a <span class=\"term\">stack trace</span>, the release, the browser and how many users were hit.",
+        "For errors you catch yourself, send them explicitly, with tags so you can filter them later."
+      ],
+      "code": {
+        "language": "ts",
+        "filename": "app/api/summary/route.ts",
+        "code": "import * as Sentry from '@sentry/nextjs';\n\ntry {\n  summary = await summarize(note.body);\n} catch (err) {\n  Sentry.captureException(err, {\n    tags: { feature: 'ai-summary' },\n    extra: { noteId: note.id },\n  });\n  return Response.json(\n    { error: 'Summary failed, try again' },\n    { status: 502 },\n  );\n}",
+        "caption": "The user gets a clear message instead of a spinner. Maya gets the full error."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "The failing summary call lands in Sentry, grouped, with a stack trace.",
+        "nodes": [
+          { "id": "app", "status": "error" },
+          { "id": "errors", "status": "active", "tags": ["482 events", "61 users"] }
+        ],
+        "edges": [
+          { "id": "app>errors", "style": "solid", "status": "error", "label": "exception", "packet": { "label": "error", "status": "error" } }
+        ]
+      }
+    },
+    {
+      "title": "Uptime checks: someone knocking",
+      "chapter": "how",
+      "body": [
+        "Error tracking only works if your app is running. If it is down completely, it cannot report anything.",
+        "An <span class=\"term\">uptime check</span> is an outside service that visits a URL every minute, from several places. Point it at a <span class=\"term\">health check</span> route that also tests the database, so \"up\" means truly working, not only \"the server answered\"."
+      ],
+      "code": {
+        "language": "ts",
+        "filename": "app/api/health/route.ts",
+        "code": "export async function GET() {\n  const { error } = await supabase\n    .from('notes').select('id').limit(1);\n  if (error) {\n    return Response.json({ db: 'down' }, { status: 503 });\n  }\n  return Response.json({ ok: true });\n}",
+        "caption": "Keep it cheap: no Claude call here, or each ping would cost money."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Every minute, the uptime service calls the health route. A 503 means trouble.",
+        "nodes": [
+          { "id": "app", "status": "normal" },
+          { "id": "errors", "status": "normal", "tags": null },
+          { "id": "uptime", "status": "active", "tags": ["GET /api/health"] }
+        ],
+        "edges": [
+          { "id": "app>errors", "style": "dashed", "status": "normal", "label": null, "packet": false },
+          { "id": "uptime>app", "style": "solid", "label": "every 60 s", "packet": { "label": "ping" } }
+        ]
+      }
+    },
+    {
+      "title": "Logs: the diary of every request",
+      "chapter": "how",
+      "body": [
+        "A <span class=\"term\">log</span> is a line your code writes when something happens. Use <span class=\"term\">structured logging</span>: JSON with named fields, so you can filter by user or count slow calls.",
+        "For an AI feature, log the model, tokens used, how long it took, and the outcome. That is how you spot a slow model or a cost spike."
+      ],
+      "code": {
+        "language": "ts",
+        "code": "console.log(JSON.stringify({\n  event: 'ai_summary',\n  userId: user.id,\n  model: res.model,\n  inputTokens: res.usage.input_tokens,\n  outputTokens: res.usage.output_tokens,\n  ms: Date.now() - start,\n  ok: true,\n}));",
+        "caption": "Hosting logs are often kept only for a short time. Send them to a log service if you need history."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Each summary request writes one JSON line: who, which model, tokens, time.",
+        "nodes": [
+          { "id": "uptime", "status": "normal", "tags": null },
+          { "id": "logs", "status": "active", "tags": ["model", "tokens", "ms"] }
+        ],
+        "edges": [
+          { "id": "uptime>app", "packet": false, "style": "dashed", "label": null },
+          { "id": "app>logs", "style": "solid", "label": "JSON lines", "packet": { "label": "log", "speed": "fast" } }
+        ]
+      }
+    },
+    {
+      "title": "Analytics: the quiet failures",
+      "chapter": "how",
+      "body": [
+        "Some breakage throws no error. A button hidden by a CSS change. A summary that returns empty text. The app is \"up\", and nobody uses the feature.",
+        "<span class=\"term\">Product analytics</span> counts what users do. If summaries per hour drop from 300 to zero after a deploy, that is a bug report, even with a clean error log."
+      ],
+      "callout": {
+        "type": "tip",
+        "text": "As a designer you already read funnels. Track the steps of the core flow (open note, click summary, see summary) and the drop-off between them is your early warning."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Summaries per hour fall to zero. No error, but the chart says something broke.",
+        "nodes": [
+          { "id": "logs", "status": "normal", "tags": null },
+          { "id": "analytics", "status": "warn", "tags": ["summaries/h: 0"] }
+        ],
+        "edges": [
+          { "id": "app>logs", "packet": false, "style": "dashed", "label": null },
+          { "id": "app>analytics", "style": "solid", "label": "events", "packet": { "label": "event" } }
+        ]
+      }
+    },
+    {
+      "title": "Alerts that are worth waking for",
+      "chapter": "example",
+      "body": [
+        "Signals are useless if nobody looks. Alerts push the important ones to Maya's phone.",
+        "Alert on what users feel: the site is down, a new error hits many users, the error rate jumps after a deploy. Everything else goes into a daily digest. Too many pings cause <span class=\"term\">alert fatigue</span>, and the real one gets ignored."
+      ],
+      "callout": {
+        "type": "claude-code",
+        "text": "When Claude Code sets up Sentry, check: is the DSN in an environment variable? Is <code>environment</code> set, and do alert rules only fire for <code>production</code>? Are source maps uploaded, so traces show real file names? Is <code>sendDefaultPii</code> off unless you decided otherwise?"
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Only the alerts that matter reach Maya's phone, with a link to the error.",
+        "nodes": [
+          { "id": "app", "status": "error" },
+          { "id": "analytics", "status": "normal", "tags": null },
+          { "id": "errors", "status": "error", "tags": ["new issue", "61 users"] },
+          { "id": "uptime", "status": "ok" },
+          { "id": "maya", "x": 2, "y": 4, "label": "Maya", "sublabel": "alert on phone", "icon": "bell", "kind": "person", "status": "active" }
+        ],
+        "edges": [
+          { "id": "app>analytics", "packet": false, "style": "dashed", "label": null },
+          { "id": "app>errors", "style": "solid", "status": "error" },
+          { "from": "errors", "to": "maya", "label": "alert", "status": "error", "packet": { "label": "alert", "status": "error" } }
+        ]
+      }
+    },
+    {
+      "title": "Logs are a copy of your data",
+      "chapter": "watch-out",
+      "body": [
+        "The tempting debug line is <code>console.log(req)</code> or logging the whole prompt. Now every user's note, email and auth token sits in a third-party log tool, kept for weeks and readable by anyone on the account.",
+        "Log ids and numbers, not content. Never log <span class=\"term\">PII</span>, prompts with personal text, API keys or <code>Authorization</code> headers."
+      ],
+      "callout": {
+        "type": "warn",
+        "text": "A client's privacy policy usually promises where their data goes. A log line with note content quietly breaks that promise, and logs are rarely covered by your delete-my-account flow."
+      },
+      "code": {
+        "language": "diff",
+        "code": "- console.log('summary request', req.headers, note.body);\n+ console.log(JSON.stringify({ event: 'ai_summary', noteId }));",
+        "caption": "Same debugging value, none of the private data."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "A careless log line copies private notes and tokens into another company's system.",
+        "nodes": [
+          { "id": "app", "status": "normal" },
+          { "id": "errors", "status": "normal", "tags": null },
+          { "id": "uptime", "status": "normal" },
+          { "id": "maya", "status": "dim" },
+          { "id": "logs", "status": "error", "tags": ["note text", "auth token"] }
+        ],
+        "edges": [
+          { "id": "app>errors", "style": "dashed", "status": "normal" },
+          { "id": "errors>maya", "status": "dim", "packet": false },
+          { "id": "app>logs", "style": "solid", "status": "error", "label": "full request", "packet": { "label": "PII", "status": "error" } }
+        ]
+      }
+    },
+    {
+      "title": "Recap: eyes on the live app",
+      "chapter": "recap",
+      "body": [
+        "Errors show what broke and where. Uptime checks catch a dead app. Logs show what happened on one request. Analytics catch quiet failures that throw no error.",
+        "Alert only on what users feel, and log ids and numbers, never private content."
+      ]
+    }
+  ],
+  "quiz": [
+    {
+      "question": "Notely's server is completely down. Which signal tells Maya first?",
+      "options": [
+        { "text": "Sentry, because it catches every error.", "why": "Sentry runs inside the app. If the app is not running, there is nothing to send the error." },
+        { "text": "An uptime check calling <code>/api/health</code> from outside.", "correct": true, "why": "It runs on someone else's servers, so it notices when your app stops answering, and it alerts within minutes." },
+        { "text": "Product analytics, because events stop.", "why": "Events would stop, but analytics tools are not built to alert in minutes on a full outage." }
+      ]
+    },
+    {
+      "question": "Claude Code added this line to debug the summary route: <code>console.log(req.headers, note.body)</code>. What do you ask it to do?",
+      "options": [
+        { "text": "Keep it. Logs are private to your team.", "why": "Logs live in a third-party tool, are kept for a while and are seen by everyone with access. The headers include auth tokens." },
+        { "text": "Move it to the browser console instead.", "why": "The browser cannot see server-side failures, and the headers would still be exposed." },
+        { "text": "Log a structured event with ids, model, tokens and timing instead.", "correct": true, "why": "That keeps the debugging value without copying private notes and auth headers into your log provider." }
+      ]
+    },
+    {
+      "question": "Maya gets about 40 alerts a day, mostly warnings from preview deployments. Last night she slept through a real outage. What should change?",
+      "options": [
+        { "text": "Alert only on user-facing problems in production, and send the rest to a digest.", "correct": true, "why": "Alert fatigue made the real alert invisible. Fewer, clearer alerts get acted on. Tagging the environment keeps preview noise out." },
+        { "text": "Turn alerts up to the loudest sound.", "why": "Louder noise does not help when most of it is meaningless. People mute or ignore it." },
+        { "text": "Turn off alerts and check the dashboard every morning.", "why": "Then an outage at 11 p.m. runs all night. Alerts are needed; they need to be rare and meaningful." }
+      ]
+    }
+  ],
+  "takeaways": [
+    "Watch four signals: <b>errors</b>, <b>uptime</b>, <b>logs</b> and <b>analytics</b>. Each answers a different question.",
+    "Use an error tracker like Sentry, and send handled errors to it with tags like <code>feature: 'ai-summary'</code>.",
+    "Point an outside <b>uptime check</b> at a <code>/api/health</code> route that also tests the database.",
+    "Log structured events with ids, model, tokens and timing. Never log private content, tokens or keys.",
+    "Alert only on what users feel. Too many alerts and the important one gets ignored."
+  ]
+}

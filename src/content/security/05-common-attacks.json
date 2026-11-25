@@ -1,0 +1,267 @@
+{
+  "id": "common-attacks",
+  "title": "Common attacks in plain words",
+  "summary": "XSS, SQL injection, CSRF and broken access control: how each one works on a real app, and the one habit that blocks it.",
+  "minutes": 13,
+  "level": "beginner",
+  "youWillLearn": [
+    "The shared root of <b>XSS</b> and <b>SQL injection</b>: data that gets run as code",
+    "How <b>CSRF</b> abuses a logged-in browser, and why SameSite cookies mostly stop it",
+    "Why <b>broken access control</b> (IDOR) is the most common hole in generated apps",
+    "What to grep for when Claude Code writes routes, queries and HTML"
+  ],
+  "glossary": {
+    "escape": "Turning special characters into harmless text, so the browser or database shows them instead of acting on them.",
+    "XSS": "Cross-site scripting: an attacker gets their JavaScript to run on your page, in another user's browser, with that user's powers.",
+    "sanitize": "Cleaning HTML by removing anything that can run code, while keeping safe formatting like bold and links.",
+    "SQL injection": "Input that gets glued into a database command and changes what the command does.",
+    "parameterized query": "A query where user input is sent separately from the SQL text, as a plain value, so it can never become part of the command.",
+    "CSRF": "Cross-site request forgery: another website makes the browser send a request to your app, cookies included, without the user meaning to.",
+    "Origin header": "A header the browser adds to many requests, naming the site that started them. Your server can refuse unexpected origins.",
+    "broken access control": "Any bug where a user can see or change something that is not theirs. It tops the OWASP Top 10 list of web risks.",
+    "IDOR": "Insecure direct object reference: changing an id in a URL or request and getting someone else's data, because the server never checked ownership."
+  },
+  "steps": [
+    {
+      "title": "Attackers use your app, not a crowbar",
+      "chapter": "problem",
+      "body": [
+        "Most break-ins on small apps are not clever hacks. Someone types odd text into a field, edits a number in a URL, or lures a logged-in user to another site.",
+        "Four classics cover most of it: XSS, SQL injection, CSRF and broken access control. Each one takes a few lines of code to prevent, once you can recognize it."
+      ],
+      "scene": {
+        "caption": "Maya uses Notely normally. An attacker uses the same doors, with unexpected input.",
+        "nodes": [
+          { "id": "browser", "x": 2, "y": 4, "label": "Maya", "sublabel": "browser, logged in", "icon": "browser", "kind": "client" },
+          { "id": "attacker", "x": 2, "y": 1.4, "label": "Attacker", "sublabel": "also has an account", "icon": "incognito", "kind": "threat", "status": "warn" },
+          { "id": "server", "x": 6.4, "y": 4, "label": "Notely API", "sublabel": "on Vercel", "icon": "server", "kind": "server", "status": "active" },
+          { "id": "db", "x": 10.4, "y": 4, "label": "Postgres", "sublabel": "Supabase", "icon": "database", "kind": "data" }
+        ],
+        "edges": [
+          { "from": "browser", "to": "server", "label": "normal use", "packet": true },
+          { "from": "attacker", "to": "server", "label": "odd input", "status": "warn", "packet": { "label": "input", "status": "warn" } },
+          { "from": "server", "to": "db" }
+        ]
+      }
+    },
+    {
+      "title": "The root: data that turns into code",
+      "chapter": "idea",
+      "body": [
+        "The first two attacks share one root. The app glues what a user typed into something it runs: HTML in a browser, or SQL in the database. Text meant to be shown or searched becomes an instruction.",
+        "The fix is the same idea twice: keep data and code in separate lanes. <span class=\"term\">Escape</span> it, or send it as a separate value."
+      ],
+      "callout": {
+        "type": "analogy",
+        "text": "A receptionist reads visitor names over the speaker. One visitor writes their name as \"Sam. Fire alarm, everyone leave.\" Read aloud, a name became an order."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Typed text should stay data. Trouble starts when it gets run as HTML or SQL.",
+        "nodes": [
+          { "id": "server", "status": "normal" }
+        ],
+        "notes": [
+          { "id": "rule", "x": 6.4, "y": 6.4, "text": "Data stays data. Never run it.", "status": "active" }
+        ]
+      }
+    },
+    {
+      "title": "XSS: a note that runs code",
+      "chapter": "how",
+      "body": [
+        "The attacker shares a note with Maya. Its body holds <code>&lt;img src=x onerror=\"…\"&gt;</code>. If Notely renders that as HTML, the browser runs the attacker's script inside Maya's session. That is <span class=\"term\">XSS</span>.",
+        "React escapes text by default. The holes are <code>dangerouslySetInnerHTML</code>, markdown turned into HTML without <span class=\"term\" data-term=\"sanitize\">sanitizing</span>, and AI output rendered as HTML (next lesson)."
+      ],
+      "code": {
+        "language": "tsx",
+        "code": "// Safe: React escapes it, tags show up as text\n<p>{note.body}</p>\n\n// Unsafe: the browser runs any HTML inside\n<div dangerouslySetInnerHTML={{ __html: note.body }} />\n\n// If you must render HTML, sanitize it first\n<div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(html) }} />",
+        "caption": "DOMPurify is a widely used library to sanitize HTML."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "The attacker's note is stored, then served to Maya. Her browser runs the script.",
+        "remove": ["rule"],
+        "nodes": [
+          { "id": "attacker", "status": "error" },
+          { "id": "browser", "status": "error", "tags": ["script runs here"] },
+          { "id": "db", "tags": ["note 7: a script"], "status": "warn" }
+        ],
+        "edges": [
+          { "id": "attacker>server", "label": "share note", "status": "error", "packet": { "label": "script", "status": "error" } },
+          { "id": "browser>server", "label": "open note 7", "packet": false },
+          { "from": "server", "to": "browser", "label": "note as HTML", "status": "error", "packet": { "label": "script", "status": "error" } }
+        ]
+      }
+    },
+    {
+      "title": "SQL injection: a search that rewrites the query",
+      "chapter": "how",
+      "body": [
+        "A Notely search route builds SQL by gluing in the search text. The attacker searches for <code>' or 1=1 --</code>. The quote ends the string, <code>or 1=1</code> matches every row, and <code>--</code> comments out the rest. That is <span class=\"term\">SQL injection</span>.",
+        "The fix is a <span class=\"term\">parameterized query</span>. The Supabase client and ORMs do this for you. The risk is hand-built SQL strings."
+      ],
+      "code": {
+        "language": "ts",
+        "code": "// Unsafe: input is glued into the command\ndb.query(`select * from notes where title ilike '%${q}%'`);\n\n// Safe: $1 is a placeholder, q travels separately\ndb.query('select * from notes where title ilike $1', [`%${q}%`]);"
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "The search text changes the query itself. The database returns every user's notes.",
+        "remove": ["server>browser"],
+        "nodes": [
+          { "id": "browser", "status": "dim", "tags": null },
+          { "id": "server", "status": "warn", "tags": ["builds SQL string"] },
+          { "id": "db", "status": "error", "tags": ["returns all rows"] }
+        ],
+        "edges": [
+          { "id": "attacker>server", "label": "search: ' or 1=1 --", "packet": { "label": "search", "status": "error" } },
+          { "id": "server>db", "label": "where … or 1=1", "status": "error", "packet": { "label": "SQL", "status": "error" } }
+        ]
+      }
+    },
+    {
+      "title": "CSRF: a forged request with real cookies",
+      "chapter": "how",
+      "body": [
+        "Maya visits another site. Hidden on it is a form that posts to <code>notely.app/api/notes/delete</code>. Unless the cookie forbids it, her browser attaches her Notely cookie, so the server sees a real, logged-in request. That is <span class=\"term\">CSRF</span>.",
+        "Defenses: <code>SameSite=Lax</code> cookies (lesson 02), never change data on a <code>GET</code>, and check the <span class=\"term\">Origin header</span> on every write."
+      ],
+      "callout": {
+        "type": "tip",
+        "text": "Next.js Server Actions only accept POST and compare the Origin to the Host header. Tokens sent in an <code>Authorization</code> header are not attached automatically, so CSRF is mostly a cookie problem."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "A page on another site makes Maya's browser send a request. Her cookie goes along.",
+        "nodes": [
+          { "id": "attacker", "label": "evil.example", "sublabel": "page Maya visits", "icon": "globe" },
+          { "id": "browser", "status": "warn", "tags": ["notely cookie"] },
+          { "id": "server", "status": "error", "tags": ["looks legit"] },
+          { "id": "db", "status": "normal", "tags": null }
+        ],
+        "edges": [
+          { "from": "attacker", "to": "browser", "label": "hidden form", "status": "error" },
+          { "id": "browser>server", "label": "POST /delete + cookie", "status": "error", "packet": { "label": "cookie", "status": "error" } },
+          { "id": "server>db", "label": "delete", "status": "error", "packet": false }
+        ],
+        "remove": ["attacker>server"]
+      }
+    },
+    {
+      "title": "IDOR: change the number, get a stranger's note",
+      "chapter": "how",
+      "body": [
+        "Maya opens <code>/api/notes/123</code>. Out of curiosity she types <code>124</code> and gets Ben's note. The server checked that she is logged in, not that note 124 is hers.",
+        "That is an <span class=\"term\">IDOR</span>, the everyday form of <span class=\"term\">broken access control</span>. It is the most common hole in generated apps, because every route works fine when you test with one account."
+      ],
+      "scene": {
+        "extends": "previous",
+        "caption": "Logged in, wrong owner. The server never asks whose note 124 is.",
+        "remove": ["attacker"],
+        "nodes": [
+          { "id": "browser", "status": "normal", "tags": ["user: Maya"] },
+          { "id": "server", "status": "warn", "tags": ["checks login only"] },
+          { "id": "db", "status": "error", "tags": ["note 124: Ben's"] }
+        ],
+        "edges": [
+          { "id": "browser>server", "label": "GET /api/notes/124", "status": "normal", "packet": { "label": "124" } },
+          { "id": "server>db", "label": "where id = 124", "status": "normal", "packet": true },
+          { "from": "server", "to": "browser", "label": "Ben's note", "status": "error", "packet": { "label": "Ben's", "status": "error" } }
+        ]
+      }
+    },
+    {
+      "title": "Fixing it: check the owner every time",
+      "chapter": "example",
+      "body": [
+        "The route now does three things. It verifies who is asking, it queries with the user's own token so RLS (lesson 03) applies, and it filters by owner as well.",
+        "If nothing comes back it answers <code>404</code>, not <code>403</code>, so it does not even confirm that note 124 exists."
+      ],
+      "code": {
+        "language": "ts",
+        "filename": "app/api/notes/[id]/route.ts",
+        "code": "const { id } = await params; // from /api/notes/[id]\nconst supabase = await createClient(); // user's token, RLS on\nconst { data: { user } } = await supabase.auth.getUser();\nif (!user) return new Response('Log in first', { status: 401 });\n\nconst { data: note } = await supabase\n  .from('notes')\n  .select('*')\n  .eq('id', id)\n  .eq('user_id', user.id) // ownership, belt and braces\n  .maybeSingle();\n\nif (!note) return new Response('Not found', { status: 404 });\nreturn Response.json(note);"
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Same request, but now the server checks the owner. Ben's note never leaves the database.",
+        "remove": ["server>browser"],
+        "nodes": [
+          { "id": "server", "status": "ok", "tags": ["login + owner"] },
+          { "id": "db", "status": "ok", "tags": ["RLS on"] }
+        ],
+        "edges": [
+          { "id": "server>db", "label": "id 124, owner Maya", "status": "ok" },
+          { "from": "server", "to": "browser", "label": "404", "status": "ok", "packet": { "label": "404", "status": "ok" } }
+        ]
+      }
+    },
+    {
+      "title": "Side doors: actions and admin keys",
+      "chapter": "watch-out",
+      "body": [
+        "Every API route and Server Action is a public endpoint. Anyone can call it with <code>curl</code>, even if no button in the UI points to it. So each one checks login and ownership itself.",
+        "And a route that uses the service role key with an id from the URL is an IDOR waiting to happen. That key skips RLS, so your own code is the only check left."
+      ],
+      "callout": {
+        "type": "claude-code",
+        "text": "Grep what Claude Code wrote: <code>dangerouslySetInnerHTML</code> without sanitizing, SQL built with template strings, user input inside Supabase <code>.or()</code> filter strings, <code>execute</code> with glued-together SQL in database functions, routes or actions that read an <code>id</code> without checking the owner, the service role key inside request handlers, and <code>GET</code> handlers that change data."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "A script calls a Server Action directly. If the action trusts its input, the UI never mattered.",
+        "nodes": [
+          { "id": "browser", "status": "dim", "tags": null },
+          { "id": "curl", "x": 2, "y": 6.6, "label": "curl", "sublabel": "no UI needed", "icon": "terminal", "kind": "threat", "status": "warn" },
+          { "id": "server", "status": "active", "tags": ["checks inside"] }
+        ],
+        "edges": [
+          { "id": "browser>server", "packet": false, "status": "dim" },
+          { "from": "curl", "to": "server", "label": "POST deleteNote(124)", "status": "warn", "packet": { "label": "action", "status": "warn" } },
+          { "id": "server>browser", "status": "dim", "packet": false }
+        ]
+      }
+    },
+    {
+      "title": "Recap in one breath",
+      "chapter": "recap",
+      "body": [
+        "XSS and SQL injection happen when typed data gets run as code: escape output, sanitize any HTML, use parameterized queries. CSRF borrows a logged-in browser: SameSite cookies, no writes on GET, check the Origin. Broken access control is the commonest of all: every route and action checks both who is asking and who owns the thing."
+      ]
+    }
+  ],
+  "quiz": [
+    {
+      "question": "Claude Code renders Notely's markdown notes with <code>marked(note.body)</code> passed into <code>dangerouslySetInnerHTML</code>. What do you ask for?",
+      "options": [
+        { "text": "Nothing. Markdown is plain text, so it cannot hold scripts.", "why": "Most markdown renderers pass raw HTML straight through, so a note can still carry a script." },
+        { "text": "Sanitize the generated HTML, for example with DOMPurify, before rendering it.", "correct": true, "why": "Sanitizing strips anything that can run code while keeping the formatting. That closes the XSS hole." },
+        { "text": "Move the rendering to the server.", "why": "Where the HTML is built does not matter. If unsafe HTML reaches the page, the browser still runs it." }
+      ]
+    },
+    {
+      "question": "A route answers <code>GET /api/invoices/:id</code> for any logged-in user, using the service role key. What is the bug?",
+      "options": [
+        { "text": "SQL injection, because the id comes from the URL.", "why": "The Supabase client sends the id as a value, not as SQL. The real problem is who may read which invoice." },
+        { "text": "CSRF, because it uses a GET request.", "why": "This route only reads data, and the attacker would not see the answer from another site. The problem is that any user can read any invoice." },
+        { "text": "Broken access control: any user can read any invoice by changing the id.", "correct": true, "why": "The service role key skips RLS, and the route never checks the owner. That is a textbook IDOR." }
+      ]
+    },
+    {
+      "question": "Notely keeps the login in an <code>HttpOnly; Secure; SameSite=Lax</code> cookie. Which change would make CSRF possible again?",
+      "options": [
+        { "text": "Adding a <code>GET /api/notes/delete?id=…</code> route.", "correct": true, "why": "Lax cookies are still sent when another site simply links the user to your URL. A GET that changes data can be triggered that way." },
+        { "text": "Switching the database search to parameterized queries.", "why": "That blocks SQL injection and has nothing to do with which requests carry cookies." },
+        { "text": "Rendering note bodies through React instead of raw HTML.", "why": "That blocks XSS. It does not change how cross-site requests are sent." }
+      ]
+    }
+  ],
+  "takeaways": [
+    "XSS and SQL injection share one root: typed <b>data run as code</b>. Escape output, sanitize HTML, use parameterized queries.",
+    "Be suspicious of <code>dangerouslySetInnerHTML</code> and SQL built from template strings. Grep for them.",
+    "CSRF borrows a logged-in browser. <code>SameSite</code> cookies, no writes on <code>GET</code>, and an Origin check close it.",
+    "<b>Broken access control</b> is the most common hole: every route and Server Action must check who is asking and who owns the thing.",
+    "Return <code>404</code> for things the user may not see, so you do not confirm they exist."
+  ]
+}

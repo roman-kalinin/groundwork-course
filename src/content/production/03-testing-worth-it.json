@@ -1,0 +1,304 @@
+{
+  "id": "testing-worth-it",
+  "title": "Testing that is worth it",
+  "summary": "Unit, integration and end-to-end tests in plain words, which ones to write first for a small AI app, and how to spot a test that proves nothing.",
+  "minutes": 13,
+  "level": "beginner",
+  "youWillLearn": [
+    "What <b>unit</b>, <b>integration</b> and <b>end-to-end</b> tests each check, and what they cost",
+    "Which tests to write first when you only have an afternoon",
+    "How to test a feature whose AI output changes every time",
+    "How to catch a test that was quietly changed to pass"
+  ],
+  "glossary": {
+    "automated test": "A small program that runs part of your app and checks the result, so a machine can repeat the check in seconds.",
+    "unit test": "A test of one small piece of code, like a single function, on its own.",
+    "integration test": "A test that checks several real parts working together, like an API route and a database.",
+    "end-to-end test": "A test that drives a real browser through a whole user flow, from login to result.",
+    "assertion": "The line in a test that states what must be true, like expect(total).toBe(3).",
+    "mock": "A stand-in for a real service that returns a fixed answer, so a test does not depend on it.",
+    "regression": "A bug that comes back, or a feature that used to work and breaks after a change.",
+    "flaky test": "A test that sometimes passes and sometimes fails without any code change.",
+    "RLS": "Row level security: rules inside Postgres that decide which rows each user may read or change."
+  },
+  "steps": [
+    {
+      "title": "Clicking around stops scaling",
+      "chapter": "problem",
+      "body": [
+        "Before each deploy, Maya clicks through Notely: sign up, log in, create a note, summarize, share. Twenty minutes, every time.",
+        "Last week she was in a hurry and skipped sign up. A small change Claude Code made to the auth form broke it. Nobody new could join for four days, and nothing told her."
+      ],
+      "callout": {
+        "type": "analogy",
+        "text": "Checking a whole design system by eye after every token change. You will miss the one screen you did not open."
+      },
+      "scene": {
+        "caption": "Maya checks a few flows by hand. The one she skipped is the one that broke.",
+        "nodes": [
+          { "id": "maya", "x": 2, "y": 4, "label": "Maya", "sublabel": "20 min of clicking", "icon": "user", "kind": "person", "status": "warn" },
+          { "id": "f-note", "x": 7.4, "y": 1.6, "label": "Create note", "icon": "pencil", "kind": "client", "status": "ok" },
+          { "id": "f-sum", "x": 7.4, "y": 4, "label": "AI summary", "icon": "sparkle", "kind": "client", "status": "ok" },
+          { "id": "f-signup", "x": 7.4, "y": 6.4, "label": "Sign up", "sublabel": "not checked", "icon": "user", "kind": "client", "status": "error" }
+        ],
+        "edges": [
+          { "from": "maya", "to": "f-note", "label": "checked", "packet": true },
+          { "from": "maya", "to": "f-sum", "label": "checked", "packet": true },
+          { "from": "maya", "to": "f-signup", "label": "skipped", "style": "dotted", "status": "error" }
+        ]
+      }
+    },
+    {
+      "title": "Tests: checks a machine can repeat",
+      "chapter": "idea",
+      "body": [
+        "An <span class=\"term\">automated test</span> is a small program that runs part of your app and checks the result. It never gets tired or skips a flow.",
+        "Tests come in three sizes. Small ones check one function. Medium ones check real parts together. Large ones drive the whole app through a browser. Smaller is faster and more precise; larger is closer to what users do."
+      ],
+      "scene": {
+        "caption": "Notely's summary feature: a browser, an API route, a helper function, a database and Claude.",
+        "nodes": [
+          { "id": "browser", "x": 2, "y": 2.6, "label": "Browser", "sublabel": "note page", "icon": "browser", "kind": "client" },
+          { "id": "api", "x": 6.2, "y": 2.6, "label": "/api/summary", "sublabel": "route", "icon": "function", "kind": "server" },
+          { "id": "db", "x": 10.2, "y": 2.6, "label": "Supabase", "sublabel": "notes table", "icon": "database", "kind": "data" },
+          { "id": "fn", "x": 6.2, "y": 5.8, "label": "buildPrompt()", "sublabel": "pure function", "icon": "code", "kind": "neutral" },
+          { "id": "claude", "x": 10.2, "y": 5.8, "label": "Claude API", "sublabel": "paid, slow, varies", "icon": "sparkle", "kind": "ai" }
+        ],
+        "edges": [
+          { "from": "browser", "to": "api", "label": "POST", "packet": true },
+          { "from": "api", "to": "db", "label": "read note" },
+          { "from": "api", "to": "fn", "label": "calls" },
+          { "from": "api", "to": "claude", "label": "summarize" }
+        ]
+      }
+    },
+    {
+      "title": "Unit tests: one piece, very fast",
+      "chapter": "how",
+      "body": [
+        "A <span class=\"term\">unit test</span> calls one function with an input and checks the output. No database, no network, so it runs in milliseconds.",
+        "<code>buildPrompt()</code> trims long notes before they go to Claude. Each test ends in an <span class=\"term\">assertion</span>: the line that says what must be true."
+      ],
+      "code": {
+        "language": "ts",
+        "filename": "lib/buildPrompt.test.ts",
+        "code": "import { it, expect } from 'vitest';\nimport { buildPrompt } from './buildPrompt';\n\nit('trims very long notes', () => {\n  const prompt = buildPrompt('a'.repeat(50_000));\n  expect(prompt.length).toBeLessThanOrEqual(20_000);\n});\n\nit('rejects empty notes', () => {\n  expect(() => buildPrompt('   ')).toThrow('Note is empty');\n});",
+        "caption": "Vitest runs these with npx vitest. Hundreds of them finish in seconds."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "A unit test touches only the helper function.",
+        "zones": [
+          { "id": "z-test", "x": 4.2, "y": 4.7, "w": 4, "h": 2.3, "label": "Unit test", "status": "active" }
+        ],
+        "nodes": [
+          { "id": "fn", "status": "active" },
+          { "id": "browser", "status": "dim" },
+          { "id": "api", "status": "dim" },
+          { "id": "db", "status": "dim" },
+          { "id": "claude", "status": "dim" }
+        ],
+        "edges": [
+          { "id": "browser>api", "packet": false, "status": "dim" },
+          { "id": "api>db", "status": "dim" },
+          { "id": "api>fn", "status": "dim" },
+          { "id": "api>claude", "status": "dim" }
+        ]
+      }
+    },
+    {
+      "title": "Integration tests: real parts together",
+      "chapter": "how",
+      "body": [
+        "An <span class=\"term\">integration test</span> runs real pieces together, like real queries from a signed-in test user against a local database started with <code>supabase start</code>.",
+        "This is where the scariest bugs hide. Can Maya read Leo's notes? Unit tests cannot answer that. Only a test that runs your actual <span class=\"term\">RLS</span> policies in Postgres can."
+      ],
+      "code": {
+        "language": "ts",
+        "filename": "tests/notes-access.test.ts",
+        "code": "it(\"Maya cannot read Leo's notes\", async () => {\n  const maya = await signInAs('maya@test.dev');\n  const { data, error } = await maya\n    .from('notes')\n    .select('*')\n    .eq('user_id', LEO_ID);\n\n  expect(error).toBeNull();\n  expect(data).toEqual([]); // RLS hides the rows\n});",
+        "caption": "signInAs is a small helper that logs in a seeded test user on the local database."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "The integration test runs the real route against a real test database.",
+        "zones": [
+          { "id": "z-test", "x": 4.2, "y": 1.4, "w": 7.6, "h": 2.6, "label": "Integration test" }
+        ],
+        "nodes": [
+          { "id": "fn", "status": "normal" },
+          { "id": "api", "status": "active" },
+          { "id": "db", "status": "active", "sublabel": "local test DB", "tags": ["RLS on"] }
+        ],
+        "edges": [
+          { "id": "api>db", "status": "active", "packet": { "label": "query" } },
+          { "id": "api>fn", "status": "normal" }
+        ]
+      }
+    },
+    {
+      "title": "End-to-end tests: a robot user",
+      "chapter": "how",
+      "body": [
+        "An <span class=\"term\">end-to-end test</span> opens a real browser and does what Maya does: log in, open a note, press <b>AI summary</b>, wait for the result.",
+        "It catches what the others miss, like a broken button or a missing redirect. But it is slow and fragile, so keep a handful, one per critical flow."
+      ],
+      "code": {
+        "language": "ts",
+        "filename": "e2e/summary.spec.ts",
+        "code": "test('summarize a note', async ({ page }) => {\n  await page.goto('/login');\n  await page.getByLabel('Email').fill('maya@test.dev');\n  await page.getByLabel('Password').fill(process.env.TEST_PW!);\n  await page.getByRole('button', { name: 'Log in' }).click();\n  await page.getByRole('link', { name: 'Trip ideas' }).click();\n  await page.getByRole('button', { name: 'AI summary' }).click();\n  await expect(page.getByTestId('summary')).toBeVisible();\n});",
+        "caption": "Playwright finds elements by role and label, the same way a screen reader does."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "The end-to-end test drives the whole app, browser included.",
+        "zones": [
+          { "id": "z-test", "x": 0.3, "y": 1.4, "w": 11.5, "h": 5.9, "label": "End-to-end test" }
+        ],
+        "nodes": [
+          { "id": "browser", "status": "active" },
+          { "id": "api", "status": "active" },
+          { "id": "db", "status": "active" },
+          { "id": "fn", "status": "active" },
+          { "id": "claude", "status": "normal" }
+        ],
+        "edges": [
+          { "id": "browser>api", "status": "active", "packet": { "label": "click" } },
+          { "id": "api>db", "packet": false },
+          { "id": "api>fn", "status": "active" },
+          { "id": "api>claude", "status": "normal" }
+        ]
+      }
+    },
+    {
+      "title": "AI output changes, so test the shape",
+      "chapter": "example",
+      "body": [
+        "Claude never writes the same summary twice. So in unit and integration tests, replace it with a <span class=\"term\">mock</span>: a stand-in that returns a fixed answer, instantly and for free.",
+        "Then test what you control: the prompt you send, the error you show when Claude times out, the summary you save. Judging summary <em>quality</em> is a different job, called evals, covered in the AI module."
+      ],
+      "code": {
+        "language": "ts",
+        "code": "vi.mock('@/lib/claude', () => ({\n  summarize: vi.fn().mockResolvedValue('Three trip ideas.'),\n}));\n\nit('saves the summary on the note', async () => {\n  await POST(requestFor(noteId));\n  expect(await getNote(noteId)).toMatchObject({\n    summary: 'Three trip ideas.',\n  });\n});",
+        "caption": "Tests that call the real Claude API are slow, cost money and fail at random."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "In tests, a mock stands in for Claude: fixed answer, no cost.",
+        "remove": ["z-test"],
+        "nodes": [
+          { "id": "browser", "status": "dim" },
+          { "id": "api", "status": "active" },
+          { "id": "db", "status": "normal" },
+          { "id": "fn", "status": "normal" },
+          { "id": "claude", "label": "Mock Claude", "sublabel": "fixed answer", "icon": "box", "kind": "neutral", "status": "ok" }
+        ],
+        "edges": [
+          { "id": "browser>api", "status": "dim", "packet": false },
+          { "id": "api>fn", "status": "normal" },
+          { "id": "api>claude", "status": "ok", "packet": { "label": "instant", "status": "ok" } }
+        ]
+      }
+    },
+    {
+      "title": "What to test first",
+      "chapter": "idea",
+      "body": [
+        "You cannot test everything, so test where a bug hurts most. First: <b>who can see what</b> (auth and RLS). Second: anything that touches <b>money</b>. Third: the one core flow users came for.",
+        "Then add a test for every bug you fix, so it cannot return as a <span class=\"term\">regression</span>. Skip pixel details and code you did not write."
+      ],
+      "callout": {
+        "type": "tip",
+        "text": "For a client's booking app, the first three tests: a customer cannot see other customers' bookings, a slot cannot be double-booked, and a paid booking is saved once."
+      },
+      "scene": {
+        "caption": "Spend test time where a bug would hurt users or money.",
+        "zones": [
+          { "id": "z-first", "x": 0.4, "y": 0.6, "w": 6.4, "h": 6.8, "label": "Test first", "status": "ok" },
+          { "id": "z-later", "x": 7.2, "y": 0.6, "w": 4.4, "h": 6.8, "label": "Later, or never" }
+        ],
+        "nodes": [
+          { "id": "p-access", "x": 3.6, "y": 1.9, "label": "Who sees what", "sublabel": "auth, RLS", "icon": "shield", "kind": "server", "status": "ok" },
+          { "id": "p-money", "x": 3.6, "y": 3.5, "label": "Money", "sublabel": "plans, AI limits", "icon": "money", "kind": "server", "status": "ok" },
+          { "id": "p-core", "x": 3.6, "y": 5.1, "label": "Core flow", "sublabel": "note → summary", "icon": "sparkle", "kind": "client", "status": "ok" },
+          { "id": "p-bugs", "x": 3.6, "y": 6.6, "label": "Fixed bugs", "sublabel": "never again", "icon": "bug", "kind": "neutral", "status": "ok" },
+          { "id": "s-pixels", "x": 9.4, "y": 2.8, "label": "Pixel details", "icon": "pencil", "kind": "neutral", "status": "dim" },
+          { "id": "s-libs", "x": 9.4, "y": 5.2, "label": "Library code", "sublabel": "not yours", "icon": "box", "kind": "neutral", "status": "dim" }
+        ]
+      }
+    },
+    {
+      "title": "A test that proves nothing",
+      "chapter": "watch-out",
+      "body": [
+        "A test fails. Claude Code is asked to \"make the tests pass\". Sometimes it fixes the code. Sometimes it changes the test so it expects the bug.",
+        "Green checks then mean nothing. The same happens with tests that mock the very thing they claim to test, or that end without a real assertion. Also delete or fix any <span class=\"term\">flaky test</span>: people learn to ignore red."
+      ],
+      "code": {
+        "language": "diff",
+        "filename": "tests/notes-access.test.ts",
+        "code": "- expect(data).toEqual([]); // RLS hides the rows\n+ expect(data.length).toBeGreaterThan(0);",
+        "caption": "This edit turns a security test into a test that requires the leak."
+      },
+      "callout": {
+        "type": "claude-code",
+        "text": "Say \"fix the code, do not change the tests\" unless the test is wrong. Read every diff under <code>tests/</code> or <code>*.test.ts</code>. Look for <code>.skip</code>, <code>.only</code>, deleted assertions, and mocks of the module under test. Break the code on purpose once: the test must fail."
+      },
+      "scene": {
+        "caption": "The test was changed to expect the bug. CI is green, and the leak ships.",
+        "nodes": [
+          { "id": "test", "x": 2, "y": 4, "label": "Access test", "sublabel": "edited to pass", "icon": "flask", "kind": "neutral", "status": "warn" },
+          { "id": "ci", "x": 6.4, "y": 4, "label": "CI", "sublabel": "all green", "icon": "check", "kind": "server", "status": "ok" },
+          { "id": "prod", "x": 10.4, "y": 4, "label": "Production", "sublabel": "notes leak", "icon": "rocket", "kind": "server", "status": "error" }
+        ],
+        "edges": [
+          { "from": "test", "to": "ci", "label": "passes", "packet": { "status": "ok" } },
+          { "from": "ci", "to": "prod", "label": "deploys", "status": "error", "packet": { "label": "bug", "status": "error" } }
+        ],
+        "notes": [
+          { "id": "false", "x": 6.4, "y": 2.2, "text": "Green, but wrong", "status": "warn" }
+        ]
+      }
+    },
+    {
+      "title": "Recap: a few tests in the right places",
+      "chapter": "recap",
+      "body": [
+        "Unit tests check one function in milliseconds. Integration tests run real parts together, and are where permission bugs get caught. End-to-end tests drive a browser through a few critical flows.",
+        "Test access, money and the core flow first. Mock Claude in tests. Treat any edit to a test as a change that needs review."
+      ]
+    }
+  ],
+  "quiz": [
+    {
+      "question": "You have one afternoon to add tests to a client's booking app. Which test do you write first?",
+      "options": [
+        { "text": "A test that the booking button is the brand color.", "why": "Visual details matter, but a wrong color does not leak data or lose money." },
+        { "text": "A test that one customer cannot read another customer's bookings.", "correct": true, "why": "A permission bug leaks private data and is invisible when you click around as yourself. That is exactly what tests should catch first." },
+        { "text": "Tests for every function in the date-picker library.", "why": "That is someone else's code, and its authors test it. Test how you use it, not its internals." }
+      ]
+    },
+    {
+      "question": "Notely's integration test calls the real Claude API and checks that the summary equals <code>\"Three trip ideas.\"</code>. It fails half the time. Why, and what is the fix?",
+      "options": [
+        { "text": "Claude is down half the time. Add retries.", "why": "The API is not the problem. Claude's wording changes on every call, so an exact text match can never be stable." },
+        { "text": "Lower the temperature to zero so the answer is always identical.", "why": "Lower temperature reduces variation but does not guarantee identical text, and the test still costs money and time on every run." },
+        { "text": "AI output varies. Mock Claude in this test and check what your code does with the answer.", "correct": true, "why": "A mock gives a fixed answer, so the test checks your logic reliably. Summary quality is judged separately, with evals." }
+      ]
+    },
+    {
+      "question": "Claude Code says \"All tests pass now\". The PR diff shows a line in <code>notes-access.test.ts</code> changed from <code>toEqual([])</code> to <code>toBeGreaterThan(0)</code>. What happened?",
+      "options": [
+        { "text": "It changed the test to accept the bug instead of fixing the code.", "correct": true, "why": "The test used to require that RLS hides other users' notes. Now it requires that they are visible. The code is still broken; the alarm was switched off." },
+        { "text": "It improved the test so it covers more rows.", "why": "Covering more rows would mean more test cases, not flipping the expected result." },
+        { "text": "Nothing important. Test files do not ship to production.", "why": "Test files do not ship, but they decide what does. A wrong test lets a real bug through CI." }
+      ]
+    }
+  ],
+  "takeaways": [
+    "<b>Unit</b> tests check one function, <b>integration</b> tests check real parts together, <b>end-to-end</b> tests drive a browser.",
+    "Test <b>access</b>, <b>money</b> and the core flow first. Add a test for every bug you fix.",
+    "Mock the Claude API in tests. Check what your code does with the answer, not the exact words.",
+    "Review every change to a test file. \"Make the tests pass\" can mean the test was changed to expect the bug."
+  ]
+}

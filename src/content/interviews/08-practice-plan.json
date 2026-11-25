@@ -1,0 +1,802 @@
+{
+  "id": "practice-plan",
+  "title": "A practice plan that works",
+  "summary": "A six-week plan built on patterns, spaced re-solving and out-loud mock interviews, plus how to practice the practical AI build round and use Claude as a coach instead of an answer key.",
+  "minutes": 11,
+  "level": "beginner",
+  "youWillLearn": [
+    "Why solving hundreds of random problems stalls, and what to do instead",
+    "A six-week plan that follows this module, about an hour a day",
+    "The <b>25-minute rule</b>, a practice log, and <b>spaced re-solving</b>",
+    "How to rehearse the practical AI build round and run mock interviews with Claude"
+  ],
+  "glossary": {
+    "deliberate practice": "Practice aimed at a specific weakness, with fast feedback, instead of repeating what already feels comfortable.",
+    "spaced repetition": "Reviewing something again after growing gaps, like one day, one week, one month, which makes it stick far longer.",
+    "practice log": "A short record per problem: its pattern, whether you needed help, the key idea, and when to re-solve it.",
+    "mock interview": "A timed practice round run like the real one, with someone (or something) playing the interviewer and giving feedback.",
+    "practical round": "An interview round where you build a small working feature, often with a real API, instead of solving a puzzle."
+  },
+  "steps": [
+    {
+      "title": "Three hundred problems, little to show",
+      "chapter": "problem",
+      "body": [
+        "The usual plan: open a problem site, solve whatever comes next, repeat for months. Some days you solve it, some days you read the answer and nod.",
+        "A month later, most of it is gone. The problems were random, so nothing connected. And you practiced in silence, which is the one thing the real round will not allow."
+      ],
+      "scene": {
+        "caption": "Random problems in, very little retained.",
+        "nodes": [
+          {
+            "id": "r1",
+            "x": 2,
+            "y": 1.6,
+            "label": "Problem 37",
+            "icon": "file",
+            "kind": "neutral"
+          },
+          {
+            "id": "r2",
+            "x": 2,
+            "y": 4,
+            "label": "Problem 112",
+            "icon": "file",
+            "kind": "neutral"
+          },
+          {
+            "id": "r3",
+            "x": 2,
+            "y": 6.4,
+            "label": "Problem 260",
+            "icon": "file",
+            "kind": "neutral"
+          },
+          {
+            "id": "you",
+            "x": 6.4,
+            "y": 4,
+            "label": "You",
+            "sublabel": "solving in silence",
+            "icon": "laptop",
+            "kind": "person",
+            "status": "warn"
+          },
+          {
+            "id": "gone",
+            "x": 10.4,
+            "y": 4,
+            "label": "A month later",
+            "sublabel": "mostly forgotten",
+            "icon": "trash",
+            "kind": "neutral",
+            "status": "error"
+          }
+        ],
+        "edges": [
+          {
+            "from": "r1",
+            "to": "you",
+            "style": "dotted"
+          },
+          {
+            "from": "r2",
+            "to": "you",
+            "style": "dotted",
+            "packet": {
+              "speed": "fast"
+            }
+          },
+          {
+            "from": "r3",
+            "to": "you",
+            "style": "dotted"
+          },
+          {
+            "from": "you",
+            "to": "gone",
+            "status": "error",
+            "packet": {
+              "label": "fades",
+              "status": "error",
+              "speed": "slow"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "title": "Fewer problems, by pattern, again later",
+      "chapter": "idea",
+      "body": [
+        "Swap volume for <span class=\"term\">deliberate practice</span>. Learn one pattern, solve two or three problems that use it, review what tripped you up, and re-solve them later from a blank editor.",
+        "That loop builds the skill the round tests: recognizing the shape of a new problem and explaining your way to it."
+      ],
+      "callout": {
+        "type": "analogy",
+        "text": "Like learning a design tool. Clicking around for months teaches less than drilling one technique, using it on a real screen, then using it again next week without the tutorial."
+      },
+      "scene": {
+        "caption": "A loop: learn, solve, review, re-solve, then the next pattern.",
+        "nodes": [
+          {
+            "id": "learn",
+            "x": 2.4,
+            "y": 2,
+            "label": "Learn a pattern",
+            "sublabel": "one lesson",
+            "icon": "brain",
+            "kind": "person",
+            "status": "active"
+          },
+          {
+            "id": "solve",
+            "x": 9.6,
+            "y": 2,
+            "label": "Solve 2 or 3",
+            "sublabel": "out loud, timed",
+            "icon": "code",
+            "kind": "client"
+          },
+          {
+            "id": "review",
+            "x": 9.6,
+            "y": 6,
+            "label": "Review + log",
+            "sublabel": "what tripped you",
+            "icon": "pencil",
+            "kind": "data"
+          },
+          {
+            "id": "resolve",
+            "x": 2.4,
+            "y": 6,
+            "label": "Re-solve later",
+            "sublabel": "blank editor",
+            "icon": "refresh",
+            "kind": "neutral"
+          }
+        ],
+        "edges": [
+          {
+            "from": "learn",
+            "to": "solve",
+            "packet": true
+          },
+          {
+            "from": "solve",
+            "to": "review",
+            "packet": true
+          },
+          {
+            "from": "review",
+            "to": "resolve",
+            "packet": true
+          },
+          {
+            "from": "resolve",
+            "to": "learn",
+            "style": "dashed",
+            "label": "next pattern"
+          }
+        ]
+      }
+    },
+    {
+      "title": "Six weeks, one topic each",
+      "chapter": "how",
+      "body": [
+        "Follow this module's order, about an hour a day, five days a week. Weeks 1 to 5 each cover one or two lessons. Week 6 mixes everything, with extra mock interviews.",
+        "Pick problems from a list grouped by pattern, such as the well-known Blind 75 or NeetCode lists, starting with the easy ones. Two solved deeply beat five skimmed."
+      ],
+      "scene": {
+        "caption": "One topic per week, then a mixed week with mocks.",
+        "nodes": [
+          {
+            "id": "wk1",
+            "x": 2,
+            "y": 2,
+            "label": "Week 1",
+            "sublabel": "Big-O, arrays, maps",
+            "icon": "calendar",
+            "kind": "neutral",
+            "status": "active"
+          },
+          {
+            "id": "wk2",
+            "x": 6.2,
+            "y": 2,
+            "label": "Week 2",
+            "sublabel": "stacks, queues, lists",
+            "icon": "calendar",
+            "kind": "neutral"
+          },
+          {
+            "id": "wk3",
+            "x": 10.2,
+            "y": 2,
+            "label": "Week 3",
+            "sublabel": "trees and graphs",
+            "icon": "calendar",
+            "kind": "neutral"
+          },
+          {
+            "id": "wk4",
+            "x": 10.2,
+            "y": 5.8,
+            "label": "Week 4",
+            "sublabel": "recursion, search",
+            "icon": "calendar",
+            "kind": "neutral"
+          },
+          {
+            "id": "wk5",
+            "x": 6.2,
+            "y": 5.8,
+            "label": "Week 5",
+            "sublabel": "the three patterns",
+            "icon": "calendar",
+            "kind": "neutral"
+          },
+          {
+            "id": "wk6",
+            "x": 2,
+            "y": 5.8,
+            "label": "Week 6",
+            "sublabel": "mixed + mocks",
+            "icon": "calendar",
+            "kind": "person",
+            "status": "ok"
+          }
+        ],
+        "edges": [
+          {
+            "from": "wk1",
+            "to": "wk2"
+          },
+          {
+            "from": "wk2",
+            "to": "wk3"
+          },
+          {
+            "from": "wk3",
+            "to": "wk4"
+          },
+          {
+            "from": "wk4",
+            "to": "wk5"
+          },
+          {
+            "from": "wk5",
+            "to": "wk6",
+            "packet": true
+          }
+        ]
+      },
+      "callout": {
+        "type": "tip",
+        "title": "Two topics this module skips",
+        "text": "Heaps (priority queues), for \"top k\" questions such as the k most similar notes, and dynamic programming. If your target companies ask harder questions, add a week for each after week 5."
+      }
+    },
+    {
+      "title": "The 25-minute rule",
+      "chapter": "how",
+      "body": [
+        "Give each problem 25 focused minutes, out loud, using the six moves from lesson 1. Stuck at 25? Read one hint and try again. Still stuck? Read the solution until you can explain <em>why</em> it works.",
+        "Then close it and write it again from a blank editor. Record the result in a <span class=\"term\">practice log</span>. Reading a solution is not the same as being able to produce it."
+      ],
+      "code": {
+        "language": "yaml",
+        "filename": "practice-log.yaml",
+        "code": "- problem: Two Sum\n  pattern: hash map\n  date: 2026-11-25\n  result: hint   # solved | hint | read solution\n  key idea: look up target - x before storing x\n  re-solve: [2026-11-26, 2026-12-02, 2026-12-25]",
+        "caption": "One entry per problem. The key idea is one line you could say out loud."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Week 1, day 1: one problem, 25 minutes, then a log entry.",
+        "nodes": [
+          {
+            "id": "wk1",
+            "tags": [
+              "25 min, out loud",
+              "then: log it"
+            ]
+          },
+          {
+            "id": "wk6",
+            "status": "dim"
+          },
+          {
+            "id": "wk2",
+            "status": "dim"
+          },
+          {
+            "id": "wk3",
+            "status": "dim"
+          },
+          {
+            "id": "wk4",
+            "status": "dim"
+          },
+          {
+            "id": "wk5",
+            "status": "dim"
+          }
+        ],
+        "edges": [
+          {
+            "id": "wk5>wk6",
+            "packet": false
+          }
+        ]
+      }
+    },
+    {
+      "title": "Re-solve on a schedule",
+      "chapter": "how",
+      "body": [
+        "Memory fades fast unless you retrieve it. <span class=\"term\">Spaced repetition</span> fights that: re-solve each problem after about one day, one week and one month, from scratch, out loud.",
+        "If a re-solve fails, the gap resets. Problems you could only read the answer to get re-solved first. That log is your study plan for week 6."
+      ],
+      "callout": {
+        "type": "tip",
+        "text": "Put re-solve dates straight into your calendar when you log a problem. A practice plan you have to remember to follow is a plan you will skip."
+      },
+      "scene": {
+        "caption": "Every logged problem comes back after one day, one week, one month.",
+        "nodes": [
+          {
+            "id": "log",
+            "x": 2,
+            "y": 4,
+            "label": "Practice log",
+            "sublabel": "pattern + key idea",
+            "icon": "list",
+            "kind": "data",
+            "status": "active"
+          },
+          {
+            "id": "d1",
+            "x": 7.6,
+            "y": 1.6,
+            "label": "+1 day",
+            "sublabel": "re-solve",
+            "icon": "calendar",
+            "kind": "neutral",
+            "status": "ok"
+          },
+          {
+            "id": "d7",
+            "x": 7.6,
+            "y": 4,
+            "label": "+1 week",
+            "sublabel": "re-solve",
+            "icon": "calendar",
+            "kind": "neutral",
+            "status": "ok"
+          },
+          {
+            "id": "d30",
+            "x": 7.6,
+            "y": 6.4,
+            "label": "+1 month",
+            "sublabel": "failed? reset",
+            "icon": "calendar",
+            "kind": "neutral",
+            "status": "warn"
+          }
+        ],
+        "edges": [
+          {
+            "from": "log",
+            "to": "d1",
+            "packet": {
+              "label": "Two Sum"
+            }
+          },
+          {
+            "from": "log",
+            "to": "d7",
+            "style": "dashed"
+          },
+          {
+            "from": "log",
+            "to": "d30",
+            "style": "dashed"
+          },
+          {
+            "from": "d30",
+            "to": "d1",
+            "label": "reset",
+            "status": "warn",
+            "style": "dotted",
+            "bend": 1.4
+          }
+        ]
+      }
+    },
+    {
+      "title": "Mock interviews, out loud and timed",
+      "chapter": "how",
+      "body": [
+        "From week 3, run one <span class=\"term\">mock interview</span> a week: 45 minutes, a new problem, talking the whole time. A friend who codes is ideal. Recording yourself works too, and watching it back is uncomfortable and very useful.",
+        "Claude makes a patient interviewer, as long as you set the rules first."
+      ],
+      "callout": {
+        "type": "claude-code",
+        "text": "Good uses: \"Play interviewer, no code, hints only on request.\" \"Here is my solution: what is its time and space complexity, and which edge case breaks it?\" \"Give me a variation of this problem I solved last week.\" Bad use: pasting a fresh problem and asking for the answer."
+      },
+      "scene": {
+        "caption": "A timed round with an interviewer who asks questions back and scores you.",
+        "nodes": [
+          {
+            "id": "you",
+            "x": 2,
+            "y": 4,
+            "label": "You",
+            "sublabel": "45 min, out loud",
+            "icon": "laptop",
+            "kind": "person",
+            "status": "active"
+          },
+          {
+            "id": "mock",
+            "x": 10,
+            "y": 4,
+            "label": "Interviewer",
+            "sublabel": "a friend or Claude",
+            "icon": "users",
+            "kind": "person"
+          },
+          {
+            "id": "card",
+            "x": 10,
+            "y": 1.5,
+            "label": "Scorecard",
+            "sublabel": "what to fix next",
+            "icon": "list",
+            "kind": "neutral",
+            "tags": [
+              "communication",
+              "approach",
+              "testing"
+            ]
+          }
+        ],
+        "edges": [
+          {
+            "from": "you",
+            "to": "mock",
+            "label": "my plan is…",
+            "packet": {
+              "label": "plan",
+              "status": "active"
+            }
+          },
+          {
+            "from": "mock",
+            "to": "you",
+            "label": "and if it's empty?",
+            "packet": {
+              "label": "question"
+            }
+          },
+          {
+            "from": "mock",
+            "to": "card",
+            "label": "scores",
+            "style": "dashed"
+          }
+        ]
+      }
+    },
+    {
+      "title": "Rehearse the practical AI build",
+      "chapter": "example",
+      "body": [
+        "AI engineer loops often include a <span class=\"term\">practical round</span>: build a small feature that calls a model, in an hour or so. It tests different muscles: reading API docs fast, handling bad output, errors and timeouts.",
+        "Practice it like a puzzle round. Give yourself a spec, a timer and the same tools the real round allows (ask the recruiter). Then compare your result with what Claude Code would have produced."
+      ],
+      "code": {
+        "language": "text",
+        "filename": "practice-spec.txt",
+        "code": "Build in 60 minutes, with the round's tools:\nPOST /api/summary  { noteId }\n- load the note; 404 if missing or not the user's\n- API key from env, never sent to the browser\n- ask the model for JSON: { summary, tags[] }\n- validate the shape; retry once if invalid\n- give up after a timeout, return a clear error\n- write two tests: happy path, invalid model output"
+      },
+      "callout": {
+        "type": "tip",
+        "text": "Talk through trade-offs as you build, as in the coding round: \"I retry once, not forever, because each call costs money and time.\""
+      },
+      "scene": {
+        "caption": "A small, real feature: a route, a model call, and a check on what comes back.",
+        "nodes": [
+          {
+            "id": "you",
+            "x": 2,
+            "y": 4,
+            "label": "You",
+            "sublabel": "timer: 60 min",
+            "icon": "laptop",
+            "kind": "person",
+            "status": "active"
+          },
+          {
+            "id": "route",
+            "x": 6.2,
+            "y": 4,
+            "label": "/api/summary",
+            "sublabel": "your code",
+            "icon": "function",
+            "kind": "server"
+          },
+          {
+            "id": "llm",
+            "x": 10.2,
+            "y": 4,
+            "label": "Claude API",
+            "sublabel": "returns JSON",
+            "icon": "sparkle",
+            "kind": "ai"
+          },
+          {
+            "id": "check",
+            "x": 6.2,
+            "y": 6.6,
+            "label": "Validate",
+            "sublabel": "retry once if bad",
+            "icon": "shield",
+            "kind": "server",
+            "status": "warn"
+          }
+        ],
+        "edges": [
+          {
+            "from": "you",
+            "to": "route",
+            "label": "build",
+            "packet": {
+              "label": "code"
+            }
+          },
+          {
+            "from": "route",
+            "to": "llm",
+            "label": "prompt",
+            "packet": {
+              "label": "note"
+            }
+          },
+          {
+            "from": "llm",
+            "to": "route",
+            "label": "JSON?",
+            "status": "warn",
+            "packet": {
+              "label": "output",
+              "status": "warn"
+            }
+          },
+          {
+            "from": "route",
+            "to": "check",
+            "style": "dashed"
+          }
+        ]
+      }
+    },
+    {
+      "title": "Practice traps that feel productive",
+      "chapter": "watch-out",
+      "body": [
+        "Watch for practice that feels like progress but is not: reading solutions without rewriting them, skipping easy problems because they feel beneath you, practicing only in silence, and letting AI solve the problem \"to see how it goes\".",
+        "Also ask the recruiter early which language, editor and rounds to expect. Practice in that language, without autocomplete if the round has none."
+      ],
+      "callout": {
+        "type": "warn",
+        "text": "Asking an AI to solve practice problems trains you to recognize good answers, not to produce them. In a round without AI, that gap shows in the first five minutes."
+      },
+      "scene": {
+        "caption": "When AI does the solving, the answer is right, but you learned to read, not to solve.",
+        "nodes": [
+          {
+            "id": "prob",
+            "x": 2,
+            "y": 4,
+            "label": "New problem",
+            "icon": "file",
+            "kind": "neutral"
+          },
+          {
+            "id": "llm",
+            "x": 6.4,
+            "y": 4,
+            "label": "Claude",
+            "sublabel": "solves it for you",
+            "icon": "sparkle",
+            "kind": "ai",
+            "status": "warn"
+          },
+          {
+            "id": "you",
+            "x": 10.4,
+            "y": 4,
+            "label": "You",
+            "sublabel": "reading, nodding",
+            "icon": "laptop",
+            "kind": "person",
+            "status": "dim"
+          }
+        ],
+        "edges": [
+          {
+            "from": "prob",
+            "to": "llm",
+            "label": "paste",
+            "status": "warn"
+          },
+          {
+            "from": "llm",
+            "to": "you",
+            "label": "full answer",
+            "status": "warn",
+            "packet": {
+              "label": "answer",
+              "status": "warn"
+            }
+          }
+        ],
+        "notes": [
+          {
+            "id": "felt",
+            "x": 6.4,
+            "y": 1.8,
+            "text": "Felt productive. Learned little.",
+            "status": "error"
+          }
+        ]
+      }
+    },
+    {
+      "title": "Recap in one breath",
+      "chapter": "recap",
+      "body": [
+        "Practice by pattern, not at random. Give each problem 25 minutes out loud, rewrite solutions from a blank editor, log them, and re-solve after a day, a week and a month.",
+        "Add weekly mock interviews and a practical AI build. Use Claude as interviewer and reviewer, never as the one solving."
+      ],
+      "scene": {
+        "caption": "The loop that builds skill: learn, solve, review, re-solve.",
+        "nodes": [
+          {
+            "id": "learn",
+            "x": 2.4,
+            "y": 2,
+            "label": "Learn a pattern",
+            "sublabel": "one lesson",
+            "icon": "brain",
+            "kind": "person",
+            "status": "ok"
+          },
+          {
+            "id": "solve",
+            "x": 9.6,
+            "y": 2,
+            "label": "Solve 2 or 3",
+            "sublabel": "out loud, timed",
+            "icon": "code",
+            "kind": "client",
+            "status": "ok"
+          },
+          {
+            "id": "review",
+            "x": 9.6,
+            "y": 6,
+            "label": "Review + log",
+            "sublabel": "what tripped you",
+            "icon": "pencil",
+            "kind": "data",
+            "status": "ok"
+          },
+          {
+            "id": "resolve",
+            "x": 2.4,
+            "y": 6,
+            "label": "Re-solve later",
+            "sublabel": "blank editor",
+            "icon": "refresh",
+            "kind": "neutral",
+            "status": "ok"
+          }
+        ],
+        "edges": [
+          {
+            "from": "learn",
+            "to": "solve",
+            "status": "ok",
+            "packet": true
+          },
+          {
+            "from": "solve",
+            "to": "review",
+            "status": "ok",
+            "packet": true
+          },
+          {
+            "from": "review",
+            "to": "resolve",
+            "status": "ok",
+            "packet": true
+          },
+          {
+            "from": "resolve",
+            "to": "learn",
+            "style": "dashed",
+            "label": "next pattern"
+          }
+        ]
+      }
+    }
+  ],
+  "quiz": [
+    {
+      "question": "You got stuck on a problem, read the solution, and it made sense. What is the most useful next step?",
+      "options": [
+        {
+          "text": "Move on to the next problem while you have momentum.",
+          "why": "Understanding a solution is not the same as producing it. Without a rewrite, it fades within days."
+        },
+        {
+          "text": "Close the solution, rewrite it from a blank editor out loud, log it, and schedule a re-solve.",
+          "correct": true,
+          "why": "Producing it yourself turns recognition into skill, and the scheduled re-solve makes it stick."
+        },
+        {
+          "text": "Ask Claude for three more solutions to the same problem.",
+          "why": "More answers to read adds more recognition, not more ability to solve on your own."
+        }
+      ]
+    },
+    {
+      "question": "Two weeks before an AI engineer interview, which use of Claude helps most?",
+      "options": [
+        {
+          "text": "Paste each practice problem and study the answers it gives.",
+          "why": "This trains reading answers, not producing them under time pressure while talking."
+        },
+        {
+          "text": "Have it play a timed interviewer that only hints on request, then critique your complexity analysis and edge cases.",
+          "correct": true,
+          "why": "It rehearses the real round and gives feedback on the exact skills the scorecard rates."
+        },
+        {
+          "text": "Avoid AI entirely, since interviews ban it.",
+          "why": "Policies vary by company, and even where AI is banned in the round, it is a useful coach in practice. Ask the recruiter about the round itself."
+        }
+      ]
+    },
+    {
+      "question": "Your practice log shows you solved Two Sum easily a month ago, but today's re-solve failed. What does the plan say?",
+      "options": [
+        {
+          "text": "Skip it: you solved it once, so you know it.",
+          "why": "Today's failed re-solve is exactly the signal that it has not stuck yet."
+        },
+        {
+          "text": "Delete it from the log so the log only shows wins.",
+          "why": "The log is a study tool, not a trophy case. Failures are what it is for."
+        },
+        {
+          "text": "Reset the gap: re-solve it tomorrow, then in a week, then in a month.",
+          "correct": true,
+          "why": "Spaced repetition restarts the schedule when retrieval fails, so the problem comes back until it sticks."
+        }
+      ]
+    }
+  ],
+  "takeaways": [
+    "Practice <b>by pattern</b>: learn one, solve two or three, review, re-solve. Depth beats volume.",
+    "Give each problem <b>25 minutes out loud</b>. If you read a solution, rewrite it from a blank editor.",
+    "Keep a <b>practice log</b> and re-solve after a day, a week and a month. A failed re-solve resets the gap.",
+    "Run a weekly <b>mock interview</b> and rehearse the practical AI build: model call, output validation, errors, tests.",
+    "Use Claude as interviewer and reviewer, never as the one solving. Ask the recruiter about language and AI rules."
+  ]
+}

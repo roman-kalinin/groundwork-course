@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { GRID, ICONS, NODE_H, nodeWidth } from '../../shared/schema.js';
+import { GRID, ICONS, NODE_H, edgeLabelWidth, nodeWidth } from '../../shared/schema.js';
 import type { ResolvedScene, SceneEdge, SceneNode, SceneNote, SceneZone, Packet } from '../../shared/schema.js';
 
 const U = GRID.unit;
@@ -126,6 +126,18 @@ interface EdgeGeom {
   d: string;
   mid: { x: number; y: number };
   at: (t: number) => { x: number; y: number };
+}
+
+/** Approximate length of an edge path, sampled. */
+function pathLength(g: EdgeGeom) {
+  let len = 0;
+  let prev = g.at(0);
+  for (let i = 1; i <= 16; i++) {
+    const p = g.at(i / 16);
+    len += Math.hypot(p.x - prev.x, p.y - prev.y);
+    prev = p;
+  }
+  return len;
 }
 
 function edgeGeometry(a: Pos, b: Pos, bend: number): EdgeGeom {
@@ -289,7 +301,13 @@ function EdgeView({ e, g, leaving, reduced, part }: { e: SceneEdge; g: EdgeGeom;
   const marker = `url(#arrow-${status})`;
   const packet: Packet | null = e.packet === true ? {} : e.packet && typeof e.packet === 'object' ? e.packet : null;
   const dir = packet?.direction ?? 'forward';
-  const lw = e.label ? e.label.length * 8.4 + 22 : 0;
+  const lw = edgeLabelWidth(e.label);
+  // With reduced motion the packet stands still: park it beside the label, not on it.
+  const pw = packet?.label ? packet.label.length * 8.8 + 24 : 18;
+  const plen = pathLength(g);
+  const off = e.label ? (lw / 2 + pw / 2 + 10) / plen : 0;
+  // no room beside the label (or the edge is shorter than the packet): the label says enough
+  const stillFits = e.label ? 0.5 - off >= (pw / 2 + 4) / plen : plen >= pw + 8;
   return (
     <g className={`edge ${st(status)} style-${e.style ?? 'solid'}${leaving ? ' leaving' : ''}`}>
       {part === 'line' && <path
@@ -306,11 +324,11 @@ function EdgeView({ e, g, leaving, reduced, part }: { e: SceneEdge; g: EdgeGeom;
           </text>
         </g>
       )}
-      {part === 'packets' && packet && !leaving && (
+      {part === 'packets' && packet && !leaving && (!reduced || stillFits) && (
         <>
-          {(dir === 'forward' || dir === 'both') && <PacketView d={g.d} packet={packet} reverse={false} delay={0} reduced={reduced} still={g.at(e.label ? 0.22 : 0.5)} />}
+          {(dir === 'forward' || dir === 'both') && <PacketView d={g.d} packet={packet} reverse={false} delay={0} reduced={reduced} still={g.at(e.label ? 0.5 - off : 0.5)} />}
           {(dir === 'backward' || dir === 'both') && (
-            <PacketView d={g.d} packet={packet} reverse delay={dir === 'both' ? SPEED[packet.speed ?? 'normal'] / 2 : 0} reduced={reduced} still={g.at(e.label ? 0.78 : 0.5)} />
+            <PacketView d={g.d} packet={packet} reverse delay={dir === 'both' ? SPEED[packet.speed ?? 'normal'] / 2 : 0} reduced={reduced} still={g.at(e.label ? 0.5 + off : 0.5)} />
           )}
         </>
       )}
@@ -389,9 +407,13 @@ export function SceneView({ scene, bounds, reduced, stepKey }: { scene?: Resolve
     const focus = s.nodes.filter((n) => n.status && n.status !== 'normal' && n.status !== 'dim');
     const list = focus.length ? focus : s.nodes;
     if (!list.length) return;
-    const cx = list.reduce((a, n) => a + n.x * U, 0) / list.length;
-    const ratio = (cx - bounds.x) / bounds.w;
-    el.scrollTo({ left: ratio * el.scrollWidth - el.clientWidth / 2, behavior: reduced ? 'auto' : 'smooth' });
+    // Show the whole span of highlighted nodes when it fits; otherwise start at its left end.
+    const lo = Math.min(...list.map((n) => (n.x - nodeWidth(n) / 2) * U));
+    const hi = Math.max(...list.map((n) => (n.x + nodeWidth(n) / 2) * U));
+    const k = el.scrollWidth / bounds.w;
+    const span = (hi - lo) * k;
+    const left = span <= el.clientWidth - 24 ? ((lo + hi) / 2 - bounds.x) * k - el.clientWidth / 2 : (lo - bounds.x) * k - 12;
+    el.scrollTo({ left, behavior: reduced ? 'auto' : 'smooth' });
   }, [stepKey, s.nodes, bounds, reduced]);
 
   const edgeGeoms = edges.flatMap(({ item, leaving }) => {

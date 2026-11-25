@@ -2,6 +2,6 @@
   "id": "production",
   "title": "Running in production",
   "order": 4,
-  "summary": "What happens after deploy: environments, monitoring, migrations, backups and keeping a live app healthy.",
+  "summary": "Life after the first deploy: Git and pull requests, environments and CI, tests worth writing, monitoring, backups, calm incident handling and keeping costs in check.",
   "color": "teal"
 }

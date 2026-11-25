@@ -1,0 +1,311 @@
+{
+  "id": "trees-and-graphs",
+  "title": "Trees and graphs (BFS and DFS)",
+  "summary": "How to picture nested and connected data, and the two ways to walk it: deep first or level by level, without getting stuck in a loop.",
+  "minutes": 14,
+  "level": "beginner",
+  "youWillLearn": [
+    "The words for a <b>tree</b>: root, parent, child, leaf",
+    "Why a balanced binary search tree finds things in O(log n)",
+    "How <b>DFS</b> (deep first, with a stack) and <b>BFS</b> (level by level, with a queue) differ",
+    "Why every graph walk needs a <b>visited</b> set, in TypeScript and in SQL"
+  ],
+  "glossary": {
+    "tree": "Data shaped like a family tree: one item at the top, and every other item has exactly one parent. No loops.",
+    "root": "The single item at the top of a tree. It has no parent.",
+    "leaf": "An item at the bottom of a tree, with no children.",
+    "binary search tree": "A tree where each item has at most two children, and everything on the left is smaller and everything on the right is larger.",
+    "DFS": "Depth-first search: follow one branch all the way down before backing up to try the next. Uses a stack.",
+    "BFS": "Breadth-first search: visit everything one step away, then two steps away, and so on. Uses a queue.",
+    "graph": "Items (nodes) joined by connections (edges), with no single top and possibly loops. A tree is a special kind of graph.",
+    "adjacency list": "A way to store a graph: for each node, a list of the nodes it connects to.",
+    "visited set": "A Set of the nodes a search has already seen, so it never processes the same node twice.",
+    "recursive CTE": "A SQL query that refers to its own results, so the database can walk a tree or graph stored in a table."
+  },
+  "steps": [
+    {
+      "title": "Folders inside folders",
+      "chapter": "problem",
+      "body": [
+        "Maya asks for folders in Notely, and folders inside folders. A flat list cannot show that shape anymore.",
+        "Now \"search everything under Work\" means: look in Work, then in each folder inside it, then in each folder inside those. You need a way to walk nested data without missing a branch or visiting one twice."
+      ],
+      "scene": {
+        "caption": "Notes now live at different depths. Where is the pitch deck?",
+        "nodes": [
+          { "id": "all", "x": 6.4, "y": 1.2, "label": "All notes", "icon": "folder", "kind": "data" },
+          { "id": "work", "x": 3.2, "y": 3.4, "label": "Work", "icon": "folder", "kind": "data" },
+          { "id": "personal", "x": 9.6, "y": 3.4, "label": "Personal", "icon": "folder", "kind": "data" },
+          { "id": "clients", "x": 1.8, "y": 5.8, "label": "Clients", "icon": "folder", "kind": "data" },
+          { "id": "pitch", "x": 4.6, "y": 5.8, "label": "Pitch deck", "icon": "file", "kind": "client", "status": "warn" },
+          { "id": "trip", "x": 8.2, "y": 5.8, "label": "Trip plan", "icon": "file", "kind": "client" },
+          { "id": "recipes", "x": 10.8, "y": 5.8, "label": "Recipes", "icon": "file", "kind": "client" }
+        ],
+        "edges": [
+          { "from": "all", "to": "work" },
+          { "from": "all", "to": "personal" },
+          { "from": "work", "to": "clients" },
+          { "from": "work", "to": "pitch" },
+          { "from": "personal", "to": "trip" },
+          { "from": "personal", "to": "recipes" }
+        ],
+        "notes": [
+          { "id": "where", "x": 2, "y": 1.2, "text": "Where is \"Pitch deck\"?", "status": "warn" }
+        ]
+      }
+    },
+    {
+      "title": "Trees: one root, no loops",
+      "chapter": "idea",
+      "body": [
+        "This shape is a <span class=\"term\">tree</span>. The item at the top is the <span class=\"term\">root</span>. Every other item has exactly one parent. Items with no children are <span class=\"term\" data-term=\"leaf\">leaves</span>.",
+        "Because each item has one parent, there are no loops. Start at the root, walk down, and you will reach every item exactly once. File systems, the DOM and JSON are all trees."
+      ],
+      "callout": {
+        "type": "analogy",
+        "text": "A design file's layer panel. One page at the top, frames inside it, groups inside frames, and every layer sits in exactly one parent."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "One root at the top, leaves at the bottom, one parent for everything else.",
+        "remove": ["where"],
+        "nodes": [
+          { "id": "all", "status": "active", "tags": ["root"] },
+          { "id": "pitch", "status": "normal", "tags": ["leaf"] },
+          { "id": "clients", "tags": ["leaf"] },
+          { "id": "trip", "tags": ["leaf"] },
+          { "id": "recipes", "tags": ["leaf"] }
+        ]
+      }
+    },
+    {
+      "title": "Binary search trees halve the work",
+      "chapter": "how",
+      "body": [
+        "A special tree, the <span class=\"term\">binary search tree</span>, keeps order: smaller values to the left, larger to the right. To find 60, start at the root. 60 is bigger than 50, go right. Smaller than 70, go left. Found.",
+        "Each step throws away half the tree, so a <em>balanced</em> one finds anything in <b>O(log n)</b>. Database indexes use a cousin of this idea, the B-tree."
+      ],
+      "scene": {
+        "caption": "Each comparison picks one side and skips the other half.",
+        "nodes": [
+          { "id": "b50", "x": 6.4, "y": 1.2, "label": "50", "sublabel": "60 > 50: right", "kind": "data", "status": "active" },
+          { "id": "b30", "x": 3.6, "y": 3.4, "label": "30", "kind": "data", "status": "dim" },
+          { "id": "b70", "x": 9.2, "y": 3.4, "label": "70", "sublabel": "60 < 70: left", "kind": "data", "status": "active" },
+          { "id": "b20", "x": 2.2, "y": 5.8, "label": "20", "kind": "data", "status": "dim" },
+          { "id": "b40", "x": 5, "y": 5.8, "label": "40", "kind": "data", "status": "dim" },
+          { "id": "b60", "x": 7.8, "y": 5.8, "label": "60", "sublabel": "found", "kind": "data", "status": "ok" },
+          { "id": "b80", "x": 10.6, "y": 5.8, "label": "80", "kind": "data" }
+        ],
+        "edges": [
+          { "from": "b50", "to": "b30", "status": "dim" },
+          { "from": "b50", "to": "b70", "status": "active", "packet": { "label": "60", "status": "active" } },
+          { "from": "b30", "to": "b20", "status": "dim" },
+          { "from": "b30", "to": "b40", "status": "dim" },
+          { "from": "b70", "to": "b60", "status": "ok", "packet": { "label": "60", "status": "ok" } },
+          { "from": "b70", "to": "b80" }
+        ]
+      }
+    },
+    {
+      "title": "DFS: go deep, then back up",
+      "chapter": "how",
+      "body": [
+        "Back to Maya's folders. <span class=\"term\">DFS</span> follows one branch all the way to the bottom before trying the next. It keeps \"places still to visit\" on a <b>stack</b> from the last lesson: pop one, look inside, push its children.",
+        "DFS is the natural fit for \"search everything under this folder\" or \"count all notes in this tree\". It visits every item once: <b>O(n)</b>."
+      ],
+      "code": {
+        "language": "ts",
+        "code": "function findNote(root: Folder, title: string) {\n  const stack = [root];\n  while (stack.length > 0) {\n    const folder = stack.pop()!;\n    const hit = folder.notes.find((n) => n.title === title);\n    if (hit) return hit;\n    stack.push(...folder.children);\n  }\n  return null;\n}",
+        "caption": "pop() takes the last child first, so it may try Personal before Work. Still DFS. Swap the stack for a queue and it becomes BFS."
+      },
+      "scene": {
+        "caption": "Depth first: down the Work branch to the bottom, then over to Personal.",
+        "nodes": [
+          { "id": "all", "x": 6.4, "y": 1.2, "label": "All notes", "icon": "folder", "kind": "data", "status": "ok", "tags": ["DFS #1"] },
+          { "id": "work", "x": 3.2, "y": 3.4, "label": "Work", "icon": "folder", "kind": "data", "status": "ok", "tags": ["DFS #2"] },
+          { "id": "personal", "x": 9.6, "y": 3.4, "label": "Personal", "icon": "folder", "kind": "data", "tags": ["DFS #5"] },
+          { "id": "clients", "x": 1.8, "y": 5.8, "label": "Clients", "icon": "folder", "kind": "data", "status": "ok", "tags": ["DFS #3"] },
+          { "id": "pitch", "x": 4.6, "y": 5.8, "label": "Pitch deck", "icon": "file", "kind": "client", "status": "active", "tags": ["DFS #4"] },
+          { "id": "trip", "x": 8.2, "y": 5.8, "label": "Trip plan", "icon": "file", "kind": "client", "tags": ["DFS #6"] },
+          { "id": "recipes", "x": 10.8, "y": 5.8, "label": "Recipes", "icon": "file", "kind": "client", "tags": ["DFS #7"] }
+        ],
+        "edges": [
+          { "from": "all", "to": "work", "status": "ok", "packet": { "label": "down", "status": "active" } },
+          { "from": "all", "to": "personal" },
+          { "from": "work", "to": "clients", "status": "ok" },
+          { "from": "work", "to": "pitch", "status": "active", "packet": { "label": "down", "status": "active" } },
+          { "from": "personal", "to": "trip" },
+          { "from": "personal", "to": "recipes" }
+        ]
+      }
+    },
+    {
+      "title": "BFS: level by level",
+      "chapter": "how",
+      "body": [
+        "<span class=\"term\">BFS</span> visits everything one step from the start, then everything two steps away, and so on. It keeps \"places to visit\" in a <b>queue</b>: take from the front, add children to the back.",
+        "Because it goes outward in rings, BFS finds the <b>fewest steps</b> to something. Ask \"shortest\" or \"closest\" and think BFS. Also <b>O(n)</b>."
+      ],
+      "callout": {
+        "type": "analogy",
+        "text": "A ripple in a pond. It reaches everything one ring out before anything two rings out."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Breadth first: the whole second row before anything on the third.",
+        "nodes": [
+          { "id": "all", "tags": ["BFS #1"] },
+          { "id": "work", "tags": ["BFS #2"] },
+          { "id": "personal", "status": "ok", "tags": ["BFS #3"] },
+          { "id": "clients", "status": "active", "tags": ["BFS #4"] },
+          { "id": "pitch", "status": "normal", "tags": ["BFS #5"] },
+          { "id": "trip", "tags": ["BFS #6"] },
+          { "id": "recipes", "tags": ["BFS #7"] }
+        ],
+        "edges": [
+          { "id": "all>work", "packet": false },
+          { "id": "all>personal", "status": "ok" },
+          { "id": "work>pitch", "status": "normal", "packet": false },
+          { "id": "work>clients", "status": "active", "packet": { "label": "row 3", "status": "active" } }
+        ],
+        "notes": [
+          { "id": "ring", "x": 6.4, "y": 7.4, "text": "Rows: 1, then 2, then 3", "status": "active" }
+        ]
+      }
+    },
+    {
+      "title": "Graphs: connections with loops",
+      "chapter": "how",
+      "body": [
+        "Now Notely adds links between notes, like a wiki. Any note can link to any other, and links can lead back to where you started. That is a <span class=\"term\">graph</span>: no single root, and loops are allowed.",
+        "Store it as an <span class=\"term\">adjacency list</span>: for each note, the list of notes it links to. A <code>Map</code> from id to an array of ids does the job."
+      ],
+      "code": {
+        "language": "ts",
+        "code": "const links = new Map<string, string[]>([\n  [\"pitch\", [\"brief\", \"budget\"]],\n  [\"brief\", [\"call\"]],\n  [\"budget\", [\"call\"]],\n  [\"call\", [\"pitch\", \"ideas\"]], // a loop back\n]);"
+      },
+      "scene": {
+        "caption": "Notes link to notes. Call notes links back to the pitch deck: a loop.",
+        "nodes": [
+          { "id": "g-pitch", "x": 2, "y": 4, "label": "Pitch deck", "icon": "file", "kind": "client", "status": "active" },
+          { "id": "g-brief", "x": 5.4, "y": 1.8, "label": "Client brief", "icon": "file", "kind": "client" },
+          { "id": "g-budget", "x": 5.4, "y": 6.2, "label": "Budget", "icon": "file", "kind": "client" },
+          { "id": "g-call", "x": 8.6, "y": 4, "label": "Call notes", "icon": "file", "kind": "client" },
+          { "id": "g-ideas", "x": 10.6, "y": 1.6, "label": "Ideas", "icon": "file", "kind": "client" }
+        ],
+        "edges": [
+          { "from": "g-pitch", "to": "g-brief" },
+          { "from": "g-pitch", "to": "g-budget" },
+          { "from": "g-brief", "to": "g-call" },
+          { "from": "g-budget", "to": "g-call" },
+          { "from": "g-call", "to": "g-pitch", "label": "links back", "status": "warn", "packet": { "label": "loop", "status": "warn" } },
+          { "from": "g-call", "to": "g-ideas" }
+        ]
+      }
+    },
+    {
+      "title": "Related notes, two links away",
+      "chapter": "example",
+      "body": [
+        "Feature: when Maya opens a note, show notes within two links, closest first, as context for the AI summary. \"Closest\" means BFS.",
+        "The key line is the <span class=\"term\">visited set</span>. Here the <code>dist</code> map doubles as one: a note that already has a distance is never queued again. That is what stops the loop."
+      ],
+      "code": {
+        "language": "ts",
+        "code": "function related(start: string, maxHops = 2) {\n  const dist = new Map([[start, 0]]); // also the visited set\n  const queue = [start];\n  let head = 0;\n  while (head < queue.length) {\n    const id = queue[head++];\n    const d = dist.get(id)!;\n    if (d === maxHops) continue;\n    for (const next of links.get(id) ?? []) {\n      if (dist.has(next)) continue; // seen: skip\n      dist.set(next, d + 1);\n      queue.push(next);\n    }\n  }\n  dist.delete(start);\n  return [...dist.keys()];\n}"
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "BFS from the pitch deck: one link, then two. The loop back is skipped.",
+        "nodes": [
+          { "id": "g-pitch", "tags": ["start"] },
+          { "id": "g-brief", "status": "ok", "tags": ["1 link"] },
+          { "id": "g-budget", "status": "ok", "tags": ["1 link"] },
+          { "id": "g-call", "status": "ok", "tags": ["2 links"] },
+          { "id": "g-ideas", "status": "dim", "tags": ["3: too far"] }
+        ],
+        "edges": [
+          { "id": "g-call>g-pitch", "label": "visited: skip", "status": "dim", "packet": false },
+          { "id": "g-pitch>g-brief", "status": "ok", "packet": { "label": "1", "status": "ok" } },
+          { "id": "g-pitch>g-budget", "status": "ok", "packet": { "label": "1", "status": "ok" } },
+          { "id": "g-brief>g-call", "status": "ok", "packet": { "label": "2", "status": "ok" } }
+        ]
+      }
+    },
+    {
+      "title": "No visited set, no end",
+      "chapter": "watch-out",
+      "body": [
+        "Forget the visited check on a graph with a loop and the search circles forever: pitch, brief, call, pitch, brief… until it runs out of memory or time.",
+        "Trees can turn into graphs by accident, too. If Maya drags a folder into its own subfolder and the app allows it, a \"tree\" walk now loops. Both in code and in SQL, guard against it."
+      ],
+      "code": {
+        "language": "sql",
+        "code": "with recursive subfolders as (\n  select id from folders where id = $1\n  union  -- not union all: repeats are dropped, loops end\n  select f.id from folders f\n  join subfolders s on f.parent_id = s.id\n)\nselect * from notes\nwhere folder_id in (select id from subfolders);",
+        "caption": "A recursive CTE walks the folder tree inside Postgres, in one query."
+      },
+      "callout": {
+        "type": "claude-code",
+        "text": "When Claude Code walks folders, comments or links, check three things. Is there a visited set or a depth limit? Does it run one query per folder in a loop, where a <span class=\"term\">recursive CTE</span> would do it in one? Does the app block moving a folder into its own child?"
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Without a visited set, the walk keeps going around the loop.",
+        "nodes": [
+          { "id": "g-pitch", "status": "error", "tags": ["again", "and again"] },
+          { "id": "g-brief", "status": "error", "tags": null },
+          { "id": "g-budget", "status": "normal", "tags": null },
+          { "id": "g-call", "status": "error", "tags": null },
+          { "id": "g-ideas", "status": "dim", "tags": null }
+        ],
+        "edges": [
+          { "id": "g-call>g-pitch", "label": "again", "status": "error", "packet": { "label": "loop", "status": "error", "speed": "fast" } },
+          { "id": "g-pitch>g-brief", "status": "error", "packet": { "label": "loop", "status": "error", "speed": "fast" } },
+          { "id": "g-pitch>g-budget", "status": "normal", "packet": false },
+          { "id": "g-brief>g-call", "status": "error", "packet": { "label": "loop", "status": "error", "speed": "fast" } }
+        ]
+      }
+    },
+    {
+      "title": "Recap in one breath",
+      "chapter": "recap",
+      "body": [
+        "A tree has one root and no loops. A graph is connections that may loop. DFS goes deep with a stack; BFS goes level by level with a queue and finds the fewest steps.",
+        "Every graph walk needs a visited set. Both walks visit each item once: O(n) for a tree, O(nodes + edges) for a graph."
+      ]
+    }
+  ],
+  "quiz": [
+    {
+      "question": "Notely wants to suggest the note that is the <b>fewest links away</b> from the one Maya is reading. Which walk fits?",
+      "options": [
+        { "text": "DFS, because it goes deep fast.", "why": "DFS may find a note five links away down one branch before it ever checks the neighbors one link away." },
+        { "text": "BFS, because it explores in rings of one link, then two.", "correct": true, "why": "The first time BFS reaches a note is through the shortest path, so \"fewest links\" questions are BFS questions." },
+        { "text": "Binary search, because it is O(log n).", "why": "Binary search needs sorted data and answers \"where is this value\", not \"how far is this note\"." }
+      ]
+    },
+    {
+      "question": "Claude Code's \"related notes\" walk works in tests but hangs in production for a few users. What is the most likely cause?",
+      "options": [
+        { "text": "The users have too many notes for O(n).", "why": "An O(n) walk over a user's notes finishes quickly. Hanging forever points to a loop, not size." },
+        { "text": "Recursion is always slow in JavaScript.", "why": "Recursion has some overhead, but it does not make a finite walk hang." },
+        { "text": "Their notes link in a loop, and the walk has no visited set.", "correct": true, "why": "Test data was probably a clean tree. Real users make loops, and without a visited check the walk goes around them forever." }
+      ]
+    },
+    {
+      "question": "Why can a balanced binary search tree find a value in O(log n)?",
+      "options": [
+        { "text": "Each comparison rules out about half of what is left.", "correct": true, "why": "Smaller goes left, larger goes right, so every step discards half the tree. About 20 steps cover a million items." },
+        { "text": "It keeps a hash of every value.", "why": "That would be a hash map, with O(1) average lookups and no order." },
+        { "text": "It visits every node, but in a smart order.", "why": "Visiting every node would be O(n). The point is that a search skips most nodes." }
+      ]
+    }
+  ],
+  "takeaways": [
+    "A <b>tree</b> has one root, one parent per item and no loops. A <b>graph</b> allows any connection, including loops.",
+    "<b>DFS</b> goes deep using a stack. <b>BFS</b> goes level by level using a queue and finds the fewest steps.",
+    "Every graph walk needs a <b>visited set</b>, or one loop in the data makes it run forever.",
+    "A balanced binary search tree finds things in O(log n) because each step skips half.",
+    "In Postgres, walk a folder tree with a <code>with recursive</code> query instead of one query per folder."
+  ]
+}

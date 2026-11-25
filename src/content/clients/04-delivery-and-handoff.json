@@ -1,0 +1,283 @@
+{
+  "id": "delivery-and-handoff",
+  "title": "Delivery and handoff",
+  "summary": "How to hand over a client app so that someone else can run it, understand it and change it: a clean repo, short docs, safe access and a trained client.",
+  "minutes": 12,
+  "level": "beginner",
+  "youWillLearn": [
+    "The four parts of a good <b>handoff</b>: repo, docs, access and training",
+    "The \"stranger test\" a clean repo must pass",
+    "How to hand over secrets without leaving copies in email or chat",
+    "How acceptance testing and a sign-off close the project"
+  ],
+  "glossary": {
+    "handoff": "The package and moment where you transfer a finished project so others can run, understand and change it without you.",
+    "bus factor": "How many people would have to disappear before nobody understands the project. One is fragile.",
+    "README": "The front-page document of a repo: what the project is and how to run it.",
+    "migration": "A file in the repo that records one change to the database structure, so every copy of the database can be rebuilt the same way.",
+    "password manager": "An app that stores secrets encrypted and lets you share them with specific people, without pasting them into chat or email.",
+    "rotate": "To replace a key or password with a new one and switch the old one off, so earlier copies stop working.",
+    "runbook": "A short page of steps for a known situation: if this happens, check this, then do that.",
+    "UAT": "User acceptance testing: the client checks the finished app against the agreed acceptance criteria.",
+    "sign-off": "The client's written confirmation that the delivered work meets the agreed criteria."
+  },
+  "steps": [
+    {
+      "title": "Launched, but it lives in your head",
+      "chapter": "problem",
+      "body": [
+        "Sam's booking app is live and it works. But only you know how to deploy it, where the reminder job runs, and why there is a test booking in the database.",
+        "That is a <span class=\"term\">bus factor</span> of one. If you get sick, or Sam hires someone else, the next person starts by reverse-engineering your work. Your reputation travels with that experience."
+      ],
+      "scene": {
+        "caption": "The app works, but the knowledge needed to run it sits with one person.",
+        "nodes": [
+          { "id": "you", "x": 2, "y": 4, "label": "You", "sublabel": "knows everything", "icon": "brain", "kind": "person", "status": "active" },
+          { "id": "app", "x": 6.4, "y": 4, "label": "Booking app", "sublabel": "live", "icon": "rocket", "kind": "server", "status": "ok" },
+          { "id": "next", "x": 10.4, "y": 4, "label": "Next developer", "sublabel": "starts from zero", "icon": "user", "kind": "person", "status": "error" }
+        ],
+        "edges": [
+          { "from": "you", "to": "app", "label": "deploys, fixes", "packet": { "label": "know-how" } },
+          { "from": "next", "to": "app", "label": "how does it work?", "style": "dashed", "status": "error" }
+        ],
+        "notes": [
+          { "id": "nodocs", "x": 10.4, "y": 6.2, "text": "No docs, no access", "status": "error" }
+        ]
+      }
+    },
+    {
+      "title": "A handoff is a package, not a call",
+      "chapter": "idea",
+      "body": [
+        "A good <span class=\"term\">handoff</span> has four parts: a clean repo, docs, access and training. Each answers a question that Sam or the next developer will ask.",
+        "Can someone else run it? Do they know how it works? Can they get in? Can Sam do daily tasks without calling you? Plan these from week one, not on the last day."
+      ],
+      "callout": {
+        "type": "analogy",
+        "text": "Selling a house. You hand over the keys, the manuals for the boiler, the name of the plumber and a note on which switch does what. Not just the address."
+      },
+      "scene": {
+        "caption": "Four parts, two receivers: the next developer runs it, Sam operates it.",
+        "nodes": [
+          { "id": "you", "x": 2, "y": 4, "label": "You", "sublabel": "packing up", "icon": "laptop", "kind": "person" },
+          { "id": "repo", "x": 6.4, "y": 1.3, "label": "Clean repo", "sublabel": "runs anywhere", "icon": "git", "kind": "neutral" },
+          { "id": "docs", "x": 6.4, "y": 3.1, "label": "Docs", "sublabel": "how it works", "icon": "file", "kind": "neutral" },
+          { "id": "access", "x": 6.4, "y": 4.9, "label": "Access", "sublabel": "who can get in", "icon": "key", "kind": "neutral" },
+          { "id": "training", "x": 6.4, "y": 6.7, "label": "Training", "sublabel": "daily tasks", "icon": "users", "kind": "neutral" },
+          { "id": "next", "x": 10.4, "y": 2.2, "label": "Next developer", "sublabel": "runs + changes it", "icon": "user", "kind": "person" },
+          { "id": "sam", "x": 10.4, "y": 5.8, "label": "Sam", "sublabel": "operates it", "icon": "user", "kind": "person" }
+        ],
+        "edges": [
+          { "from": "repo", "to": "next" },
+          { "from": "docs", "to": "next" },
+          { "from": "access", "to": "sam" },
+          { "from": "training", "to": "sam" }
+        ]
+      }
+    },
+    {
+      "title": "A clean repo passes the stranger test",
+      "chapter": "how",
+      "body": [
+        "The test: a stranger clones the repo, follows the <span class=\"term\">README</span>, and has the app running locally within an hour.",
+        "That needs a <code>.env.example</code> (lesson 3), every database change saved as a <span class=\"term\">migration</span> in the repo, a seed file with fake data, and no dead experiments or stray test keys."
+      ],
+      "code": {
+        "language": "bash",
+        "filename": "the stranger test",
+        "code": "git clone git@github.com:sams-salon/booking.git\ncd booking\ncp .env.example .env.local   # fill in dev keys\nnpm install\nnpx supabase start           # local database (needs Docker)\nnpx supabase db reset        # runs migrations, then seed\nnpm run dev",
+        "caption": "If these steps fail on a fresh laptop, the repo is not ready to hand over."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "First part: a repo that a stranger can run without asking you anything.",
+        "nodes": [
+          { "id": "repo", "status": "active", "tags": ["README", "migrations", "seed"] },
+          { "id": "docs", "status": "dim" },
+          { "id": "access", "status": "dim" },
+          { "id": "training", "status": "dim" },
+          { "id": "sam", "status": "dim" },
+          { "id": "next", "status": "active" }
+        ],
+        "edges": [
+          { "id": "repo>next", "label": "clone + run", "status": "active", "packet": { "label": "clone" } }
+        ]
+      }
+    },
+    {
+      "title": "Docs that answer real questions",
+      "chapter": "how",
+      "body": [
+        "Skip the essay. Write short answers to the questions people will actually ask: how do I deploy, what runs on a schedule, which services cost money, what are the known limits?",
+        "A one-page architecture sketch helps most. This is your strength as a designer: one clear diagram of browser, API, database and outside services beats ten pages of prose."
+      ],
+      "code": {
+        "language": "text",
+        "filename": "README.md (outline)",
+        "code": "# Salon Booking\n## Run locally       7 commands, see above\n## Architecture      one diagram + 5 sentences\n## Env vars          what each is, which account owns it\n## Deploys           push to main = production\n## Scheduled jobs    reminders, every hour\n## Running costs     Vercel, Supabase, SMS, AI\n## Known limits      one location, English only"
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Second part: short docs, built around the questions people really ask.",
+        "nodes": [
+          { "id": "repo", "status": "ok", "tags": null },
+          { "id": "docs", "status": "active", "tags": ["README", "diagram", "costs"] }
+        ],
+        "edges": [
+          { "id": "repo>next", "label": null, "status": "ok", "packet": false },
+          { "id": "docs>next", "label": "understands", "status": "active", "packet": { "label": "docs" } }
+        ]
+      }
+    },
+    {
+      "title": "Hand over access, not passwords in chat",
+      "chapter": "how",
+      "body": [
+        "Since Sam owns the accounts (lesson 3), most access is already hers. What remains: secrets you created, and recovery codes for two-factor login.",
+        "Share secrets through a <span class=\"term\">password manager</span>, never email or chat, which keep copies forever. Cut your own role to what a support retainer needs. If you step away fully, remove yourself and have every key you saw <span class=\"term\" data-term=\"rotate\">rotated</span>."
+      ],
+      "callout": {
+        "type": "warn",
+        "text": "Make sure at least two people on Sam's side can log in to every account, each with two-factor login. One owner with one phone is a single point of failure."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Third part: secrets go through a vault, Sam has two admins, your access shrinks.",
+        "nodes": [
+          { "id": "docs", "status": "ok", "tags": null },
+          { "id": "access", "status": "active", "tags": ["vault", "2 admins"] },
+          { "id": "sam", "status": "active" },
+          { "id": "next", "status": "normal" },
+          { "id": "you", "sublabel": "access reduced", "status": "dim" }
+        ],
+        "edges": [
+          { "id": "docs>next", "label": null, "status": "ok", "packet": false },
+          { "id": "access>sam", "label": "owns", "status": "active", "packet": { "label": "vault" } }
+        ]
+      }
+    },
+    {
+      "title": "Train Sam on the daily jobs",
+      "chapter": "how",
+      "body": [
+        "Sam does not need to know Next.js. She needs to block a stylist's day off, cancel a booking, and know what to do when a client says \"I never got a reminder\".",
+        "Record a short screen video per task, and write a <span class=\"term\">runbook</span>: a page of \"if this happens, do that\" steps, including when to call you."
+      ],
+      "code": {
+        "language": "text",
+        "filename": "runbook: missing reminder",
+        "code": "1. Admin → Bookings: find the booking\n2. Check \"reminder sent at\". Empty? Note the time.\n3. SMS provider dashboard → message log\n4. Still unclear? Email help@studio.example\n   with the booking id. Reply within 1 business day.",
+        "caption": "Written for Sam, in her words. No code, no jargon."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Fourth part: Sam can run the salon's daily tasks on her own.",
+        "nodes": [
+          { "id": "access", "status": "ok", "tags": null },
+          { "id": "training", "status": "active", "tags": ["videos", "runbook"] }
+        ],
+        "edges": [
+          { "id": "access>sam", "label": null, "status": "ok", "packet": false },
+          { "id": "training>sam", "label": "operates", "status": "active", "packet": { "label": "how-to" } }
+        ]
+      }
+    },
+    {
+      "title": "Acceptance: Sam signs it off",
+      "chapter": "example",
+      "body": [
+        "Before the last invoice comes <span class=\"term\">UAT</span>: Sam walks through each acceptance criterion from lesson 1 on the live app, on real phones.",
+        "Each one passes or becomes a bug ticket. When all pass, she gives a written <span class=\"term\">sign-off</span>. That triggers the final milestone payment and starts the warranty period from your contract."
+      ],
+      "scene": {
+        "caption": "Sam tests every criterion. One fails and becomes a ticket; sign-off waits for it.",
+        "nodes": [
+          { "id": "c1", "x": 2, "y": 1.6, "label": "Book a slot", "sublabel": "criterion", "icon": "check", "kind": "neutral", "status": "ok" },
+          { "id": "c2", "x": 2, "y": 4, "label": "No double booking", "sublabel": "criterion", "icon": "check", "kind": "neutral", "status": "ok" },
+          { "id": "c3", "x": 2, "y": 6.4, "label": "Text 24 h before", "sublabel": "criterion", "icon": "alert", "kind": "neutral", "status": "warn", "tags": ["bug ticket"] },
+          { "id": "sam", "x": 6.4, "y": 4, "label": "Sam tests", "sublabel": "live app, real phone", "icon": "phone", "kind": "person", "status": "active" },
+          { "id": "signoff", "x": 10.4, "y": 4, "label": "Sign-off", "sublabel": "final invoice", "icon": "pencil", "kind": "neutral" }
+        ],
+        "edges": [
+          { "from": "c1", "to": "sam", "label": "pass", "status": "ok" },
+          { "from": "c2", "to": "sam", "label": "pass", "status": "ok" },
+          { "from": "c3", "to": "sam", "label": "fails", "status": "warn" },
+          { "from": "sam", "to": "signoff", "label": "when all pass", "style": "dashed" }
+        ]
+      }
+    },
+    {
+      "title": "Clean up what Claude Code left behind",
+      "chapter": "watch-out",
+      "body": [
+        "AI-assisted repos collect leftovers: old branches, a forgotten <code>/test-page</code> route, <code>console.log</code> lines that print client phone numbers, commented-out code, TODOs nobody owns.",
+        "Each costs the next developer time, and logs with personal data are a privacy problem. Do a cleanup pass before handoff, like tidying a Figma file before developers open it."
+      ],
+      "code": {
+        "language": "bash",
+        "code": "git grep -n \"console.log\"     # stray logs\ngit grep -nE \"TODO|FIXME\"     # unowned work\ngit branch -r                  # old branches\nnpx supabase db diff           # schema changes not in migrations"
+      },
+      "callout": {
+        "type": "claude-code",
+        "text": "Ask Claude Code for a handoff audit: unused files and routes, TODOs, logs that print personal data, env vars missing from <code>.env.example</code>. Review its list before fixing. Keep <code>CLAUDE.md</code>, but rewrite it for the next person: it is a map of the project for them and their AI."
+      },
+      "scene": {
+        "caption": "Leftovers point into the repo. A Claude Code audit finds them; you decide what goes.",
+        "nodes": [
+          { "id": "repo", "x": 6.4, "y": 4, "label": "Repo", "sublabel": "before handoff", "icon": "git", "kind": "neutral", "status": "warn" },
+          { "id": "logs", "x": 2, "y": 1.6, "label": "console.log", "sublabel": "prints phone numbers", "icon": "log", "kind": "threat", "status": "error" },
+          { "id": "todo", "x": 2, "y": 6.4, "label": "TODOs", "sublabel": "nobody owns them", "icon": "list", "kind": "neutral", "status": "warn" },
+          { "id": "route", "x": 10.4, "y": 1.6, "label": "/test-page", "sublabel": "forgotten route", "icon": "file", "kind": "neutral", "status": "warn" },
+          { "id": "claude", "x": 10.4, "y": 6.4, "label": "Claude Code", "sublabel": "handoff audit", "icon": "terminal", "kind": "ai", "status": "active" }
+        ],
+        "edges": [
+          { "from": "logs", "to": "repo", "style": "dashed", "status": "error" },
+          { "from": "todo", "to": "repo", "style": "dashed", "status": "warn" },
+          { "from": "route", "to": "repo", "style": "dashed", "status": "warn" },
+          { "from": "claude", "to": "repo", "label": "audit", "packet": { "label": "scan", "status": "active" } }
+        ]
+      }
+    },
+    {
+      "title": "Recap in one breath",
+      "chapter": "recap",
+      "body": [
+        "A handoff is a package: a repo a stranger can run, short docs with one diagram, access through a vault with your keys rotated, and a runbook so Sam can operate without you.",
+        "Clean up AI leftovers first. Close with UAT against the original criteria and a written sign-off."
+      ]
+    }
+  ],
+  "quiz": [
+    {
+      "question": "Which is the best test that the repo is ready to hand over?",
+      "options": [
+        { "text": "It deploys to Vercel without errors.", "why": "A working deploy says nothing about whether someone else can run, understand or change it." },
+        { "text": "A developer who has never seen it can run it locally from the README alone.", "correct": true, "why": "That is the stranger test. It proves the setup steps, env vars, migrations and seed data are all in the repo." },
+        { "text": "Claude Code says the code quality is good.", "why": "Useful as a check, but it does not prove someone can get the project running without your help." }
+      ]
+    },
+    {
+      "question": "Sam's next developer needs the SMS provider's API key for local development. What do you do?",
+      "options": [
+        { "text": "Send it by email, then ask them to delete the email.", "why": "Email keeps copies on several servers and devices. Asking someone to delete it does not remove those." },
+        { "text": "Paste it into the README so it is easy to find.", "why": "The README is in the repo. Anyone with repo access, now or later, would have the key." },
+        { "text": "Share it through a password manager, or have Sam create a dev key for them.", "correct": true, "why": "The vault shares it without leaving copies in chat or email. A separate dev key per developer is even better: it can be switched off on its own." }
+      ]
+    },
+    {
+      "question": "Claude Code's handoff audit lists 40 <code>console.log</code> calls, two of which print a client's name and phone number. What matters most?",
+      "options": [
+        { "text": "Remove the ones that print personal data first.", "correct": true, "why": "Logs are stored and often visible to more people than the database. Personal data in them is a privacy problem, not just mess." },
+        { "text": "Leave them all in; logs help with debugging.", "why": "Purposeful, structured logs help. Leftover debug prints, especially with personal data, do not." },
+        { "text": "Delete all 40 without reading them.", "why": "Some logs may be intended, for example usage logging for AI costs. Review the list; do not delete blindly." }
+      ]
+    }
+  ],
+  "takeaways": [
+    "A <b>handoff</b> has four parts: clean repo, docs, access, training. Plan them from week one.",
+    "A clean repo passes the stranger test: clone, follow the README, run it within an hour.",
+    "Share secrets through a <b>password manager</b> and reduce your own access. When you step away, get every key you saw rotated.",
+    "Give Sam a <b>runbook</b> and short videos for daily tasks, written in her words.",
+    "Close with UAT against the lesson 1 criteria and a written <b>sign-off</b>."
+  ]
+}

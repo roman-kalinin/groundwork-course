@@ -143,3 +143,5 @@ export function sanitizeInline(
   onTerm?: (key: string) => void,
 ): string;
 export function nodeWidth(n: { w?: number; label?: string; sublabel?: string; icon?: string }): number;
+export function textWidth(text: string | undefined, kind?: "label" | "sub" | "edge"): number;
+export function edgeLabelWidth(label: string | undefined): number;

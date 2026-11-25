@@ -1,0 +1,281 @@
+{
+  "id": "server-logs",
+  "title": "Server logs on Vercel, Supabase and Cloudflare",
+  "summary": "When the browser only says 500, follow the request hop by hop through the logs of each platform until one of them names the cause.",
+  "minutes": 12,
+  "level": "beginner",
+  "youWillLearn": [
+    "Why a 500 is never explained in the browser, and where the explanation lives",
+    "Where to find logs in <b>Vercel</b>, <b>Supabase</b> and <b>Cloudflare</b>, and what each one can tell you",
+    "How to write log lines you can actually search",
+    "What must never end up in a log"
+  ],
+  "glossary": {
+    "log": "A line of text a program writes down while it runs, with a timestamp, so you can read later what happened.",
+    "runtime logs": "Logs written while your deployed code handles real requests, as opposed to logs written while the app was being built.",
+    "build logs": "The output of turning your code into a deployment: installing packages, compiling, bundling. A failed build never goes live.",
+    "structured logging": "Writing each log line as small JSON with fixed fields, so you can filter by a field like noteId instead of reading everything.",
+    "WAF": "Web Application Firewall: rules at the edge that block suspicious requests before they reach your app.",
+    "Ray ID": "Cloudflare's id for one request. It appears on Cloudflare error pages and in the <code>cf-ray</code> response header.",
+    "environment variable": "A setting, such as an API key, given to your app by the platform at run time instead of being written in the code.",
+    "PII": "Personally identifiable information: names, emails, addresses, or content a user wrote. Treat it as private."
+  },
+  "steps": [
+    {
+      "title": "The browser only knows it was a 500",
+      "chapter": "problem",
+      "body": [
+        "In production, Maya's summary fails. Network shows <code>POST /api/summary</code> → <code>500</code>, and the response body explains nothing.",
+        "That is on purpose. In production, servers do not send stack traces to browsers, because they can reveal secrets. The real error was written down somewhere else: in a <span class=\"term\">log</span> on the server side."
+      ],
+      "scene": {
+        "caption": "Maya's request passes through Cloudflare to a Vercel function, which talks to Supabase and Claude. The browser only gets 500.",
+        "nodes": [
+          { "id": "browser", "x": 1.4, "y": 4, "label": "Browser", "sublabel": "Maya", "icon": "browser", "kind": "client", "status": "warn" },
+          { "id": "cf", "x": 4.3, "y": 4, "label": "Cloudflare", "sublabel": "in front", "icon": "shield", "kind": "external" },
+          { "id": "vercel", "x": 7.4, "y": 4, "label": "Vercel function", "sublabel": "/api/summary", "icon": "function", "kind": "server", "status": "error" },
+          { "id": "supabase", "x": 10.6, "y": 1.8, "label": "Supabase", "sublabel": "notes + auth", "icon": "database", "kind": "data" },
+          { "id": "claude", "x": 10.6, "y": 6.2, "label": "Claude API", "sublabel": "summaries", "icon": "sparkle", "kind": "ai" }
+        ],
+        "edges": [
+          { "from": "browser", "to": "cf", "packet": { "label": "POST" } },
+          { "from": "cf", "to": "vercel", "packet": true },
+          { "from": "vercel", "to": "supabase", "label": "load note" },
+          { "from": "vercel", "to": "claude", "label": "summarize" },
+          { "from": "vercel", "to": "browser", "label": "500", "status": "error", "bend": 1.6, "packet": { "label": "500", "status": "error" } }
+        ],
+        "notes": [
+          { "id": "only500", "x": 4.3, "y": 7.2, "text": "Browser sees: Internal Server Error", "status": "warn" }
+        ]
+      }
+    },
+    {
+      "title": "Every hop keeps a diary",
+      "chapter": "idea",
+      "body": [
+        "Each platform on the request's path writes its own logs. Cloudflare logs what it let through or blocked. Vercel logs what your function printed and how it ended. Supabase logs the queries and logins it handled.",
+        "Debugging a 500 means walking that path in order, checking each diary at the same timestamp, until one of them says what broke."
+      ],
+      "callout": {
+        "type": "analogy",
+        "text": "Parcel tracking. \"Left the depot, arrived at the hub, out for delivery.\" When a parcel goes missing, you find the last scan that worked and the first one that did not."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Three platforms, three sets of logs. Read them in the order the request travelled.",
+        "remove": ["only500"],
+        "nodes": [
+          { "id": "browser", "status": "normal" },
+          { "id": "cf", "tags": ["security events"] },
+          { "id": "vercel", "status": "active", "tags": ["runtime logs"] },
+          { "id": "supabase", "tags": ["Postgres, Auth, API"] }
+        ],
+        "edges": [
+          { "id": "vercel>browser", "status": "dim", "packet": false }
+        ]
+      }
+    },
+    {
+      "title": "Vercel: what your function printed",
+      "chapter": "how",
+      "body": [
+        "In your Vercel project, the <b>Logs</b> tab shows <span class=\"term\">runtime logs</span>: one row per request, with path, status and time. Filter by route or by 5xx. Expand a row to see everything that request printed with <code>console.log</code> or <code>console.error</code>, including thrown errors and their stack traces.",
+        "<span class=\"term\">Build logs</span> live on each deployment instead. Look there when a deploy fails, not when a request does."
+      ],
+      "callout": {
+        "type": "tip",
+        "text": "Platforms keep runtime logs only for a limited time, shorter on free plans. For a client app, send them to a log service so last week's incident is still readable."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Start at your own code: the Vercel function's runtime logs.",
+        "nodes": [
+          { "id": "cf", "status": "dim" },
+          { "id": "supabase", "status": "dim" },
+          { "id": "claude", "status": "dim" },
+          { "id": "vercel", "tags": ["Logs tab", "filter: 5xx"] }
+        ],
+        "edges": [
+          { "id": "browser>cf", "status": "dim", "packet": false },
+          { "id": "cf>vercel", "status": "dim", "packet": false },
+          { "id": "vercel>supabase", "status": "dim" },
+          { "id": "vercel>claude", "status": "dim" }
+        ]
+      }
+    },
+    {
+      "title": "Write log lines you can search",
+      "chapter": "how",
+      "body": [
+        "A log only helps if the right line exists. Log where a step starts and how it ends, with the ids you would search for: which note, which user.",
+        "<span class=\"term\">Structured logging</span> means one small JSON object per line. Then you can filter for <code>\"noteId\":\"n_81\"</code> and see that note's whole story, instead of scrolling through \"here\" and \"got data\"."
+      ],
+      "code": {
+        "language": "ts",
+        "filename": "app/api/summary/route.ts",
+        "code": "const log = (at: string, data: object) =>\n  console.log(JSON.stringify({ at, ...data }));\n\nlog(\"summary:start\", { noteId, userId: user.id });\ntry {\n  const text = await summarize(note.body);\n  log(\"summary:done\", { noteId, chars: text.length });\n  return Response.json({ summary: text });\n} catch (err) {\n  log(\"summary:failed\", { noteId, error: String(err) });\n  return new Response(\"Summary failed\", { status: 500 });\n}",
+        "caption": "Ids and outcomes, not content. The note's text never goes into the log."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Each request now leaves a start line and an end line, tagged with the note's id.",
+        "nodes": [
+          { "id": "vercel", "tags": ["summary:start", "summary:failed"] }
+        ]
+      }
+    },
+    {
+      "title": "Supabase: queries, logins and the API",
+      "chapter": "how",
+      "body": [
+        "Supabase's dashboard has a <b>Logs</b> section split by source. <b>API</b>: every REST call with its status. <b>Postgres</b>: database errors such as <code>permission denied for table notes</code> or a failed constraint. <b>Auth</b>: sign-ins, failed passwords, expired links. Edge Functions have their own logs too.",
+        "If your function says \"Supabase returned an error\", this is where the database says why."
+      ],
+      "callout": {
+        "type": "tip",
+        "text": "The Network lesson showed an RLS refusal from the browser's side. Supabase's API logs record that same request with its 403, whether it came from the browser or from your server. That helps most when the query runs server-side and the browser never sees it."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Supabase keeps separate logs for its API, the database and Auth.",
+        "nodes": [
+          { "id": "vercel", "status": "normal", "tags": null },
+          { "id": "supabase", "status": "active" }
+        ],
+        "edges": [
+          { "id": "vercel>supabase", "status": "active", "packet": { "label": "query" } }
+        ]
+      }
+    },
+    {
+      "title": "Cloudflare: the request that never arrived",
+      "chapter": "how",
+      "body": [
+        "Cloudflare sits in front of everything. If a <span class=\"term\">WAF</span> rule or bot check blocks a request, it never reaches Vercel, so Vercel has no log line at all.",
+        "Empty Vercel logs plus a user who sees an error? Check Cloudflare's security events. Its error pages show a <span class=\"term\">Ray ID</span> you can search for. If you run Cloudflare Workers, <code>npx wrangler tail</code> streams their logs live."
+      ],
+      "callout": {
+        "type": "tip",
+        "text": "A Cloudflare-branded error page with a code from <code>520</code> to <code>524</code> means Cloudflare could not get a good answer from Vercel. The request did leave the edge, so check Vercel's logs at the same time."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "A request blocked at the edge leaves a trace in Cloudflare only. Vercel never sees it.",
+        "nodes": [
+          { "id": "supabase", "status": "dim" },
+          { "id": "cf", "status": "warn" },
+          { "id": "vercel", "status": "dim" }
+        ],
+        "edges": [
+          { "id": "vercel>supabase", "status": "dim", "packet": false },
+          { "id": "browser>cf", "status": "warn", "packet": { "label": "POST", "status": "warn" } },
+          { "id": "cf>vercel", "status": "error", "label": "blocked" }
+        ],
+        "notes": [
+          { "id": "nothing", "x": 7.4, "y": 6.4, "text": "Blocked here = no Vercel log", "status": "warn" }
+        ]
+      }
+    },
+    {
+      "title": "Maya's 500, hop by hop",
+      "chapter": "example",
+      "body": [
+        "Cloudflare: request passed. Vercel: <code>summary:start</code>, then <code>summary:failed</code> with <em>Claude API 401: authentication_error</em>. Supabase API log: the note loaded with a <code>200</code>.",
+        "So the key is wrong in production only. The cause: <code>ANTHROPIC_API_KEY</code> was set as an <span class=\"term\">environment variable</span> for Preview, not for Production. After adding it, a new deploy is needed, since a running deployment keeps the values it started with."
+      ],
+      "code": {
+        "language": "text",
+        "filename": "Vercel → Logs, POST /api/summary 500",
+        "code": "{\"at\":\"summary:start\",\"noteId\":\"n_81\",\"userId\":\"u_42\"}\n{\"at\":\"summary:failed\",\"noteId\":\"n_81\",\n \"error\":\"Error: Claude API 401: authentication_error\"}"
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Cloudflare and Supabase are fine. The Vercel log points at the Claude API call.",
+        "remove": ["nothing"],
+        "nodes": [
+          { "id": "cf", "status": "ok" },
+          { "id": "supabase", "status": "ok" },
+          { "id": "vercel", "status": "error", "tags": ["key missing in Prod"] },
+          { "id": "claude", "status": "normal" }
+        ],
+        "edges": [
+          { "id": "browser>cf", "status": "normal", "packet": false },
+          { "id": "cf>vercel", "status": "ok", "label": null },
+          { "id": "vercel>supabase", "status": "ok", "label": "200" },
+          { "id": "vercel>claude", "status": "error", "label": "401", "packet": { "label": "no key", "status": "error" } }
+        ]
+      }
+    },
+    {
+      "title": "Logs are not a safe place for secrets",
+      "chapter": "watch-out",
+      "body": [
+        "Debug logging tempts you to print everything: <code>req.headers</code>, <code>process.env</code>, the full prompt. Logs are kept for days, readable by everyone on the team, and often copied to other services.",
+        "One <code>console.log(req.headers)</code> writes users' cookies to disk. A logged prompt writes their private notes. Log ids and outcomes, never keys, tokens or <span class=\"term\">PII</span>."
+      ],
+      "callout": {
+        "type": "claude-code",
+        "text": "After Claude Code adds logging, search the diff for <code>headers</code>, <code>process.env</code>, <code>token</code>, <code>prompt</code> and <code>body</code>. Ask it to log ids and status codes instead. And ask it to remove temporary debug logs once the bug is fixed."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "A careless log line copies secrets and private notes into a place many people can read.",
+        "nodes": [
+          { "id": "vercel", "status": "warn", "tags": ["console.log(headers)"] },
+          { "id": "cf", "status": "dim" },
+          { "id": "supabase", "status": "dim" },
+          { "id": "claude", "status": "dim" }
+        ],
+        "edges": [
+          { "id": "vercel>claude", "status": "dim", "packet": false, "label": null },
+          { "id": "vercel>supabase", "status": "dim", "label": null },
+          { "id": "cf>vercel", "status": "dim" }
+        ],
+        "notes": [
+          { "id": "leak", "x": 7.4, "y": 6.6, "text": "Cookies and notes, now in the logs", "status": "error" }
+        ]
+      }
+    },
+    {
+      "title": "Recap: follow the request",
+      "chapter": "recap",
+      "body": [
+        "A 500 is explained on the server, never in the browser. Walk the path in order: Cloudflare (blocked?), Vercel runtime logs (what did my code print?), Supabase logs (what did the database or Auth say?).",
+        "Log start and end of each step with ids, as JSON. Never log secrets or user content."
+      ]
+    }
+  ],
+  "quiz": [
+    {
+      "question": "Users report an error page, but Vercel's runtime logs show no requests at that time. What is the most likely place to look?",
+      "options": [
+        { "text": "Supabase's Postgres logs.", "why": "An error page is a page request. It goes through Cloudflare to Vercel, not straight to Supabase. If Vercel saw nothing, the request stopped before it." },
+        { "text": "Cloudflare's security events, since the request may have been blocked before it reached Vercel.", "correct": true, "why": "Cloudflare sits in front. A blocked request leaves a trace only there, often with a Ray ID shown on the user's error page." },
+        { "text": "The browser Console, since the server is clearly fine.", "why": "No log is not the same as fine. It means the request never got there, so look at the step before." }
+      ]
+    },
+    {
+      "question": "Claude Code adds <code>console.log(\"request\", req.headers, body)</code> to debug a route. What do you ask it to change?",
+      "options": [
+        { "text": "Nothing, since logs are private to the project.", "why": "Logs are seen by every team member, kept for days and often sent to other services. Cookies and user content do not belong there." },
+        { "text": "Use <code>console.error</code> so it stands out.", "why": "The level is not the problem. The content is: headers carry cookies and tokens, and the body carries user data." },
+        { "text": "Log only ids and outcomes, like <code>noteId</code> and the status, as JSON.", "correct": true, "why": "Ids let you follow one request through the logs without copying secrets or private content into them." }
+      ]
+    },
+    {
+      "question": "You add <code>ANTHROPIC_API_KEY</code> to Production in Vercel's settings. The live site still fails with 401. Why?",
+      "options": [
+        { "text": "The running deployment started with the old values. It needs a new deploy.", "correct": true, "why": "Environment variables are read into a deployment when it is created. Redeploy so the new value is used." },
+        { "text": "Vercel can only hold one API key per project.", "why": "A project can hold many environment variables, each set per environment." },
+        { "text": "The key must also be added to Cloudflare.", "why": "Cloudflare only forwards the request. The key is used by your function on Vercel when it calls the Claude API." }
+      ]
+    }
+  ],
+  "takeaways": [
+    "A <code>500</code> is explained in the <b>server logs</b>, never in the browser. Go there next.",
+    "Walk the request in order: Cloudflare (blocked?), Vercel runtime logs (what did my code print?), Supabase logs (what did the database or Auth say?).",
+    "No Vercel log line at all? The request probably never arrived. Check Cloudflare.",
+    "Log the start and end of each step as JSON with ids like <code>noteId</code>, so you can filter one request's story.",
+    "Never log headers, <code>process.env</code>, tokens or user content."
+  ]
+}

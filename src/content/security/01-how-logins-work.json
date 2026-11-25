@@ -1,0 +1,306 @@
+{
+  "id": "how-logins-work",
+  "title": "How logins work",
+  "summary": "What really happens when someone logs in: password hashing, \"Sign in with Google\" and magic links, and the mistakes that leak accounts.",
+  "minutes": 12,
+  "level": "beginner",
+  "youWillLearn": [
+    "Why an app should never store a password, and what it stores instead",
+    "What <b>salt</b> and a <b>slow hash</b> add, and why bcrypt or Argon2 beat a plain hash",
+    "How <b>Sign in with Google</b> works without Notely ever seeing the Google password",
+    "How magic links work, and what to check on the login form itself"
+  ],
+  "glossary": {
+    "authentication": "Proving who you are, for example by typing the right password. Deciding what you may do comes later.",
+    "hash": "A fixed-length fingerprint computed from some input. The same input always gives the same hash, and you cannot turn the hash back into the input.",
+    "salt": "A random value stored next to each user's hash and mixed into it, so two people with the same password get different hashes.",
+    "bcrypt": "A password hashing function that is slow on purpose, with an adjustable cost. Argon2 and scrypt are newer siblings built for the same job.",
+    "OAuth": "A standard that lets one app act on, or log you in with, your account at another service, without ever getting that service's password.",
+    "OpenID Connect": "The login layer on top of OAuth. It adds a signed statement of who the user is, which is what \"Sign in with Google\" uses.",
+    "identity provider": "The service that checks the password and vouches for the user: Google, Apple, GitHub, or your own auth server.",
+    "redirect URL": "The address an identity provider sends the user back to after login. It must be on a list you registered in advance.",
+    "magic link": "A login link sent by email. It holds a long random token that works once and expires after a short time.",
+    "credential stuffing": "Bots trying email and password pairs leaked from other sites, hoping people reused them on yours.",
+    "MFA": "Multi-factor authentication: a second proof after the password, like a code from an authenticator app."
+  },
+  "steps": [
+    {
+      "title": "Never keep the password itself",
+      "chapter": "problem",
+      "body": [
+        "Maya signs up for Notely with her email and a password. A quick first draft saves the password as-is in a <code>users</code> table. Logins work fine.",
+        "Then the database leaks: a stolen backup, a bad query, a hacked laptop. The attacker now holds every password in plain text. People reuse passwords, so Maya's Gmail is at risk too."
+      ],
+      "callout": {
+        "type": "warn",
+        "text": "A leak is not a rare disaster you can plan around. Assume your database will be copied one day, and make sure the copy is useless."
+      },
+      "scene": {
+        "caption": "The password goes straight into the table. One leaked backup exposes everyone.",
+        "nodes": [
+          { "id": "browser", "x": 2, "y": 4, "label": "Browser", "sublabel": "Maya signs up", "icon": "browser", "kind": "client" },
+          { "id": "server", "x": 6.4, "y": 4, "label": "Notely API", "sublabel": "on Vercel", "icon": "server", "kind": "server" },
+          { "id": "db", "x": 10.4, "y": 4, "label": "users table", "icon": "database", "kind": "data", "status": "error", "tags": ["maya: hunter2"] },
+          { "id": "thief", "x": 10.4, "y": 6.8, "label": "Leaked backup", "sublabel": "in the wrong hands", "icon": "incognito", "kind": "threat", "status": "error" }
+        ],
+        "edges": [
+          { "from": "browser", "to": "server", "label": "sign up", "packet": { "label": "password" } },
+          { "from": "server", "to": "db", "label": "save as-is", "packet": true },
+          { "from": "db", "to": "thief", "label": "copied", "style": "dashed", "status": "error" }
+        ]
+      }
+    },
+    {
+      "title": "Store a fingerprint, not the password",
+      "chapter": "idea",
+      "body": [
+        "Notely never needs to <em>read</em> Maya's password again. It only needs to check that she typed the same one.",
+        "So at sign-up it stores a <span class=\"term\">hash</span>: a one-way fingerprint of the password. At login it hashes what she typed and compares. Same fingerprint: she is in. That check is <span class=\"term\">authentication</span>."
+      ],
+      "callout": {
+        "type": "analogy",
+        "text": "A fingerprint can prove a person was here, but you cannot rebuild the person from it. A password hash works the same way."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "The table now holds fingerprints. Login hashes the typed password and compares.",
+        "nodes": [
+          { "id": "browser", "sublabel": "Maya logs in" },
+          { "id": "server", "status": "active", "tags": ["hash + compare"] },
+          { "id": "db", "status": "ok", "tags": ["maya: 9f2c…e1"] },
+          { "id": "thief", "status": "dim" }
+        ],
+        "edges": [
+          { "id": "browser>server", "label": "log in" },
+          { "id": "server>db", "label": "fetch hash" },
+          { "id": "db>thief", "label": "only fingerprints", "status": "dim" }
+        ]
+      }
+    },
+    {
+      "title": "Salt and slowness: the real recipe",
+      "chapter": "how",
+      "body": [
+        "A plain hash is not enough. Two users with <code>password123</code> get the same hash, and attackers keep huge lists of common passwords already hashed.",
+        "So each user gets a random <span class=\"term\">salt</span> mixed in. And the hash function is slow on purpose: <span class=\"term\">bcrypt</span>, scrypt or Argon2. One login barely notices. A billion guesses become very expensive."
+      ],
+      "code": {
+        "language": "sql",
+        "filename": "Supabase SQL editor",
+        "code": "select email, encrypted_password from auth.users;\n\n-- maya@example.com | $2a$10$Qm8x…(salt)…(hash)\n-- ben@example.com  | $2a$10$7Lp2…(salt)…(hash)",
+        "caption": "$2a$ means bcrypt, 10 is the cost. Salt and hash live in one string. Same password, different strings."
+      },
+      "callout": {
+        "type": "tip",
+        "text": "Never write your own hashing. Let the auth provider do it, or use a well-known library for bcrypt or Argon2."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Same password, different salts, different hashes. A precomputed list no longer helps.",
+        "nodes": [
+          { "id": "server", "status": "normal", "tags": ["salt + bcrypt"] },
+          { "id": "db", "tags": ["maya: $2a$10$Qm8x…", "ben: $2a$10$7Lp2…"] },
+          { "id": "thief", "sublabel": "must guess one by one", "status": "warn" }
+        ],
+        "edges": [
+          { "id": "db>thief", "label": "slow to crack", "status": "warn" }
+        ]
+      }
+    },
+    {
+      "title": "Sign in with Google: no password at all",
+      "chapter": "how",
+      "body": [
+        "Better still: do not hold passwords. With <b>Sign in with Google</b>, Google checks the password and tells Notely who logged in. Google is the <span class=\"term\">identity provider</span>.",
+        "The standard behind this is <span class=\"term\">OAuth</span>, and its login layer is <span class=\"term\">OpenID Connect</span>. Notely never sees Maya's Google password, so it cannot leak it."
+      ],
+      "callout": {
+        "type": "analogy",
+        "text": "A hotel that accepts your passport instead of issuing its own ID card. It trusts the government already checked who you are."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Maya logs in at Google. Notely's database holds no password for her.",
+        "remove": ["db", "thief"],
+        "nodes": [
+          { "id": "server", "tags": null, "status": "normal" },
+          { "id": "google", "x": 10.4, "y": 1.6, "label": "Google", "sublabel": "identity provider", "icon": "globe", "kind": "external", "status": "active" }
+        ],
+        "edges": [
+          { "id": "browser>server", "label": "Sign in with Google", "packet": false },
+          { "from": "browser", "to": "google", "label": "password, at Google", "packet": { "label": "log in" } }
+        ]
+      }
+    },
+    {
+      "title": "The redirect dance, step by step",
+      "chapter": "how",
+      "body": [
+        "1. Notely sends Maya's browser to Google. 2. She logs in and approves. 3. Google sends her back to Notely's <span class=\"term\">redirect URL</span> with a one-time code. 4. Notely's server trades that code with Google for her verified identity.",
+        "The code works once, expires fast, and is useless without a second proof Notely kept back."
+      ],
+      "scene": {
+        "extends": "previous",
+        "caption": "Google returns a one-time code. Notely's server trades it for Maya's identity.",
+        "nodes": [
+          { "id": "google", "status": "normal" },
+          { "id": "server", "status": "ok", "tags": ["maya@gmail.com"] }
+        ],
+        "edges": [
+          { "id": "browser>google", "packet": false },
+          { "from": "google", "to": "browser", "label": "back, with a code", "status": "ok", "packet": { "label": "code", "status": "ok" } },
+          { "id": "browser>server", "label": "code", "packet": { "label": "code" } },
+          { "from": "server", "to": "google", "label": "trade code", "packet": { "label": "who?", "direction": "both" } }
+        ]
+      }
+    },
+    {
+      "title": "Redirect URLs must be on a list",
+      "chapter": "watch-out",
+      "body": [
+        "Google, and Supabase in front of it, only send codes back to redirect URLs you registered in advance. That stops an attacker from having Maya's code delivered to their own site.",
+        "The classic bug: login works on <code>localhost</code>, then fails in production or on Vercel preview URLs, because nobody added those addresses to the list."
+      ],
+      "callout": {
+        "type": "warn",
+        "text": "Do not \"fix\" a failing redirect with a wildcard that matches any domain. Add the exact production URL, and keep any preview wildcard tied to your own team's domain."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Google only hands codes to addresses on the list. Anything else is refused.",
+        "nodes": [
+          { "id": "server", "status": "normal", "tags": null },
+          { "id": "google", "tags": ["allowed: notely.app"], "status": "active" },
+          { "id": "evil", "x": 10.4, "y": 6.4, "label": "evil.example", "sublabel": "not on the list", "icon": "incognito", "kind": "threat", "status": "error" }
+        ],
+        "edges": [
+          { "id": "server>google", "packet": false },
+          { "id": "browser>server", "packet": false },
+          { "from": "google", "to": "evil", "label": "send code? no", "style": "dashed", "status": "error" }
+        ]
+      }
+    },
+    {
+      "title": "Magic links: the inbox is the key",
+      "chapter": "how",
+      "body": [
+        "Another password-free option: Maya types her email, and Notely sends a <span class=\"term\">magic link</span>. It holds a long random token that works once and expires soon. Clicking it logs her in.",
+        "The trade-off: whoever can read Maya's inbox can log in as her. That was already true, since every \"forgot password\" email works the same way."
+      ],
+      "scene": {
+        "extends": "previous",
+        "caption": "Notely emails a single-use link. Clicking it brings the token back to the server.",
+        "remove": ["google", "evil"],
+        "nodes": [
+          { "id": "inbox", "x": 2, "y": 1.4, "label": "Maya's inbox", "icon": "mail", "kind": "external", "status": "active" },
+          { "id": "server", "tags": ["single use", "expires soon"] }
+        ],
+        "edges": [
+          { "from": "server", "to": "inbox", "label": "link + token", "packet": { "label": "email" } },
+          { "from": "inbox", "to": "browser", "label": "click" },
+          { "id": "browser>server", "label": "token", "packet": { "label": "token", "status": "active" } }
+        ]
+      }
+    },
+    {
+      "title": "Notely hands all of this to Supabase",
+      "chapter": "example",
+      "body": [
+        "Notely writes none of this logic itself. Supabase Auth hashes passwords with bcrypt, runs the Google flow and sends magic links. Notely calls one function per method.",
+        "After any of them succeeds, Supabase gives the browser proof that Maya is logged in. How that proof works is the next lesson, Sessions vs tokens."
+      ],
+      "code": {
+        "language": "ts",
+        "filename": "app/login/actions.ts",
+        "code": "// Email + password: Supabase hashes and compares\nawait supabase.auth.signInWithPassword({ email, password });\n\n// Sign in with Google\nawait supabase.auth.signInWithOAuth({\n  provider: 'google',\n  options: { redirectTo: `${origin}/auth/callback` },\n});\n\n// Magic link\nawait supabase.auth.signInWithOtp({ email });"
+      },
+      "callout": {
+        "type": "claude-code",
+        "text": "Ask: does any of our own tables have a <code>password</code> column? (It should not.) Does anything log request bodies on login routes? Are the production and preview URLs in Supabase's Redirect URLs and Google's console? Does <code>/auth/callback</code> call <code>exchangeCodeForSession</code>?"
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Three login methods, one auth service. Notely's own tables hold no passwords.",
+        "nodes": [
+          { "id": "server", "label": "Supabase Auth", "sublabel": "hashing, OAuth, links", "icon": "shield", "status": "ok", "tags": null },
+          { "id": "inbox", "status": "normal" },
+          { "id": "google", "x": 10.4, "y": 1.6, "label": "Google", "sublabel": "identity provider", "icon": "globe", "kind": "external" },
+          { "id": "db", "x": 10.4, "y": 4.4, "label": "auth.users", "sublabel": "bcrypt hashes only", "icon": "database", "kind": "data", "status": "ok" }
+        ],
+        "edges": [
+          { "id": "browser>server", "label": "log in", "packet": { "label": "login" } },
+          { "id": "server>inbox", "packet": false },
+          { "from": "server", "to": "google", "label": "OAuth" },
+          { "from": "server", "to": "db", "label": "hashes" }
+        ]
+      }
+    },
+    {
+      "title": "The login form leaks too",
+      "chapter": "watch-out",
+      "body": [
+        "Error messages: \"No account for this email\" tells an attacker who uses Notely. Say \"Wrong email or password\" for both cases.",
+        "Unlimited tries: bots run <span class=\"term\">credential stuffing</span>, replaying leaked email and password pairs from other sites. Rate-limit login attempts, and offer <span class=\"term\">MFA</span> so a correct password alone is not enough."
+      ],
+      "callout": {
+        "type": "tip",
+        "text": "You met rate limiting in system design. A login form is one of the first places it belongs, counted per account and per IP address."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "A bot hammers the login form with leaked passwords. Rate limits and MFA stop it.",
+        "remove": ["google", "inbox"],
+        "nodes": [
+          { "id": "server", "status": "warn", "tags": ["rate limited", "MFA"] },
+          { "id": "db", "status": "normal" },
+          { "id": "bot", "x": 2, "y": 6.6, "label": "Bot", "sublabel": "leaked password lists", "icon": "robot", "kind": "threat", "status": "error" }
+        ],
+        "edges": [
+          { "id": "browser>server", "packet": false },
+          { "from": "bot", "to": "server", "label": "10,000 tries", "status": "error", "packet": { "label": "guess", "status": "error", "speed": "fast" } }
+        ]
+      }
+    },
+    {
+      "title": "Recap in one breath",
+      "chapter": "recap",
+      "body": [
+        "Never store passwords. Store a salted, slow hash (bcrypt, scrypt, Argon2), and compare hashes at login. Better: let an identity provider like Google check the password, through OAuth and OpenID Connect, or email a single-use magic link.",
+        "Either way, use a proven auth service, register exact redirect URLs, and rate-limit the login form."
+      ]
+    }
+  ],
+  "quiz": [
+    {
+      "question": "Claude Code drafts a <code>profiles</code> table with a <code>password</code> column and plans to compare it with what the user types. What do you ask for instead?",
+      "options": [
+        { "text": "Encrypt the column with a key stored in an env var.", "why": "Encryption can be reversed by anyone who gets the key, and the server needs that key at hand. Passwords should never be recoverable at all." },
+        { "text": "Hash it with SHA-256 before saving.", "why": "Better than plain text, but SHA-256 is fast and unsalted here. Attackers can test billions of guesses per second against it." },
+        { "text": "Drop the column and use Supabase Auth, which stores salted bcrypt hashes.", "correct": true, "why": "A proven auth service salts and slow-hashes passwords for you, and keeps them out of your own tables." }
+      ]
+    },
+    {
+      "question": "\"Sign in with Google\" works on <code>localhost</code> but fails on the production site with a redirect error. What is the most likely cause?",
+      "options": [
+        { "text": "The production URL is missing from the allowed redirect URLs.", "correct": true, "why": "Google and Supabase only send users back to addresses registered in advance. Add the exact production URL to both lists." },
+        { "text": "Google blocks logins from sites hosted on Vercel.", "why": "Google does not care where a site is hosted. It only checks that the redirect URL is on your registered list." },
+        { "text": "Maya's Google password is not stored in production yet.", "why": "Notely never stores Google passwords. Google checks the password itself." }
+      ]
+    },
+    {
+      "question": "A client wants to drop passwords and use only magic links. What changes about the account's security?",
+      "options": [
+        { "text": "Nothing can go wrong, because there is no password to steal.", "why": "The link itself is now the key. Anyone who reads the inbox, or intercepts the link before it expires, can log in." },
+        { "text": "Account safety now depends on the user's email inbox.", "correct": true, "why": "Whoever controls the inbox can log in. This was already true for password resets, so it is often a fair trade." },
+        { "text": "Logins become impossible to rate-limit.", "why": "You can and should limit how often links are requested per email and per IP, so the form cannot be used to spam inboxes." }
+      ]
+    }
+  ],
+  "takeaways": [
+    "Never store passwords. Store a <b>salted, slow hash</b> (bcrypt, scrypt or Argon2) and compare hashes at login.",
+    "Do not write your own auth. Let Supabase Auth or another proven service hash, verify and email for you.",
+    "<b>Sign in with Google</b> uses OAuth and OpenID Connect: Google checks the password, your app gets a verified identity.",
+    "Register exact <b>redirect URLs</b> for production and previews. Avoid wide wildcards.",
+    "Use one vague error for wrong email or password, rate-limit logins, and offer MFA."
+  ]
+}

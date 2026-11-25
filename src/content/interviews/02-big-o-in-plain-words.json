@@ -1,0 +1,577 @@
+{
+  "id": "big-o-in-plain-words",
+  "title": "Big-O in plain words",
+  "summary": "How to describe the way code slows down as data grows, the five growth rates you will meet most, and how to spot a hidden slow loop in code Claude writes.",
+  "minutes": 12,
+  "level": "beginner",
+  "youWillLearn": [
+    "What <b>Big-O</b> measures: growth, not seconds",
+    "The five common growth rates, from O(1) to O(n²), with real numbers",
+    "How to trade a little memory for a lot of speed",
+    "How to spot hidden loops like <code>.includes()</code> inside <code>.map()</code>"
+  ],
+  "glossary": {
+    "Big-O": "A short way to describe how the work a piece of code does grows as its input grows, ignoring small details.",
+    "n": "The size of the input: how many notes, tags, characters or rows the code has to handle.",
+    "time complexity": "How the number of steps grows with n. Written in Big-O, like O(n).",
+    "space complexity": "How the extra memory the code needs grows with n. Also written in Big-O.",
+    "constant time": "The work stays the same no matter how big n gets. Written O(1).",
+    "linear time": "The work grows in step with n: twice the notes, twice the work. Written O(n).",
+    "quadratic time": "The work grows with n times n, usually from a loop inside a loop. Written O(n²).",
+    "logarithmic time": "The work grows very slowly because each step cuts the problem in half. Written O(log n).",
+    "Set": "A JavaScript collection of unique values that can answer \"is this in here?\" in about one step."
+  },
+  "steps": [
+    {
+      "title": "Instant with 10 notes, a timeout with 100,000",
+      "chapter": "problem",
+      "body": [
+        "Notely gets a \"Find duplicate notes\" button. Claude Code writes it, you test it on your 10 notes, and it is instant.",
+        "Then a power user imports 100,000 notes. The same function runs until the serverless function times out. Nothing is broken. The code does far more work than you expected as the data grew."
+      ],
+      "scene": {
+        "caption": "Same code, more data. The work did not grow in a straight line.",
+        "nodes": [
+          {
+            "id": "notes",
+            "x": 2,
+            "y": 4,
+            "label": "Maya's notes",
+            "sublabel": "10, then 100,000",
+            "icon": "list",
+            "kind": "data"
+          },
+          {
+            "id": "fn",
+            "x": 6.4,
+            "y": 4,
+            "label": "findDuplicates",
+            "sublabel": "serverless function",
+            "icon": "function",
+            "kind": "server",
+            "status": "error"
+          },
+          {
+            "id": "result",
+            "x": 10.4,
+            "y": 4,
+            "label": "Duplicates",
+            "sublabel": "never arrives",
+            "icon": "file",
+            "kind": "client",
+            "status": "dim"
+          }
+        ],
+        "edges": [
+          {
+            "from": "notes",
+            "to": "fn",
+            "label": "n notes",
+            "packet": {
+              "label": "100k",
+              "speed": "slow"
+            }
+          },
+          {
+            "from": "fn",
+            "to": "result",
+            "label": "timeout",
+            "status": "error",
+            "style": "dashed"
+          }
+        ],
+        "notes": [
+          {
+            "id": "n10",
+            "x": 6.4,
+            "y": 2.2,
+            "text": "10 notes: instant. 100k: timeout.",
+            "status": "error"
+          }
+        ]
+      }
+    },
+    {
+      "title": "Big-O describes growth, not seconds",
+      "chapter": "idea",
+      "body": [
+        "<span class=\"term\">Big-O</span> answers one question: if the input gets bigger, how much more work does the code do?",
+        "We call the input size <span class=\"term\">n</span>. A loop that touches each note once does about n steps, written <b>O(n)</b>, or <span class=\"term\">linear time</span>. Double the notes, double the work. Big-O ignores the speed of the machine. It only describes the shape of the growth."
+      ],
+      "callout": {
+        "type": "analogy",
+        "text": "Reading every page of a book to find a word takes longer for a longer book, in proportion. That is O(n). Big-O is about how the effort scales, not how fast you read."
+      },
+      "scene": {
+        "caption": "One pass over n items: the work grows in step with n.",
+        "nodes": [
+          {
+            "id": "input",
+            "x": 2,
+            "y": 4,
+            "label": "n items",
+            "sublabel": "notes, tags, rows",
+            "icon": "list",
+            "kind": "data"
+          },
+          {
+            "id": "on",
+            "x": 8.4,
+            "y": 4,
+            "label": "O(n)",
+            "sublabel": "linear: one pass",
+            "icon": "refresh",
+            "kind": "neutral",
+            "status": "active",
+            "tags": [
+              "1M items: 1M steps"
+            ]
+          }
+        ],
+        "edges": [
+          {
+            "from": "input",
+            "to": "on",
+            "label": "touch each once",
+            "packet": {
+              "label": "item",
+              "speed": "fast"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "title": "O(1): the same work at any size",
+      "chapter": "how",
+      "body": [
+        "Some operations do not care how big the data is. Reading <code>notes[5]</code> from an array, or looking up a key in a map, takes about one step whether there are ten notes or ten million.",
+        "That is <span class=\"term\">constant time</span>, written <b>O(1)</b>. It is the best you can get, and the reason hash maps show up in so many interview answers."
+      ],
+      "callout": {
+        "type": "tip",
+        "text": "You met key-value caches like Redis in system design: lookup by key is O(1) on average. Same idea, inside one function."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Lookup by key or index costs one step, no matter how big n is.",
+        "nodes": [
+          {
+            "id": "on",
+            "status": "normal"
+          },
+          {
+            "id": "o1",
+            "x": 8.4,
+            "y": 1.1,
+            "label": "O(1)",
+            "sublabel": "constant: by key",
+            "icon": "bolt",
+            "kind": "neutral",
+            "status": "ok",
+            "tags": [
+              "1M items: 1 step"
+            ]
+          }
+        ],
+        "edges": [
+          {
+            "id": "input>on",
+            "packet": false
+          },
+          {
+            "from": "input",
+            "to": "o1",
+            "label": "jump to key",
+            "packet": {
+              "label": "key",
+              "status": "ok",
+              "speed": "fast"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "title": "O(n²): a loop inside a loop",
+      "chapter": "how",
+      "body": [
+        "Here is the duplicate finder Claude wrote. For each note, it compares against every other note. That is a loop inside a loop.",
+        "With n notes, that is roughly n × n comparisons: <span class=\"term\">quadratic time</span>, <b>O(n²)</b>. With 100,000 notes, it is about five billion comparisons. That is why the function timed out."
+      ],
+      "code": {
+        "language": "ts",
+        "filename": "lib/duplicates.ts (slow)",
+        "code": "for (let i = 0; i < notes.length; i++) {\n  for (let j = i + 1; j < notes.length; j++) {\n    if (notes[i].title === notes[j].title) {\n      dupes.add(notes[i].title);\n    }\n  }\n}",
+        "caption": "n(n-1)/2 comparisons. Big-O drops the /2: it is still O(n²)."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Nested loops: 10 times the data means about 100 times the work.",
+        "nodes": [
+          {
+            "id": "o1",
+            "status": "normal"
+          },
+          {
+            "id": "on2",
+            "x": 8.4,
+            "y": 6.9,
+            "label": "O(n²)",
+            "sublabel": "quadratic: nested",
+            "icon": "alert",
+            "kind": "threat",
+            "status": "error",
+            "tags": [
+              "1M: ~1 trillion"
+            ]
+          }
+        ],
+        "edges": [
+          {
+            "id": "input>o1",
+            "packet": false
+          },
+          {
+            "from": "input",
+            "to": "on2",
+            "label": "every pair",
+            "status": "error",
+            "packet": {
+              "label": "pairs",
+              "status": "error",
+              "speed": "slow"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "title": "O(log n) and O(n log n): halving",
+      "chapter": "how",
+      "body": [
+        "Some code cuts the problem in half at each step, like finding a word in a dictionary by opening it in the middle. A million items need only about 20 halvings. That is <span class=\"term\">logarithmic time</span>, <b>O(log n)</b>.",
+        "Good sorting does about log n rounds of work over all n items: <b>O(n log n)</b>. Remember it as \"the cost of sorting\"."
+      ],
+      "scene": {
+        "extends": "previous",
+        "caption": "The full ladder: slowest growth (best) at the top, fastest growth (worst) at the bottom.",
+        "nodes": [
+          {
+            "id": "on2",
+            "status": "warn"
+          },
+          {
+            "id": "ologn",
+            "x": 8.4,
+            "y": 2.55,
+            "label": "O(log n)",
+            "sublabel": "halve each step",
+            "icon": "search",
+            "kind": "neutral",
+            "status": "ok",
+            "tags": [
+              "1M items: ~20 steps"
+            ]
+          },
+          {
+            "id": "onlogn",
+            "x": 8.4,
+            "y": 5.45,
+            "label": "O(n log n)",
+            "sublabel": "good sorting",
+            "icon": "chart",
+            "kind": "neutral",
+            "status": "active",
+            "tags": [
+              "1M: ~20M steps"
+            ]
+          }
+        ],
+        "edges": [
+          {
+            "id": "input>on2",
+            "packet": false,
+            "status": "warn"
+          },
+          {
+            "from": "input",
+            "to": "ologn",
+            "style": "dotted"
+          },
+          {
+            "from": "input",
+            "to": "onlogn",
+            "style": "dotted"
+          }
+        ]
+      }
+    },
+    {
+      "title": "Keep the biggest term, drop the rest",
+      "chapter": "how",
+      "body": [
+        "Big-O is a rough shape, so you simplify. Two separate loops over the notes is 2n steps, which is still <b>O(n)</b>. A loop plus a nested loop is n + n², which is <b>O(n²)</b>: at large n, the biggest term swamps the others.",
+        "Counting steps gives <span class=\"term\">time complexity</span>. Memory counts too: extra memory that grows with n is <span class=\"term\">space complexity</span>. A copy of the list costs O(n) space."
+      ],
+      "callout": {
+        "type": "tip",
+        "text": "In an interview, always say both: \"This is O(n) time and O(n) space.\" Interviewers often ask for both, and saying it first shows you think about the trade-off."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Constants and small terms disappear. Only the shape at large n counts.",
+        "nodes": [
+          {
+            "id": "ologn",
+            "status": "normal"
+          },
+          {
+            "id": "onlogn",
+            "status": "normal"
+          },
+          {
+            "id": "on",
+            "status": "active",
+            "tags": [
+              "2n → O(n)"
+            ]
+          },
+          {
+            "id": "on2",
+            "tags": [
+              "n + n² → O(n²)"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "title": "Trade memory for speed with a Set",
+      "chapter": "example",
+      "body": [
+        "Back to the duplicate finder. Instead of comparing every pair, walk the notes once and remember every title you have seen in a <span class=\"term\">Set</span>. Checking a Set is about O(1).",
+        "One pass of O(1) checks: <b>O(n) time</b>. The Set uses O(n) extra memory. For 100,000 notes, that is a great trade: from billions of comparisons to about 100,000."
+      ],
+      "code": {
+        "language": "ts",
+        "filename": "lib/duplicates.ts (fast)",
+        "code": "export function findDuplicateTitles(notes: Note[]) {\n  const seen = new Set<string>();\n  const dupes = new Set<string>();\n  for (const note of notes) {\n    if (seen.has(note.title)) dupes.add(note.title);\n    else seen.add(note.title);\n  }\n  return [...dupes];\n}",
+        "caption": "O(n) time, O(n) space. Same answer, finishes in milliseconds."
+      },
+      "scene": {
+        "caption": "The function remembers what it has seen, so each note is checked once.",
+        "nodes": [
+          {
+            "id": "notes",
+            "x": 2,
+            "y": 4,
+            "label": "Maya's notes",
+            "sublabel": "100,000",
+            "icon": "list",
+            "kind": "data"
+          },
+          {
+            "id": "fn",
+            "x": 6.4,
+            "y": 4,
+            "label": "findDuplicates",
+            "sublabel": "one pass",
+            "icon": "function",
+            "kind": "server",
+            "status": "ok",
+            "tags": [
+              "O(n) time"
+            ]
+          },
+          {
+            "id": "seen",
+            "x": 6.4,
+            "y": 1.4,
+            "label": "seen",
+            "sublabel": "a Set of titles",
+            "icon": "bolt",
+            "kind": "data",
+            "tags": [
+              "O(n) space"
+            ]
+          },
+          {
+            "id": "result",
+            "x": 10.4,
+            "y": 4,
+            "label": "Duplicates",
+            "sublabel": "in milliseconds",
+            "icon": "file",
+            "kind": "client",
+            "status": "ok"
+          }
+        ],
+        "edges": [
+          {
+            "from": "notes",
+            "to": "fn",
+            "label": "each note once",
+            "packet": {
+              "label": "note",
+              "speed": "fast"
+            }
+          },
+          {
+            "from": "fn",
+            "to": "seen",
+            "label": "has(title)?",
+            "arrow": "both",
+            "style": "dashed"
+          },
+          {
+            "from": "fn",
+            "to": "result",
+            "status": "ok",
+            "packet": {
+              "label": "done",
+              "status": "ok"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "title": "Hidden loops hide in one-liners",
+      "chapter": "watch-out",
+      "body": [
+        "Not every loop looks like a loop. <code>array.includes()</code>, <code>.indexOf()</code> and <code>.find()</code> each scan the whole array. Put one inside a <code>.map()</code> or <code>.filter()</code> and you have O(n × m) on one tidy line, where m is the length of the scanned array. When both grow together, that is O(n²).",
+        "The same trap exists one level up: a database query inside a loop sends one query per item."
+      ],
+      "code": {
+        "language": "ts",
+        "code": "// O(n × m): includes() scans pinnedIds every time\nnotes.filter((n) => pinnedIds.includes(n.id));\n\n// O(n + m): build a Set once, then O(1) checks\nconst pinned = new Set(pinnedIds);\nnotes.filter((n) => pinned.has(n.id));"
+      },
+      "callout": {
+        "type": "claude-code",
+        "text": "When Claude Code writes data-handling code, look for <code>.includes</code>, <code>.find</code> or <code>.indexOf</code> inside a loop or callback, and <code>await</code> on a query inside <code>for</code>. Ask: \"What is the time complexity of this, and how big can n get in production?\""
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "A one-line .includes() inside .filter() quietly turns O(n) back into O(n²).",
+        "remove": [
+          "seen"
+        ],
+        "nodes": [
+          {
+            "id": "fn",
+            "status": "warn",
+            "sublabel": "filter + includes",
+            "tags": [
+              "O(n × m)"
+            ]
+          },
+          {
+            "id": "result",
+            "status": "dim",
+            "sublabel": "slow again"
+          },
+          {
+            "id": "pins",
+            "x": 6.4,
+            "y": 1.4,
+            "label": "pinnedIds",
+            "sublabel": "an array, scanned",
+            "icon": "list",
+            "kind": "data",
+            "status": "warn"
+          }
+        ],
+        "edges": [
+          {
+            "id": "fn>result",
+            "status": "warn",
+            "packet": false
+          },
+          {
+            "from": "fn",
+            "to": "pins",
+            "label": "scan all, every time",
+            "status": "warn",
+            "packet": {
+              "label": "scan",
+              "status": "warn",
+              "speed": "fast"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "title": "Recap in one breath",
+      "chapter": "recap",
+      "body": [
+        "Big-O describes how work grows with n, not how many seconds it takes. From best to worst: O(1), O(log n), O(n), O(n log n), O(n²).",
+        "Nested loops, including hidden ones like <code>.includes()</code> in a loop, are the usual cause of slow code. A Set or Map often trades O(n) memory for a big drop in time."
+      ]
+    }
+  ],
+  "quiz": [
+    {
+      "question": "A function loops over Maya's notes once, and inside the loop it calls <code>tags.includes(note.tag)</code> on an array of all tags. What is its time complexity, with n notes and m tags?",
+      "options": [
+        {
+          "text": "O(n), because there is only one visible loop.",
+          "why": "<code>includes()</code> is a loop too: it scans the tags array each time, so the work multiplies."
+        },
+        {
+          "text": "O(n × m)",
+          "correct": true,
+          "why": "For each of the n notes, includes() may scan all m tags. Turning tags into a Set first makes it O(n + m)."
+        },
+        {
+          "text": "O(1), because includes() is a built-in.",
+          "why": "Built-in does not mean free. Array methods like includes, indexOf and find scan the array."
+        }
+      ]
+    },
+    {
+      "question": "Approach A takes 3n steps. Approach B takes n² steps. With n = 10,000, which statement is right?",
+      "options": [
+        {
+          "text": "A is O(3n), so it is three times slower than B.",
+          "why": "Big-O drops constants: A is O(n). And at n = 10,000, B does 100 million steps while A does 30,000."
+        },
+        {
+          "text": "They are about the same, since both depend on n.",
+          "why": "Depending on n is not enough. How it grows matters: linear stays manageable, quadratic explodes."
+        },
+        {
+          "text": "A is O(n) and B is O(n²). A wins by a wide margin at this size.",
+          "correct": true,
+          "why": "30,000 steps against 100,000,000. The gap keeps widening as n grows."
+        }
+      ]
+    },
+    {
+      "question": "Claude Code fixed a slow duplicate check by adding a Set of seen values. A reviewer says \"but now it uses more memory\". What is the best reply?",
+      "options": [
+        {
+          "text": "True: O(n) extra space, in exchange for going from O(n²) to O(n) time. For 100,000 notes that trade is clearly worth it.",
+          "correct": true,
+          "why": "Naming both the time and the space cost, and why the trade fits the data size, is exactly the reasoning interviewers look for."
+        },
+        {
+          "text": "Sets use no extra memory, so nothing changed.",
+          "why": "A Set stores every value you add, so it grows with n."
+        },
+        {
+          "text": "Go back to the nested loop to save memory.",
+          "why": "A few megabytes of memory is cheap. A function that times out at 100,000 notes is a broken feature."
+        }
+      ]
+    }
+  ],
+  "takeaways": [
+    "<b>Big-O</b> describes how work grows as the input grows, not how many seconds it takes.",
+    "Know the ladder: O(1), O(log n), O(n), O(n log n), O(n²). Drop constants and keep the biggest term.",
+    "A loop inside a loop is O(n²). So is <code>.includes()</code>, <code>.find()</code> or <code>.indexOf()</code> inside a loop.",
+    "A <code>Set</code> or <code>Map</code> often trades O(n) memory for O(n) instead of O(n²) time.",
+    "Always state both: \"O(n) time, O(n) space\", and ask how big n gets in production."
+  ]
+}

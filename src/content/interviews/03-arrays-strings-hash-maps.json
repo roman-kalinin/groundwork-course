@@ -1,0 +1,732 @@
+{
+  "id": "arrays-strings-hash-maps",
+  "title": "Arrays, strings and hash maps",
+  "summary": "The three structures behind most interview answers: what each one is fast and slow at, and why a hash map turns so many slow solutions into fast ones.",
+  "minutes": 13,
+  "level": "beginner",
+  "youWillLearn": [
+    "Why an <b>array</b> is instant by position but slow to search and to insert at the front",
+    "How strings behave like read-only arrays of characters",
+    "How a <b>hash map</b> finds any key in about one step, and what a collision is",
+    "The classic Two Sum answer, and when to use <code>Map</code> instead of a plain object"
+  ],
+  "glossary": {
+    "array": "A list of values stored in order, where each value has a numbered position starting at 0.",
+    "index": "The position number of a value in an array or string. The first one is 0.",
+    "immutable": "Cannot be changed after it is created. Any \"change\" makes a new copy instead.",
+    "hash map": "A structure that stores key-value pairs and finds the value for any key in about one step.",
+    "hash function": "A function that turns a key into a number, always the same number for the same key, used to pick a storage slot.",
+    "bucket": "One storage slot inside a hash map. The hash function decides which bucket a key goes into.",
+    "collision": "When two different keys get the same bucket. The map still works, it only has to check a few entries in that bucket.",
+    "Map": "JavaScript's built-in hash map. Keys can be any type, and it has no surprise built-in keys."
+  },
+  "steps": [
+    {
+      "title": "\"The third note\" vs \"note n_83\"",
+      "chapter": "problem",
+      "body": [
+        "Notely keeps Maya's notes in a list. Two questions come up all day.",
+        "\"Show the third note\" is instant. \"Find the note with id <code>n_83</code>\" means checking notes one by one until it turns up. With four notes, nobody notices. With 50,000 notes, and that lookup repeated inside a loop on every request, the waiting adds up."
+      ],
+      "scene": {
+        "caption": "Finding a note by its id means walking the list from the start.",
+        "nodes": [
+          {
+            "id": "c0",
+            "x": 1.6,
+            "y": 4.6,
+            "label": "Groceries",
+            "sublabel": "index 0",
+            "kind": "data",
+            "status": "dim"
+          },
+          {
+            "id": "c1",
+            "x": 3.8,
+            "y": 4.6,
+            "label": "Pitch deck",
+            "sublabel": "index 1",
+            "kind": "data",
+            "status": "dim"
+          },
+          {
+            "id": "c2",
+            "x": 6,
+            "y": 4.6,
+            "label": "Trip plan",
+            "sublabel": "index 2",
+            "kind": "data",
+            "status": "dim"
+          },
+          {
+            "id": "c3",
+            "x": 8.2,
+            "y": 4.6,
+            "label": "Ideas",
+            "sublabel": "index 3",
+            "kind": "data",
+            "status": "active"
+          },
+          {
+            "id": "query",
+            "x": 4.9,
+            "y": 1.6,
+            "label": "Find n_83",
+            "sublabel": "check one by one",
+            "icon": "search",
+            "kind": "client",
+            "status": "warn"
+          }
+        ],
+        "edges": [
+          {
+            "from": "query",
+            "to": "c0",
+            "label": "start here",
+            "style": "dashed"
+          },
+          {
+            "from": "c0",
+            "to": "c1",
+            "packet": {
+              "label": "no",
+              "speed": "fast"
+            }
+          },
+          {
+            "from": "c1",
+            "to": "c2",
+            "packet": {
+              "label": "no",
+              "speed": "fast"
+            }
+          },
+          {
+            "from": "c2",
+            "to": "c3",
+            "packet": {
+              "label": "no",
+              "speed": "fast"
+            }
+          }
+        ],
+        "notes": [
+          {
+            "id": "scan",
+            "x": 9.4,
+            "y": 6.6,
+            "text": "Search by value: O(n)",
+            "status": "warn"
+          }
+        ]
+      }
+    },
+    {
+      "title": "Arrays: numbered boxes in a row",
+      "chapter": "idea",
+      "body": [
+        "An <span class=\"term\">array</span> stores values side by side, each at a numbered position called an <span class=\"term\">index</span>, starting at 0.",
+        "Because the boxes sit in a row, the computer can jump straight to box 2: <code>notes[2]</code> is <b>O(1)</b>. But asking \"which box holds n_83?\" still means looking in each box: <b>O(n)</b>. Arrays are fast by position, slow by content."
+      ],
+      "callout": {
+        "type": "analogy",
+        "text": "Numbered lockers in a hallway. \"Open locker 2\" takes one step. \"Find the locker with the red jacket\" means opening lockers until you see it."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Jumping to an index is one step. Searching by content is a walk.",
+        "remove": [
+          "c0>c1",
+          "c1>c2",
+          "c2>c3",
+          "query>c0",
+          "scan"
+        ],
+        "nodes": [
+          {
+            "id": "c0",
+            "status": "normal"
+          },
+          {
+            "id": "c1",
+            "status": "normal"
+          },
+          {
+            "id": "c2",
+            "status": "ok"
+          },
+          {
+            "id": "c3",
+            "status": "normal"
+          },
+          {
+            "id": "query",
+            "label": "notes[2]",
+            "sublabel": "jump by index",
+            "status": "ok"
+          }
+        ],
+        "edges": [
+          {
+            "from": "query",
+            "to": "c2",
+            "label": "O(1)",
+            "status": "ok",
+            "packet": {
+              "label": "jump",
+              "status": "ok",
+              "speed": "fast"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "title": "Inserting at the front moves everyone",
+      "chapter": "how",
+      "body": [
+        "Maya creates a new note, and Notely shows newest first, so it goes at index 0. Every other note must shift one box to the right to make room.",
+        "Adding or removing at the <b>end</b> (<code>push</code>, <code>pop</code>) is O(1). At the <b>front</b> or in the middle (<code>unshift</code>, <code>splice</code>) it is O(n), because the rest of the row moves."
+      ],
+      "scene": {
+        "extends": "previous",
+        "caption": "One new note at the front, and every index after it changes.",
+        "remove": [
+          "query"
+        ],
+        "nodes": [
+          {
+            "id": "new",
+            "x": 1.6,
+            "y": 4.6,
+            "label": "New note",
+            "sublabel": "index 0",
+            "kind": "client",
+            "status": "active"
+          },
+          {
+            "id": "c0",
+            "x": 3.8,
+            "sublabel": "index 1",
+            "status": "warn"
+          },
+          {
+            "id": "c1",
+            "x": 6,
+            "sublabel": "index 2",
+            "status": "warn"
+          },
+          {
+            "id": "c2",
+            "x": 8.2,
+            "sublabel": "index 3",
+            "status": "warn"
+          },
+          {
+            "id": "c3",
+            "x": 10.4,
+            "sublabel": "index 4",
+            "status": "warn"
+          }
+        ],
+        "notes": [
+          {
+            "id": "shift",
+            "x": 6,
+            "y": 2.6,
+            "text": "unshift(): everyone moves. O(n)",
+            "status": "warn"
+          }
+        ]
+      }
+    },
+    {
+      "title": "Strings: read-only arrays of characters",
+      "chapter": "how",
+      "body": [
+        "A string works like an array of characters: <code>title[0]</code> is the first letter, <code>title.length</code> is the count, and you can loop over it.",
+        "One difference: in JavaScript, strings are <span class=\"term\">immutable</span>. Methods like <code>toLowerCase()</code> or <code>replace()</code> return a <em>new</em> string. Interview string problems (reverse, palindrome, anagram) are mostly array problems in disguise."
+      ],
+      "code": {
+        "language": "ts",
+        "code": "const title = \"Maya\";\ntitle[0];             // \"M\"  (O(1) by index)\ntitle.length;         // 4\ntitle.toLowerCase();  // \"maya\", a new string\n[...title].reverse().join(\"\"); // \"ayaM\"",
+        "caption": "Spread a string into an array when you need to reorder or edit characters."
+      },
+      "scene": {
+        "caption": "A string is a row of characters, each with an index, that you cannot edit in place.",
+        "nodes": [
+          {
+            "id": "s0",
+            "x": 2.2,
+            "y": 4.2,
+            "label": "M",
+            "sublabel": "index 0",
+            "kind": "data",
+            "status": "active"
+          },
+          {
+            "id": "s1",
+            "x": 4.6,
+            "y": 4.2,
+            "label": "a",
+            "sublabel": "index 1",
+            "kind": "data"
+          },
+          {
+            "id": "s2",
+            "x": 7,
+            "y": 4.2,
+            "label": "y",
+            "sublabel": "index 2",
+            "kind": "data"
+          },
+          {
+            "id": "s3",
+            "x": 9.4,
+            "y": 4.2,
+            "label": "a",
+            "sublabel": "index 3",
+            "kind": "data"
+          }
+        ],
+        "zones": [
+          {
+            "id": "z-str",
+            "x": 0.8,
+            "y": 2.8,
+            "w": 10,
+            "h": 2.8,
+            "label": "\"Maya\", length 4, immutable"
+          }
+        ],
+        "notes": [
+          {
+            "id": "copy",
+            "x": 5.8,
+            "y": 6.6,
+            "text": "toLowerCase() returns a new string",
+            "status": "active"
+          }
+        ]
+      }
+    },
+    {
+      "title": "Hash maps: jump straight to a key",
+      "chapter": "how",
+      "body": [
+        "A <span class=\"term\">hash map</span> stores pairs: a key and its value. To store <code>n_83</code>, it runs the key through a <span class=\"term\">hash function</span>, which turns it into a number. That number picks a <span class=\"term\">bucket</span>.",
+        "To find <code>n_83</code> later, it hashes the key again, gets the same number, and goes straight to that bucket. No walking the list: about <b>O(1)</b>."
+      ],
+      "callout": {
+        "type": "tip",
+        "text": "You met hashing in system design, where it decides which shard holds a row. Same trick, smaller scale: here it decides which bucket in memory holds a key."
+      },
+      "scene": {
+        "caption": "The key is hashed to a bucket number, so lookup goes straight there.",
+        "nodes": [
+          {
+            "id": "key",
+            "x": 1.8,
+            "y": 4,
+            "label": "n_83",
+            "sublabel": "the key",
+            "icon": "key",
+            "kind": "client",
+            "status": "active"
+          },
+          {
+            "id": "hash",
+            "x": 5.4,
+            "y": 4,
+            "label": "hash()",
+            "sublabel": "key → number",
+            "icon": "function",
+            "kind": "server"
+          },
+          {
+            "id": "b0",
+            "x": 9.6,
+            "y": 1.6,
+            "label": "Bucket 0",
+            "icon": "box",
+            "kind": "data",
+            "status": "dim"
+          },
+          {
+            "id": "b1",
+            "x": 9.6,
+            "y": 4,
+            "label": "Bucket 1",
+            "icon": "box",
+            "kind": "data",
+            "status": "ok",
+            "tags": [
+              "n_83 → Trip plan"
+            ]
+          },
+          {
+            "id": "b2",
+            "x": 9.6,
+            "y": 6.4,
+            "label": "Bucket 2",
+            "icon": "box",
+            "kind": "data",
+            "status": "dim"
+          }
+        ],
+        "edges": [
+          {
+            "from": "key",
+            "to": "hash",
+            "packet": {
+              "label": "n_83"
+            }
+          },
+          {
+            "from": "hash",
+            "to": "b1",
+            "label": "→ 1",
+            "status": "ok",
+            "packet": {
+              "label": "1",
+              "status": "ok"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "title": "Collisions, and why it is \"about\" O(1)",
+      "chapter": "how",
+      "body": [
+        "Sometimes two keys hash to the same bucket. That is a <span class=\"term\">collision</span>. The map keeps both in that bucket and checks the few entries there.",
+        "A good hash function spreads keys evenly and the map grows as it fills, so buckets stay tiny: <b>O(1) on average</b>. In theory, if every key landed in one bucket, lookup would fall to O(n). Say \"O(1) average\" in interviews."
+      ],
+      "scene": {
+        "extends": "previous",
+        "caption": "Two keys share bucket 1. The map checks both, which is still fast.",
+        "nodes": [
+          {
+            "id": "key",
+            "status": "normal"
+          },
+          {
+            "id": "key2",
+            "x": 1.8,
+            "y": 6.4,
+            "label": "n_19",
+            "sublabel": "another key",
+            "icon": "key",
+            "kind": "client",
+            "status": "active"
+          },
+          {
+            "id": "b1",
+            "status": "warn",
+            "tags": [
+              "n_83 → Trip plan",
+              "n_19 → Ideas"
+            ]
+          }
+        ],
+        "edges": [
+          {
+            "id": "key>hash",
+            "packet": false
+          },
+          {
+            "from": "key2",
+            "to": "hash",
+            "packet": {
+              "label": "n_19"
+            }
+          },
+          {
+            "id": "hash>b1",
+            "label": "also → 1",
+            "status": "warn",
+            "packet": {
+              "label": "1",
+              "status": "warn"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "title": "Map and Set, the JavaScript versions",
+      "chapter": "how",
+      "body": [
+        "In JavaScript, use <span class=\"term\">Map</span> for key-value pairs and <code>Set</code> for \"have I seen this?\". Both give O(1) average lookups.",
+        "For Notely: build <code>notesById</code> once, O(n), then every lookup is O(1). Build once, look up many times. That one move fixes a large share of slow code."
+      ],
+      "code": {
+        "language": "ts",
+        "code": "const notesById = new Map<string, Note>();\nfor (const note of notes) notesById.set(note.id, note);\n\nnotesById.get(\"n_83\");   // Trip plan, O(1)\nnotesById.has(\"n_99\");   // false\nnotesById.size;          // 50000",
+        "caption": "One O(n) pass to build, then O(1) for every lookup after."
+      },
+      "scene": {
+        "caption": "Build the Map once from the array. Every later lookup skips the walk.",
+        "nodes": [
+          {
+            "id": "arr",
+            "x": 2,
+            "y": 4,
+            "label": "notes",
+            "sublabel": "an array, 50,000",
+            "icon": "list",
+            "kind": "data"
+          },
+          {
+            "id": "map",
+            "x": 6.4,
+            "y": 4,
+            "label": "notesById",
+            "sublabel": "a Map",
+            "icon": "bolt",
+            "kind": "data",
+            "status": "ok",
+            "tags": [
+              "n_83 → Trip plan"
+            ]
+          },
+          {
+            "id": "ai",
+            "x": 10.4,
+            "y": 4,
+            "label": "AI summary",
+            "sublabel": "needs note n_83",
+            "icon": "sparkle",
+            "kind": "ai"
+          }
+        ],
+        "edges": [
+          {
+            "from": "arr",
+            "to": "map",
+            "label": "build once, O(n)",
+            "style": "dashed"
+          },
+          {
+            "from": "ai",
+            "to": "map",
+            "label": "get(), O(1)",
+            "status": "ok",
+            "packet": {
+              "label": "n_83",
+              "status": "ok",
+              "speed": "fast"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "title": "Two Sum: the hash map classic",
+      "chapter": "example",
+      "body": [
+        "Interview favorite: find two numbers in a list that add up to a target. For Notely: two notes whose token counts fill a summary budget of exactly 1,000.",
+        "Brute force checks every pair: O(n²). Better: walk once, and for each count ask the map, \"have I seen <code>target − count</code>?\" If yes, done. If no, store this count. <b>O(n) time, O(n) space.</b>"
+      ],
+      "code": {
+        "language": "ts",
+        "code": "function twoSum(counts: number[], target: number) {\n  const seen = new Map<number, number>(); // value → index\n  for (let i = 0; i < counts.length; i++) {\n    const need = target - counts[i];\n    if (seen.has(need)) return [seen.get(need)!, i];\n    seen.set(counts[i], i);\n  }\n  return null; // say this case out loud too\n}"
+      },
+      "scene": {
+        "caption": "At 700, the map already knows where 300 is. One pass, done.",
+        "nodes": [
+          {
+            "id": "t0",
+            "x": 1.6,
+            "y": 5.4,
+            "label": "300",
+            "sublabel": "index 0",
+            "kind": "data",
+            "status": "ok"
+          },
+          {
+            "id": "t1",
+            "x": 3.8,
+            "y": 5.4,
+            "label": "1200",
+            "sublabel": "index 1",
+            "kind": "data"
+          },
+          {
+            "id": "t2",
+            "x": 6,
+            "y": 5.4,
+            "label": "700",
+            "sublabel": "index 2",
+            "kind": "data",
+            "status": "active"
+          },
+          {
+            "id": "t3",
+            "x": 8.2,
+            "y": 5.4,
+            "label": "500",
+            "sublabel": "not reached",
+            "kind": "data",
+            "status": "dim"
+          },
+          {
+            "id": "seen",
+            "x": 9.8,
+            "y": 2,
+            "label": "seen",
+            "sublabel": "value → index",
+            "icon": "bolt",
+            "kind": "data",
+            "tags": [
+              "300 → 0",
+              "1200 → 1"
+            ]
+          }
+        ],
+        "edges": [
+          {
+            "from": "t2",
+            "to": "seen",
+            "label": "need 300?",
+            "status": "ok",
+            "packet": {
+              "label": "300?",
+              "status": "ok"
+            }
+          }
+        ],
+        "notes": [
+          {
+            "id": "math",
+            "x": 4.2,
+            "y": 2,
+            "text": "1000 − 700 = 300, seen at index 0",
+            "status": "ok"
+          }
+        ]
+      }
+    },
+    {
+      "title": "Plain objects make leaky maps",
+      "chapter": "watch-out",
+      "body": [
+        "Using <code>{}</code> as a map works until it doesn't. Its keys are always strings, so the number <code>1</code> and the string <code>\"1\"</code> collide. It also inherits built-in keys like <code>constructor</code>, so <code>\"constructor\" in counts</code> is true on an empty object.",
+        "With user-supplied keys, such as tags Maya types, prefer <code>Map</code>."
+      ],
+      "callout": {
+        "type": "claude-code",
+        "text": "Search Claude's code for <code>.find(</code> or <code>.filter(</code> by id inside a loop, and ask for a <code>Map</code> keyed by id instead. If it builds a dictionary with <code>{}</code> from user input, ask it to use <code>Map</code> or <code>Object.create(null)</code>, and to explain the change."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "With a plain object, an empty map already \"has\" some keys.",
+        "remove": [
+          "math"
+        ],
+        "nodes": [
+          {
+            "id": "seen",
+            "label": "counts = {}",
+            "sublabel": "a plain object",
+            "status": "warn",
+            "tags": [
+              "\"1\" and 1: same key",
+              "has constructor"
+            ]
+          },
+          {
+            "id": "t2",
+            "status": "normal"
+          },
+          {
+            "id": "t0",
+            "status": "normal"
+          }
+        ],
+        "edges": [
+          {
+            "id": "t2>seen",
+            "label": "surprise keys",
+            "status": "warn",
+            "packet": {
+              "label": "?",
+              "status": "warn"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "title": "Recap in one breath",
+      "chapter": "recap",
+      "body": [
+        "Arrays are instant by index and slow by content, and inserting at the front shifts everything. Strings are read-only arrays of characters.",
+        "Hash maps hash a key to a bucket for O(1) average lookups. When code searches the same list again and again, build a <code>Map</code> or <code>Set</code> once and look things up."
+      ]
+    }
+  ],
+  "quiz": [
+    {
+      "question": "Notely's summary route receives 200 note ids and finds each one with <code>notes.find(n =&gt; n.id === id)</code> in an array of 50,000 notes. What is the best fix?",
+      "options": [
+        {
+          "text": "Sort the notes array first.",
+          "why": "Sorting costs O(n log n) and <code>find()</code> still walks from the start. You would need binary search on top, which is more code for less gain than a Map."
+        },
+        {
+          "text": "Build a <code>Map</code> from id to note once, then call <code>get(id)</code> 200 times.",
+          "correct": true,
+          "why": "One O(n) pass to build, then each lookup is O(1) on average, instead of up to 50,000 checks per id."
+        },
+        {
+          "text": "Use <code>for</code> instead of <code>find()</code>, since loops are faster.",
+          "why": "The loop style barely matters. Both walk the array, so it is still O(n) per lookup."
+        }
+      ]
+    },
+    {
+      "question": "Maya's feed shows newest first. Claude Code adds each new note with <code>notes.unshift(note)</code> on a 100,000 item array. What is the cost of each insert?",
+      "options": [
+        {
+          "text": "O(n), because every existing item shifts one position.",
+          "correct": true,
+          "why": "Inserting at the front moves the whole row. Appending with <code>push()</code> and reading in reverse order avoids that."
+        },
+        {
+          "text": "O(1), because it is one method call.",
+          "why": "One call can hide a lot of work. unshift has to move every existing element."
+        },
+        {
+          "text": "O(log n), because arrays are indexed.",
+          "why": "Indexing makes <em>reading</em> by position O(1). It does not make inserting at the front cheap."
+        }
+      ]
+    },
+    {
+      "question": "In an interview you say a hash map lookup is O(1). The interviewer asks: \"Always?\" What is the strongest answer?",
+      "options": [
+        {
+          "text": "\"Yes, hash maps are always O(1).\"",
+          "why": "Collisions mean keys can share a bucket. In the worst case, lookup degrades to O(n)."
+        },
+        {
+          "text": "\"No, it's O(log n), like a tree.\"",
+          "why": "That is the cost of a balanced tree, a different structure with sorted keys."
+        },
+        {
+          "text": "\"O(1) on average. Collisions can push the worst case to O(n), but a good hash function and resizing keep buckets small.\"",
+          "correct": true,
+          "why": "It shows you know where the O(1) comes from and when it breaks, which is exactly what the follow-up is testing."
+        }
+      ]
+    }
+  ],
+  "takeaways": [
+    "<b>Arrays</b>: O(1) by index, O(n) to search by value, O(n) to insert at the front.",
+    "Strings act like <b>read-only arrays</b> of characters. Methods return new strings.",
+    "A <b>hash map</b> gives O(1) average lookup by key. Say \"average\" and know that collisions are the reason.",
+    "Searching the same list repeatedly? Build a <code>Map</code> or <code>Set</code> once, then look up.",
+    "Prefer <code>Map</code> over <code>{}</code> for dictionaries, especially with user-supplied keys."
+  ]
+}

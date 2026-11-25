@@ -1,0 +1,272 @@
+{
+  "id": "streaming-and-latency",
+  "title": "Streaming and latency",
+  "summary": "Why AI answers appear word by word, how to stream them through your own server, and what to do when a job is too slow for one request.",
+  "minutes": 12,
+  "level": "beginner",
+  "youWillLearn": [
+    "Why <b>time to first token</b> matters more to users than total time",
+    "How a streamed answer travels from the model, through your route, to the browser",
+    "Which <b>timeouts</b> sit in that chain, and who sets them",
+    "When to stop streaming and move work into a <b>background job</b>"
+  ],
+  "glossary": {
+    "latency": "How long someone waits between asking and getting a result.",
+    "streaming": "Sending a response in small pieces as it is produced, instead of all at once at the end.",
+    "time to first token": "How long until the first piece of the answer arrives. It decides whether an app feels fast.",
+    "SSE": "Server-sent events: a simple web standard where the server keeps one response open and pushes small text events down it.",
+    "timeout": "A limit on how long something may run or wait. When it is hit, the work is cut off with an error.",
+    "background job": "Work that runs outside the user's request, so the request can answer right away and the result arrives later.",
+    "polling": "The browser asking again every few seconds: is it done yet?",
+    "abort": "Cancelling a request that is still running, so neither side keeps working on it."
+  },
+  "steps": [
+    {
+      "title": "Twenty seconds of spinner",
+      "chapter": "problem",
+      "body": [
+        "Maya clicks <b>AI summary</b> on a long note. A spinner turns. And turns. After twenty seconds the full summary pops in at once.",
+        "Nothing is broken. The model was writing the whole time, one token after another. Notely waited for the very last token before showing anything. To Maya, that <span class=\"term\">latency</span> looks like a frozen app, and she clicks again."
+      ],
+      "scene": {
+        "caption": "The server waits for the complete answer. The browser sees nothing until the end.",
+        "nodes": [
+          { "id": "browser", "x": 2, "y": 4, "label": "Browser", "sublabel": "Maya's laptop", "icon": "browser", "kind": "client", "status": "warn" },
+          { "id": "route", "x": 6.4, "y": 4, "label": "Summary route", "sublabel": "Next.js on Vercel", "icon": "function", "kind": "server", "tags": ["waiting…"] },
+          { "id": "llm", "x": 10.4, "y": 4, "label": "Claude API", "sublabel": "writing tokens", "icon": "sparkle", "kind": "ai", "status": "active" }
+        ],
+        "edges": [
+          { "from": "browser", "to": "route", "label": "POST /summary", "packet": { "label": "note" } },
+          { "from": "route", "to": "llm", "label": "full answer, please", "packet": true }
+        ],
+        "notes": [
+          { "id": "frozen", "x": 2, "y": 2.4, "text": "Is it broken?", "status": "warn" }
+        ]
+      }
+    },
+    {
+      "title": "Show the words as they are written",
+      "chapter": "idea",
+      "body": [
+        "The fix is <span class=\"term\">streaming</span>: pass each piece along the moment it exists. The total time barely changes. What changes is the <span class=\"term\">time to first token</span>: Maya sees words within a second or two, and reading keeps pace with writing.",
+        "This is why every AI chat types its answer out. It is not a visual effect; it is the real speed of generation."
+      ],
+      "callout": {
+        "type": "analogy",
+        "text": "A waiter who brings each dish as it is ready, instead of holding the whole order until dessert is done. The meal takes as long; nobody sits hungry."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Tokens flow through the server to the browser as soon as they exist.",
+        "remove": ["frozen"],
+        "nodes": [
+          { "id": "browser", "status": "ok", "sublabel": "words appear live" },
+          { "id": "route", "tags": ["passes through"] }
+        ],
+        "edges": [
+          { "from": "llm", "to": "route", "label": "token by token", "status": "ok", "packet": { "label": "tokens", "status": "ok", "speed": "fast" } },
+          { "from": "route", "to": "browser", "label": "token by token", "status": "ok", "packet": { "label": "tokens", "status": "ok", "speed": "fast" } }
+        ]
+      }
+    },
+    {
+      "title": "One response that stays open",
+      "chapter": "how",
+      "body": [
+        "With streaming on, the Claude API keeps the HTTP response open and sends a series of small events. This format is called <span class=\"term\">SSE</span>.",
+        "First a <code>message_start</code>, then many <code>content_block_delta</code> events, each carrying a few characters of text, then <code>message_stop</code>. A few bookkeeping events sit in between. The SDK turns these into simple callbacks, so you rarely read the raw format, but you will see it in network logs."
+      ],
+      "code": {
+        "language": "text",
+        "filename": "What the stream looks like",
+        "code": "event: message_start\ndata: {\"type\":\"message_start\", ...}\n\nevent: content_block_delta\ndata: {\"delta\":{\"type\":\"text_delta\",\"text\":\"- Logo\"}}\n\nevent: content_block_delta\ndata: {\"delta\":{\"type\":\"text_delta\",\"text\":\" goes blue\"}}\n\nevent: message_stop",
+        "caption": "Shortened. Each event is a line of JSON pushed down the same open response."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "One open response from the API, carrying many small events.",
+        "nodes": [
+          { "id": "llm", "tags": ["text/event-stream"] }
+        ],
+        "edges": [
+          { "id": "llm>route", "label": "SSE events", "packet": { "label": "delta", "status": "ok", "speed": "fast" } }
+        ]
+      }
+    },
+    {
+      "title": "Your route passes the stream along",
+      "chapter": "how",
+      "body": [
+        "The browser never talks to the model directly, so your route must relay the stream. It opens a stream to the API, and returns its own streaming response to the browser.",
+        "On the page, the code reads that response chunk by chunk and appends text to the summary box. Many teams use a helper library for this; the plumbing underneath is the same."
+      ],
+      "code": {
+        "language": "ts",
+        "filename": "app/api/summary/route.ts",
+        "code": "export async function POST(req: Request) {\n  const { noteId } = await req.json();\n  const note = await getNoteForUser(noteId);\n  const stream = anthropic.messages.stream({\n    model: process.env.SUMMARY_MODEL!,\n    max_tokens: 1024,\n    messages: [{ role: \"user\", content: note.body }],\n  });\n  const enc = new TextEncoder();\n  const body = new ReadableStream({\n    async start(controller) {\n      stream.on(\"text\", (t) => controller.enqueue(enc.encode(t)));\n      await stream.finalMessage();\n      controller.close();\n    },\n  });\n  return new Response(body);\n}",
+        "caption": "The route reads the note itself, by id, for the logged-in user. It never trusts note text sent by the browser."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Two streams joined end to end: API to route, route to browser.",
+        "nodes": [
+          { "id": "llm", "tags": null },
+          { "id": "route", "status": "active", "tags": ["ReadableStream"] }
+        ]
+      }
+    },
+    {
+      "title": "A chain of timeouts",
+      "chapter": "how",
+      "body": [
+        "Every hop has a <span class=\"term\">timeout</span>. The browser's fetch can give up. Your serverless function has a maximum run time set by the host and your plan. The SDK has its own request timeout.",
+        "The shortest one wins. A long answer can be cut off by your function's limit even while the model is still writing happily."
+      ],
+      "callout": {
+        "type": "tip",
+        "text": "On Vercel, a route can raise its own limit with <code>export const maxDuration = 60</code> (seconds), up to what your plan allows. Check the current limits in the docs rather than trusting an old blog post."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Each hop has its own time limit. The shortest one decides.",
+        "nodes": [
+          { "id": "browser", "status": "normal", "tags": ["fetch timeout"] },
+          { "id": "route", "status": "warn", "tags": ["maxDuration"] },
+          { "id": "llm", "tags": ["SDK timeout"] }
+        ],
+        "notes": [
+          { "id": "short", "x": 6.4, "y": 6.2, "text": "Shortest limit wins", "status": "warn" }
+        ]
+      }
+    },
+    {
+      "title": "Too slow for a request: background it",
+      "chapter": "how",
+      "body": [
+        "Some jobs take minutes: summarizing all of Maya's notes, or importing 500 files. No user should hold a request open that long.",
+        "So the route answers right away with <code>202 Accepted</code> and a job id. A <span class=\"term\">background job</span> does the work, saves the result to a <code>jobs</code> table, and the page finds out by <span class=\"term\">polling</span> or a realtime subscription."
+      ],
+      "callout": {
+        "type": "tip",
+        "text": "You met queues and workers in system design. Same pattern here: the model call is the slow worker step."
+      },
+      "scene": {
+        "caption": "The request returns at once. A worker does the slow part and saves the result.",
+        "nodes": [
+          { "id": "browser", "x": 2, "y": 1.8, "label": "Browser", "sublabel": "Maya's laptop", "icon": "browser", "kind": "client" },
+          { "id": "route", "x": 6.4, "y": 1.8, "label": "Digest route", "sublabel": "answers in ms", "icon": "function", "kind": "server", "status": "ok" },
+          { "id": "queue", "x": 6.4, "y": 4.3, "label": "Job queue", "icon": "queue", "kind": "server" },
+          { "id": "worker", "x": 10.2, "y": 4.3, "label": "Worker", "sublabel": "no request waiting", "icon": "gear", "kind": "server", "status": "active" },
+          { "id": "llm", "x": 10.2, "y": 1.8, "label": "Claude API", "sublabel": "long call", "icon": "sparkle", "kind": "ai" },
+          { "id": "jobs", "x": 2, "y": 6.6, "label": "jobs table", "sublabel": "status + result", "icon": "table", "kind": "data", "tags": ["done"] }
+        ],
+        "edges": [
+          { "from": "route", "to": "browser", "label": "202 + job id", "status": "ok" },
+          { "from": "route", "to": "queue", "label": "enqueue", "packet": { "label": "job" } },
+          { "from": "queue", "to": "worker", "packet": true },
+          { "from": "worker", "to": "llm", "label": "takes minutes", "style": "dashed" },
+          { "from": "worker", "to": "jobs", "label": "save result", "packet": { "label": "result", "status": "ok" } },
+          { "from": "jobs", "to": "browser", "label": "realtime: done", "status": "ok" }
+        ]
+      }
+    },
+    {
+      "title": "Notely: stream or background?",
+      "chapter": "example",
+      "body": [
+        "Ask one question: is a person watching and waiting for this exact answer?",
+        "Yes, and it takes seconds: <b>stream it</b>. The note summary and the chat reply. No, or it takes minutes: <b>background it</b>. The weekly digest email and the bulk import. Save every result to the database either way, so a refresh does not lose it."
+      ],
+      "callout": {
+        "type": "claude-code",
+        "text": "Ask: is <code>stream</code> used for user-facing answers? What is the route's <code>maxDuration</code>, and can the slowest case finish inside it? Is the finished text saved to the database? For long jobs, is there a status row, and what does the UI show while it runs or if it fails?"
+      },
+      "scene": {
+        "caption": "Waiting person and seconds: stream. Nobody waiting or minutes: background job.",
+        "zones": [
+          { "id": "z-stream", "x": 0.4, "y": 0.5, "w": 5.4, "h": 7, "label": "Stream it" },
+          { "id": "z-bg", "x": 6.2, "y": 0.5, "w": 5.4, "h": 7, "label": "Background job" }
+        ],
+        "nodes": [
+          { "id": "sum", "x": 3.1, "y": 2.4, "label": "Note summary", "sublabel": "Maya is watching", "icon": "sparkle", "kind": "ai", "status": "ok" },
+          { "id": "chat", "x": 3.1, "y": 5.4, "label": "Chat reply", "sublabel": "seconds", "icon": "chat", "kind": "ai", "status": "ok" },
+          { "id": "digest", "x": 8.9, "y": 2.4, "label": "Weekly digest", "sublabel": "sent by email", "icon": "mail", "kind": "server", "tags": ["minutes"] },
+          { "id": "import", "x": 8.9, "y": 5.4, "label": "Bulk import", "sublabel": "500 notes", "icon": "upload", "kind": "server", "tags": ["progress bar"] }
+        ],
+        "edges": [
+          { "from": "sum", "to": "chat", "style": "dotted", "arrow": "none" },
+          { "from": "digest", "to": "import", "style": "dotted", "arrow": "none" }
+        ]
+      }
+    },
+    {
+      "title": "Streams can break halfway",
+      "chapter": "watch-out",
+      "body": [
+        "Once streaming starts, your route has already sent <code>200 OK</code>. If the API fails mid-answer, the error arrives <em>inside</em> the stream, so the page must handle it and show a retry.",
+        "The opposite case costs money: Maya closes the tab, but your route keeps reading tokens nobody will see. Pass the request's <span class=\"term\">abort</span> signal through, so the model call stops too."
+      ],
+      "code": {
+        "language": "ts",
+        "code": "req.signal.addEventListener(\"abort\", () => stream.abort());",
+        "caption": "When the browser goes away, cancel the upstream call."
+      },
+      "scene": {
+        "caption": "The tab is closed, but the model keeps writing and you keep paying.",
+        "nodes": [
+          { "id": "browser", "x": 2, "y": 4, "label": "Browser", "sublabel": "tab closed", "icon": "browser", "kind": "client", "status": "dim" },
+          { "id": "route", "x": 6.4, "y": 4, "label": "Summary route", "sublabel": "still reading", "icon": "function", "kind": "server", "status": "warn" },
+          { "id": "llm", "x": 10.4, "y": 4, "label": "Claude API", "sublabel": "still writing", "icon": "sparkle", "kind": "ai", "status": "warn" }
+        ],
+        "edges": [
+          { "from": "route", "to": "browser", "label": "nobody listening", "status": "dim", "style": "dashed" },
+          { "from": "llm", "to": "route", "label": "tokens you pay for", "status": "warn", "packet": { "label": "$", "status": "warn", "speed": "fast" } }
+        ],
+        "notes": [
+          { "id": "fix", "x": 8.4, "y": 6.2, "text": "Fix: abort the upstream call", "status": "ok" }
+        ]
+      }
+    },
+    {
+      "title": "Recap in one breath",
+      "chapter": "recap",
+      "body": [
+        "Models write one token at a time, so a full answer takes a while. Streaming does not make it faster; it makes the first words arrive early.",
+        "Relay the stream through your own route, know the shortest timeout in the chain, abort when the user leaves, and save the final text. If a job takes minutes, answer at once and do it in the background."
+      ]
+    }
+  ],
+  "quiz": [
+    {
+      "question": "A client says: \"Streaming will make our AI answers finish faster, right?\" What is the honest answer?",
+      "options": [
+        { "text": "Yes, streaming uses a faster connection to the model.", "why": "The model generates at the same speed either way. Streaming changes when you see the text, not how fast it is written." },
+        { "text": "No. Total time is about the same, but the first words show up much sooner.", "correct": true, "why": "Streaming cuts time to first token. Users read as the model writes, so the app feels fast even when the full answer takes as long." },
+        { "text": "No, streaming makes answers slower because of the extra events.", "why": "The event overhead is tiny. The big effect is that users see progress almost immediately." }
+      ]
+    },
+    {
+      "question": "Notely's new \"summarize all my notes\" feature fails for heavy users with a function timeout. What is the best fix?",
+      "options": [
+        { "text": "Turn on streaming for that route.", "why": "Streaming still keeps the function running until the last token. A job of several minutes can still pass the host's limit." },
+        { "text": "Retry the request automatically until it works.", "why": "The job takes as long every time, so it will time out every time, and each retry costs tokens." },
+        { "text": "Return a job id right away and run the work in a background job.", "correct": true, "why": "Nobody is waiting on that exact second. A worker can take minutes, save the result, and the page picks it up when it is done." }
+      ]
+    },
+    {
+      "question": "Logs show many summaries that finish generating after users already left the page. What should Claude Code add?",
+      "options": [
+        { "text": "Cancel the upstream API call when the browser's request is aborted.", "correct": true, "why": "Passing the abort signal through stops the model from writing tokens nobody will read, which saves money." },
+        { "text": "A loading spinner so users stay on the page.", "why": "Users will always leave sometimes. The server still needs to stop work it no longer needs." },
+        { "text": "A larger <code>max_tokens</code> value.", "why": "That lets answers grow longer, which makes the waste worse, not better." }
+      ]
+    }
+  ],
+  "takeaways": [
+    "<b>Streaming</b> cuts time to first token. It does not make the model write faster.",
+    "The browser talks to your route, and your route relays the model's stream. The key never leaves the server.",
+    "Every hop has a <b>timeout</b>; the shortest one wins. Know your function's <code>maxDuration</code>.",
+    "Abort the model call when the user leaves, and save the final text to the database.",
+    "If a job takes minutes, return a job id and run it as a <b>background job</b>."
+  ]
+}

@@ -1,0 +1,309 @@
+{
+  "id": "common-patterns",
+  "title": "Common patterns: two pointers, sliding window, counting",
+  "summary": "Three patterns that solve a large share of array and string questions, the signal words that tell you which one to reach for, and the conditions under which each one breaks.",
+  "minutes": 14,
+  "level": "intermediate",
+  "youWillLearn": [
+    "How to spot a pattern from the <b>signal words</b> in a problem",
+    "<b>Frequency counting</b> with a Map: duplicates, anagrams, most common",
+    "<b>Two pointers</b> on sorted data: pairs in O(n) without extra memory",
+    "<b>Sliding window</b> for contiguous runs, fixed and variable size, and when it fails"
+  ],
+  "glossary": {
+    "pattern": "A reusable shape of solution that fits a whole family of problems, like a design pattern for code.",
+    "frequency count": "A Map from each value to how many times it appears, built in one pass.",
+    "anagram": "A word made from exactly the same letters as another, in a different order, like \"listen\" and \"silent\".",
+    "two pointers": "Two index variables that move through an array, often from both ends toward the middle, to avoid checking every pair.",
+    "sliding window": "A start and end index marking a stretch of neighboring items. The window slides forward instead of being rebuilt each time.",
+    "contiguous": "Next to each other with no gaps, like characters 3 to 7 of a string, as opposed to any picks from anywhere."
+  },
+  "steps": [
+    {
+      "title": "Two hundred problems, still lost on the next",
+      "chapter": "problem",
+      "body": [
+        "A common way to prepare: solve hundreds of problems and hope the interview repeats one. Then the interviewer changes a detail, and the memorized answer no longer fits.",
+        "The way out is to notice that most array and string problems are variations on a few <span class=\"term\" data-term=\"pattern\">patterns</span>. Learn to recognize the pattern, and a new problem becomes a familiar one."
+      ],
+      "callout": {
+        "type": "analogy",
+        "text": "Like UI patterns. You do not memorize every settings page ever made. You recognize \"this is a list with detail\" or \"this is a wizard\" and reach for the right structure."
+      },
+      "scene": {
+        "caption": "Every problem looks new, until you see which pattern it is.",
+        "nodes": [
+          { "id": "p1", "x": 2.4, "y": 1.6, "label": "Problem 1", "icon": "file", "kind": "neutral", "status": "dim" },
+          { "id": "p2", "x": 2.4, "y": 4, "label": "Problem 2", "icon": "file", "kind": "neutral", "status": "dim" },
+          { "id": "p3", "x": 2.4, "y": 6.4, "label": "Problem 201", "sublabel": "never seen it", "icon": "file", "kind": "neutral", "status": "warn" },
+          { "id": "you", "x": 9.2, "y": 4, "label": "You", "sublabel": "memorized 200", "icon": "brain", "kind": "person", "status": "warn" }
+        ],
+        "edges": [
+          { "from": "p3", "to": "you", "label": "no match", "status": "warn", "style": "dashed" }
+        ]
+      }
+    },
+    {
+      "title": "Read the signal words",
+      "chapter": "idea",
+      "body": [
+        "Problems drop hints. \"How many\", \"most common\", \"duplicate\", \"anagram\": count things. \"Sorted\" plus \"pair\" or \"two items\": two pointers. \"Subarray\", \"substring\", \"in a row\", \"longest stretch\": sliding window.",
+        "Say the match out loud in the interview: \"This asks for a contiguous stretch, so I'm thinking sliding window.\" It shows the structure of your thinking before any code."
+      ],
+      "scene": {
+        "caption": "Signal words on the left point to a pattern on the right.",
+        "nodes": [
+          { "id": "sig-count", "x": 2.6, "y": 1.6, "label": "Count it", "sublabel": "most common, duplicate", "icon": "search", "kind": "client" },
+          { "id": "sig-pair", "x": 2.6, "y": 4, "label": "Sorted pair", "sublabel": "two items that sum to", "icon": "search", "kind": "client" },
+          { "id": "sig-run", "x": 2.6, "y": 6.4, "label": "In a row", "sublabel": "substring, longest run", "icon": "search", "kind": "client" },
+          { "id": "pat-count", "x": 9.2, "y": 1.6, "label": "Frequency count", "sublabel": "a Map of counts", "icon": "chart", "kind": "server" },
+          { "id": "pat-two", "x": 9.2, "y": 4, "label": "Two pointers", "sublabel": "from both ends", "icon": "link", "kind": "server" },
+          { "id": "pat-win", "x": 9.2, "y": 6.4, "label": "Sliding window", "sublabel": "start and end index", "icon": "layers", "kind": "server" }
+        ],
+        "edges": [
+          { "from": "sig-count", "to": "pat-count", "packet": true },
+          { "from": "sig-pair", "to": "pat-two", "packet": true },
+          { "from": "sig-run", "to": "pat-win", "packet": true }
+        ]
+      }
+    },
+    {
+      "title": "Frequency counting: tally in one pass",
+      "chapter": "how",
+      "body": [
+        "Walk the input once and keep a <span class=\"term\">frequency count</span> in a Map: value to how many times you saw it. You met the Map in lesson 3; this is its most common job.",
+        "Then answer from the counts: the most common tag, any duplicates, or whether two words are an <span class=\"term\">anagram</span> (same letters, same counts). <b>O(n) time, O(k) space</b>, where k is the number of distinct values."
+      ],
+      "code": {
+        "language": "ts",
+        "code": "function isAnagram(a: string, b: string) {\n  if (a.length !== b.length) return false;\n  const counts = new Map<string, number>();\n  for (const ch of a) counts.set(ch, (counts.get(ch) ?? 0) + 1);\n  for (const ch of b) {\n    const left = (counts.get(ch) ?? 0) - 1;\n    if (left < 0) return false; // b has an extra ch\n    counts.set(ch, left);\n  }\n  return true;\n}",
+        "caption": "Sorting both strings also works, but costs O(n log n)."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "\"Most common\", \"duplicate\", \"anagram\": build a tally, then read it.",
+        "nodes": [
+          { "id": "sig-count", "status": "active" },
+          { "id": "pat-count", "status": "ok", "tags": ["listen: l1 i1 s1…", "silent: same"] },
+          { "id": "sig-pair", "status": "dim" },
+          { "id": "sig-run", "status": "dim" },
+          { "id": "pat-two", "status": "dim" },
+          { "id": "pat-win", "status": "dim" }
+        ],
+        "edges": [
+          { "id": "sig-count>pat-count", "status": "ok", "packet": { "label": "tally", "status": "ok" } },
+          { "id": "sig-pair>pat-two", "status": "dim", "packet": false },
+          { "id": "sig-run>pat-win", "status": "dim", "packet": false }
+        ]
+      }
+    },
+    {
+      "title": "Two pointers: squeeze from both ends",
+      "chapter": "how",
+      "body": [
+        "Notely's summary budget is 1,000 tokens, and note sizes are <b>sorted</b>. Find two notes that fill it exactly. Lesson 3 solved this with a Map. Sorted data allows <span class=\"term\">two pointers</span>, which need no extra memory.",
+        "Put one pointer at the smallest note, one at the largest, and add them. 100 + 750 = 850: too small. Only moving the left pointer up can make the sum bigger."
+      ],
+      "scene": {
+        "caption": "Smallest plus largest is under budget, so the left pointer must move right.",
+        "nodes": [
+          { "id": "v0", "x": 1.6, "y": 4.8, "label": "100", "sublabel": "index 0", "kind": "data", "status": "active" },
+          { "id": "v1", "x": 3.8, "y": 4.8, "label": "250", "sublabel": "index 1", "kind": "data" },
+          { "id": "v2", "x": 6, "y": 4.8, "label": "400", "sublabel": "index 2", "kind": "data" },
+          { "id": "v3", "x": 8.2, "y": 4.8, "label": "600", "sublabel": "index 3", "kind": "data" },
+          { "id": "v4", "x": 10.4, "y": 4.8, "label": "750", "sublabel": "index 4", "kind": "data", "status": "active" },
+          { "id": "ptr-l", "x": 1.6, "y": 2.2, "label": "left", "icon": "link", "kind": "client", "status": "active" },
+          { "id": "ptr-r", "x": 10.4, "y": 2.2, "label": "right", "icon": "link", "kind": "client", "status": "active" }
+        ],
+        "edges": [
+          { "from": "ptr-l", "to": "v0" },
+          { "from": "ptr-r", "to": "v4" }
+        ],
+        "notes": [
+          { "id": "sum", "x": 6, "y": 2.2, "text": "100 + 750 = 850, too small", "status": "warn" }
+        ]
+      }
+    },
+    {
+      "title": "Each move rules out a whole row of pairs",
+      "chapter": "how",
+      "body": [
+        "Move left to 250: 250 + 750 = 1,000. Found. If a sum is too big, move the right pointer down instead.",
+        "Why is skipping safe? When 100 + 750 was too small, 100 plus anything smaller than 750 is too small as well, so 100 can be dropped entirely. Each step removes one item: <b>O(n) time, O(1) space</b>."
+      ],
+      "code": {
+        "language": "ts",
+        "code": "function pairForBudget(sizes: number[], budget: number) {\n  let l = 0;\n  let r = sizes.length - 1;\n  while (l < r) {\n    const sum = sizes[l] + sizes[r];\n    if (sum === budget) return [l, r];\n    if (sum < budget) l++; // need more\n    else r--;              // too much\n  }\n  return null;\n}",
+        "caption": "Only works because sizes is sorted. On unsorted data, sort first or use the Map."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "The left pointer glides to 250. Together with 750, that is exactly 1,000.",
+        "nodes": [
+          { "id": "v0", "status": "dim" },
+          { "id": "v1", "status": "ok" },
+          { "id": "v4", "status": "ok" },
+          { "id": "ptr-l", "x": 3.8, "status": "ok" },
+          { "id": "ptr-r", "status": "ok" }
+        ],
+        "remove": ["ptr-l>v0", "sum"],
+        "edges": [
+          { "from": "ptr-l", "to": "v1", "status": "ok" },
+          { "id": "ptr-r>v4", "status": "ok" }
+        ],
+        "notes": [
+          { "id": "sum2", "x": 7.1, "y": 2.2, "text": "250 + 750 = 1,000. Found.", "status": "ok" }
+        ]
+      }
+    },
+    {
+      "title": "Sliding window: slide, don't rebuild",
+      "chapter": "how",
+      "body": [
+        "New question: which three <span class=\"term\">contiguous</span> messages in Maya's chat used the most tokens? Adding up every group of three from scratch repeats work.",
+        "A <span class=\"term\">sliding window</span> keeps a running sum. To slide one step, add the item entering on the right and subtract the one leaving on the left. Every item enters once and leaves once: <b>O(n)</b>."
+      ],
+      "code": {
+        "language": "ts",
+        "code": "function busiestRun(tokens: number[], k: number) {\n  let sum = 0;\n  for (let i = 0; i < k; i++) sum += tokens[i];\n  let best = sum;\n  for (let i = k; i < tokens.length; i++) {\n    sum += tokens[i] - tokens[i - k]; // add new, drop old\n    best = Math.max(best, sum);\n  }\n  return best;\n}"
+      },
+      "callout": {
+        "type": "tip",
+        "text": "You will meet windows again in AI apps: splitting a long document into overlapping chunks before creating embeddings is a window sliding over the text. And the sliding-window rate limiter from system design is the same idea, sliding over time."
+      },
+      "scene": {
+        "caption": "The window slides one step: +800 enters, −200 leaves. 2,000 is the busiest run.",
+        "zones": [
+          { "id": "win", "x": 2.75, "y": 3.5, "w": 6.5, "h": 2.6, "label": "window of 3", "status": "active" }
+        ],
+        "nodes": [
+          { "id": "w0", "x": 1.6, "y": 4.8, "label": "200", "sublabel": "leaving", "kind": "data", "status": "dim" },
+          { "id": "w1", "x": 3.8, "y": 4.8, "label": "900", "kind": "data", "status": "active" },
+          { "id": "w2", "x": 6, "y": 4.8, "label": "300", "kind": "data", "status": "active" },
+          { "id": "w3", "x": 8.2, "y": 4.8, "label": "800", "sublabel": "entering", "kind": "data", "status": "active" },
+          { "id": "w4", "x": 10.4, "y": 4.8, "label": "100", "kind": "data" }
+        ],
+        "notes": [
+          { "id": "wsum", "x": 6, "y": 1.8, "text": "1,400 + 800 − 200 = 2,000 (best)", "status": "ok" }
+        ]
+      }
+    },
+    {
+      "title": "Variable windows: grow right, shrink left",
+      "chapter": "example",
+      "body": [
+        "Some windows change size. Classic: the longest stretch of a string with no repeated character. Grow the window to the right. When the new character is already inside, move the left edge just past its last position.",
+        "A Map of \"last seen index\" makes the jump O(1). Two indexes that only move forward: <b>O(n)</b>."
+      ],
+      "code": {
+        "language": "ts",
+        "code": "function longestUnique(s: string) {\n  const lastSeen = new Map<string, number>();\n  let start = 0;\n  let best = 0;\n  for (let i = 0; i < s.length; i++) {\n    const prev = lastSeen.get(s[i]);\n    // repeat inside the window: shrink past it\n    if (prev !== undefined && prev >= start) start = prev + 1;\n    lastSeen.set(s[i], i);\n    best = Math.max(best, i - start + 1);\n  }\n  return best;\n}",
+        "caption": "Patterns combine: a sliding window that uses a Map."
+      },
+      "scene": {
+        "caption": "The second \"a\" pushes the left edge past the first one. Window: b, c, a, d.",
+        "zones": [
+          { "id": "win", "x": 2.75, "y": 3.5, "w": 8.7, "h": 2.6, "label": "no repeats, length 4", "status": "ok" }
+        ],
+        "nodes": [
+          { "id": "w0", "x": 1.6, "y": 4.8, "label": "a", "sublabel": "index 0", "kind": "data", "status": "dim" },
+          { "id": "w1", "x": 3.8, "y": 4.8, "label": "b", "sublabel": "index 1, start", "kind": "data", "status": "ok" },
+          { "id": "w2", "x": 6, "y": 4.8, "label": "c", "sublabel": "index 2", "kind": "data", "status": "ok" },
+          { "id": "w3", "x": 8.2, "y": 4.8, "label": "a", "sublabel": "index 3, repeat", "kind": "data", "status": "active" },
+          { "id": "w4", "x": 10.4, "y": 4.8, "label": "d", "sublabel": "index 4", "kind": "data", "status": "ok" }
+        ],
+        "edges": [
+          { "from": "w3", "to": "w0", "label": "seen at 0: start = 1", "style": "dashed", "status": "active", "bend": -1.4 }
+        ],
+        "notes": [
+          { "id": "wsum", "x": 6, "y": 1.8, "text": "\"abcad\": longest without repeats = 4", "status": "ok" }
+        ]
+      }
+    },
+    {
+      "title": "Every pattern has a precondition",
+      "chapter": "watch-out",
+      "body": [
+        "Patterns fail quietly when their condition is missing. Two pointers needs <b>sorted</b> data; sorting first adds O(n log n). A shrinking window for \"smallest stretch with sum at least X\" needs <b>no negative numbers</b>: with negatives, shrinking can raise the sum, and the logic breaks.",
+        "Before using a pattern, say its precondition out loud and check it against the input."
+      ],
+      "callout": {
+        "type": "claude-code",
+        "text": "Ask Claude Code to name the pattern it used and its precondition: \"Does this assume sorted input? Non-negative values?\" Then ask for a test that breaks the precondition. In practice, ask it for the signal words in a problem, not the solution."
+      },
+      "scene": {
+        "caption": "One negative number, and the shrinking-window logic is no longer safe.",
+        "zones": [
+          { "id": "win", "x": 2.75, "y": 3.5, "w": 6.5, "h": 2.6, "label": "shrink when sum ≥ X?", "status": "error" }
+        ],
+        "nodes": [
+          { "id": "w0", "x": 1.6, "y": 4.8, "label": "4", "kind": "data", "status": "dim" },
+          { "id": "w1", "x": 3.8, "y": 4.8, "label": "−5", "sublabel": "negative", "kind": "data", "status": "error" },
+          { "id": "w2", "x": 6, "y": 4.8, "label": "6", "kind": "data", "status": "warn" },
+          { "id": "w3", "x": 8.2, "y": 4.8, "label": "3", "kind": "data", "status": "warn" },
+          { "id": "w4", "x": 10.4, "y": 4.8, "label": "2", "kind": "data" }
+        ],
+        "notes": [
+          { "id": "wsum", "x": 6, "y": 1.8, "text": "Dropping −5 makes the sum bigger", "status": "error" }
+        ]
+      }
+    },
+    {
+      "title": "Recap in one breath",
+      "chapter": "recap",
+      "body": [
+        "Read the signal words. Counting words: a frequency Map. Sorted plus a pair: two pointers from both ends. Contiguous stretch: a sliding window that adds on the right and drops on the left.",
+        "Each turns O(n²) into O(n), and each has a precondition. Name it before you code."
+      ],
+      "scene": {
+        "caption": "Three patterns, three signals, three preconditions.",
+        "nodes": [
+          { "id": "sig-count", "x": 2.6, "y": 1.6, "label": "Count it", "sublabel": "most common, duplicate", "icon": "search", "kind": "client" },
+          { "id": "sig-pair", "x": 2.6, "y": 4, "label": "Sorted pair", "sublabel": "two items that sum to", "icon": "search", "kind": "client" },
+          { "id": "sig-run", "x": 2.6, "y": 6.4, "label": "In a row", "sublabel": "substring, longest run", "icon": "search", "kind": "client" },
+          { "id": "pat-count", "x": 9.2, "y": 1.6, "label": "Frequency count", "sublabel": "a Map of counts", "icon": "chart", "kind": "server", "status": "ok" },
+          { "id": "pat-two", "x": 9.2, "y": 4, "label": "Two pointers", "sublabel": "needs sorted input", "icon": "link", "kind": "server", "status": "ok" },
+          { "id": "pat-win", "x": 9.2, "y": 6.4, "label": "Sliding window", "sublabel": "needs contiguous", "icon": "layers", "kind": "server", "status": "ok" }
+        ],
+        "edges": [
+          { "from": "sig-count", "to": "pat-count", "status": "ok", "packet": true },
+          { "from": "sig-pair", "to": "pat-two", "status": "ok", "packet": true },
+          { "from": "sig-run", "to": "pat-win", "status": "ok", "packet": true }
+        ]
+      }
+    }
+  ],
+  "quiz": [
+    {
+      "question": "\"Given Maya's daily word counts, find the 7-day stretch with the highest total.\" Which pattern fits best?",
+      "options": [
+        { "text": "Two pointers from both ends", "why": "Two pointers fits pairs in sorted data. Here the days are in time order and you need a contiguous run, not a pair." },
+        { "text": "A fixed-size sliding window of 7", "correct": true, "why": "\"Stretch\" signals contiguous days. Keep a running sum: add the new day, subtract the day that leaves. O(n)." },
+        { "text": "A frequency count of the word counts", "why": "Counting how often each number appears says nothing about which days are next to each other." }
+      ]
+    },
+    {
+      "question": "Claude Code uses two pointers from both ends to find two note sizes that sum to a budget, but the input comes straight from the database with no <code>order by</code>. What is the risk?",
+      "options": [
+        { "text": "Moving a pointer only makes sense when the array is sorted, so it can skip the real pair and return null.", "correct": true, "why": "The skip logic relies on sorted order. Add <code>order by size</code>, sort first, or use the Map approach from lesson 3." },
+        { "text": "It will be O(n²) instead of O(n).", "why": "The loop still runs in O(n). The problem is not speed, it is silently wrong answers." },
+        { "text": "None. Postgres always returns rows in insert order.", "why": "Without <code>order by</code>, Postgres makes no promise about row order." }
+      ]
+    },
+    {
+      "question": "Which problem is a frequency-count problem?",
+      "options": [
+        { "text": "Find the longest run of notes written on consecutive days.", "why": "\"Longest run\" of consecutive items is a sliding window signal." },
+        { "text": "In a sorted list of prices, find two that add up to 100.", "why": "Sorted plus pair is the two-pointer signal." },
+        { "text": "Check whether two tag names use exactly the same letters.", "correct": true, "why": "Same letters, same counts: tally the letters of one, subtract the other, check nothing goes negative." }
+      ]
+    }
+  ],
+  "takeaways": [
+    "Read the <b>signal words</b> first: count, sorted pair, or contiguous stretch.",
+    "<b>Frequency count</b>: one pass into a <code>Map</code>, then answer from the tallies.",
+    "<b>Two pointers</b>: start at both ends of sorted data and move the side that fixes the sum. O(n) time, O(1) space.",
+    "<b>Sliding window</b>: add the item entering, drop the item leaving. Never re-add the whole window.",
+    "Every pattern has a precondition (sorted, contiguous, non-negative). Say it out loud before you code."
+  ]
+}
