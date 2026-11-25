@@ -31,9 +31,9 @@
         "caption": "The code reached production. The column did not.",
         "nodes": [
           { "id": "local", "x": 2, "y": 4, "label": "Local database", "sublabel": "your laptop", "icon": "database", "kind": "data", "status": "ok", "tags": ["pinned ✓"] },
-          { "id": "git", "x": 6.2, "y": 1.4, "label": "GitHub", "sublabel": "code only", "icon": "git", "kind": "external" },
+          { "id": "git", "x": 6.2, "y": 0.8, "label": "GitHub", "sublabel": "code only", "icon": "git", "kind": "external" },
           { "id": "vercel", "x": 6.2, "y": 6.4, "label": "Vercel deploy", "sublabel": "new code", "icon": "rocket", "kind": "server", "status": "active" },
-          { "id": "prod", "x": 10.2, "y": 4, "label": "Production DB", "sublabel": "Supabase project", "icon": "database", "kind": "data", "status": "error", "tags": ["no pinned"] }
+          { "id": "prod", "x": 10.4, "y": 4, "label": "Production DB", "sublabel": "Supabase project", "icon": "database", "kind": "data", "status": "error", "tags": ["no pinned"] }
         ],
         "edges": [
           { "from": "git", "to": "vercel", "label": "deploy", "packet": { "label": "code" } },
@@ -146,7 +146,7 @@
         "nodes": [
           { "id": "old", "x": 2.2, "y": 2.2, "label": "Old code", "sublabel": "still running", "icon": "server", "kind": "server", "status": "error" },
           { "id": "new", "x": 2.2, "y": 5.8, "label": "New code", "sublabel": "rolling out", "icon": "server", "kind": "server", "status": "active" },
-          { "id": "prod", "x": 10.2, "y": 4, "label": "Production DB", "sublabel": "Supabase project", "icon": "database", "kind": "data", "status": "warn", "tags": ["title → heading"] }
+          { "id": "prod", "x": 10.4, "y": 4, "label": "Production DB", "sublabel": "Supabase project", "icon": "database", "kind": "data", "status": "warn", "tags": ["title → heading"] }
         ],
         "edges": [
           { "from": "old", "to": "prod", "label": "select title", "status": "error", "packet": { "label": "query", "status": "error" } },

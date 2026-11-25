@@ -40,7 +40,7 @@
       "scene": {
         "caption": "The browser asks for Maya's notes. The server has no idea who is asking.",
         "nodes": [
-          { "id": "browser", "x": 2, "y": 4, "label": "Browser", "sublabel": "Maya's laptop", "icon": "browser", "kind": "client" },
+          { "id": "browser", "x": 1.8, "y": 4, "label": "Browser", "sublabel": "Maya's laptop", "icon": "browser", "kind": "client" },
           { "id": "server", "x": 6.4, "y": 4, "label": "Notely API", "sublabel": "on Vercel", "icon": "server", "kind": "server", "status": "warn" }
         ],
         "edges": [

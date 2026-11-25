@@ -41,7 +41,7 @@
           { "id": "browser", "x": 2, "y": 4, "label": "Browser", "sublabel": "Maya signs up", "icon": "browser", "kind": "client" },
           { "id": "server", "x": 6.2, "y": 4, "label": "Notely API", "sublabel": "on Vercel", "icon": "server", "kind": "server" },
           { "id": "db", "x": 10.4, "y": 4, "label": "users table", "icon": "database", "kind": "data", "status": "error", "tags": ["maya: hunter2"] },
-          { "id": "thief", "x": 10.4, "y": 6, "label": "Leaked backup", "sublabel": "in the wrong hands", "icon": "incognito", "kind": "threat", "status": "error" }
+          { "id": "thief", "x": 9.6, "y": 6.8, "label": "Leaked backup", "sublabel": "in the wrong hands", "icon": "incognito", "kind": "threat", "status": "error" }
         ],
         "edges": [
           { "from": "browser", "to": "server", "label": "sign up", "packet": { "label": "password" } },
@@ -124,7 +124,7 @@
         "remove": ["db", "thief"],
         "nodes": [
           { "id": "server", "tags": null, "status": "normal" },
-          { "id": "google", "x": 10.4, "y": 1.6, "label": "Google", "sublabel": "identity provider", "icon": "globe", "kind": "external", "status": "active" }
+          { "id": "google", "x": 10.4, "y": 1.4, "label": "Google", "sublabel": "identity provider", "icon": "globe", "kind": "external", "status": "active" }
         ],
         "edges": [
           { "id": "browser>server", "label": "Sign in with Google", "packet": false },
@@ -192,7 +192,7 @@
         "caption": "Notely emails a single-use link. Clicking it brings the token back to the server.",
         "remove": ["google", "evil"],
         "nodes": [
-          { "id": "inbox", "x": 2, "y": 1.4, "label": "Maya's inbox", "icon": "mail", "kind": "external", "status": "active" },
+          { "id": "inbox", "x": 1.6, "y": 1.4, "label": "Maya's inbox", "icon": "mail", "kind": "external", "status": "active" },
           { "id": "server", "tags": ["single use", "expires soon"] }
         ],
         "edges": [
@@ -224,7 +224,7 @@
         "nodes": [
           { "id": "server", "label": "Supabase Auth", "sublabel": "hashing, OAuth, links", "icon": "shield", "status": "ok", "tags": null },
           { "id": "inbox", "status": "normal" },
-          { "id": "google", "x": 10.4, "y": 1.6, "label": "Google", "sublabel": "identity provider", "icon": "globe", "kind": "external" },
+          { "id": "google", "x": 10.4, "y": 1.4, "label": "Google", "sublabel": "identity provider", "icon": "globe", "kind": "external" },
           { "id": "db", "x": 10.4, "y": 4.4, "label": "auth.users", "sublabel": "bcrypt hashes only", "icon": "database", "kind": "data", "status": "ok" }
         ],
         "edges": [

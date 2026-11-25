@@ -33,7 +33,7 @@
         "nodes": [
           { "id": "browser", "x": 1.4, "y": 4, "label": "Browser", "sublabel": "Maya", "icon": "browser", "kind": "client", "status": "warn" },
           { "id": "cf", "x": 3.9, "y": 4, "label": "Cloudflare", "sublabel": "in front", "icon": "shield", "kind": "external" },
-          { "id": "vercel", "x": 7.4, "y": 4, "label": "Vercel function", "sublabel": "/api/summary", "icon": "function", "kind": "server", "status": "error" },
+          { "id": "vercel", "x": 9.8, "y": 4, "label": "Vercel function", "sublabel": "/api/summary", "icon": "function", "kind": "server", "status": "error" },
           { "id": "supabase", "x": 10.6, "y": 1.8, "label": "Supabase", "sublabel": "notes + auth", "icon": "database", "kind": "data" },
           { "id": "claude", "x": 10.6, "y": 7.4, "label": "Claude API", "sublabel": "summaries", "icon": "sparkle", "kind": "ai" }
         ],

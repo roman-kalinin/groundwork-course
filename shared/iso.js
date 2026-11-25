@@ -14,15 +14,20 @@ export const ISO = {
   /** screen px per grid unit, horizontally (a grid step moves G across and G/2 down) */
   G: 70,
   /** extra room around the content */
-  pad: 26,
-  lift: 14, // how far an "active" block floats up
-  card: { label: 20, sub: 14.5, padX: 13, h1: 36, h2: 55, gap: 11, tail: 7, minW: 64 },
-  edge: { size: 13, padX: 9, h: 25 },
-  tag: { size: 12, padX: 7, h: 21, gap: 5, below: 8 },
-  note: { padX: 13, h: 34, rise: 22 },
-  packet: { size: 12.5, padX: 9, h: 22, r: 6.5 },
-  zone: { size: 11.5, padX: 9, h: 22, thick: 6 },
+  pad: 30,
+  lift: 16, // how far an "active" block floats up
+  card: { label: 20, sub: 14.5, padX: 13, h1: 36, h2: 55, gap: 10, tail: 7, minW: 64 },
+  edge: { size: 14.5, padX: 10, h: 27 },
+  tag: { size: 13, padX: 7, h: 22, gap: 5, below: 8 },
+  note: { padX: 14, h: 36, rise: 24 },
+  packet: { size: 13, padX: 9, h: 23, r: 7 },
+  zone: { size: 12.5, padX: 9, h: 24, thick: 7, inset: 0.1 },
+  /** the smallest view (screen units) the per-step camera zooms in to */
+  minView: { w: 820, h: 500 },
 };
+
+/** Node shapes an author may pick with `shape` (overrides the kind's default shape). */
+export const NODE_SHAPES = ['block', 'tile', 'token', 'flag', 'stack'];
 
 const SQRT2 = Math.SQRT2;
 
@@ -33,31 +38,44 @@ export function project(x, y, z = 0) {
 
 // ---------------------------------------------------------------- node shapes
 /**
- * The 3D shape used for a node, by kind. hw/hd are half the footprint in grid
- * units (x and y); h is the height in px. `top` is the highest screen point of
- * the shape above the floor centre (used to place the card).
+ * The 3D shape used for a node: by `shape` when the author set one, otherwise
+ * by kind. hw/hd are half the footprint in grid units (x and y); h is the
+ * height in px.
  */
 export function nodeShape(n) {
+  switch (n.shape) {
+    case 'block':
+      return { type: 'box', hw: 0.48, hd: 0.48, h: 31 };
+    case 'tile':
+      return { type: 'tile', hw: 0.5, hd: 0.5, h: 11 };
+    case 'token':
+      return { type: 'token', hw: 0.43, hd: 0.43, r: 0.43 * SQRT2, h: 15 };
+    case 'flag':
+      return { type: 'flag', hw: 0.24, hd: 0.24, h: 7, poleH: 64 };
+    case 'stack':
+      return { type: 'stack', hw: 0.46, hd: 0.46, h: 33 };
+    default:
+  }
   const kind = n.kind ?? 'neutral';
   switch (kind) {
     case 'server':
-      return { type: 'server', hw: 0.42, hd: 0.42, h: 40 };
+      return { type: 'server', hw: 0.5, hd: 0.5, h: 48 };
     case 'data':
-      return { type: 'cylinder', hw: 0.41, hd: 0.41, r: 0.41 * SQRT2, h: 36 };
+      return { type: 'cylinder', hw: 0.49, hd: 0.49, r: 0.49 * SQRT2, h: 42 };
     case 'ai':
-      return { type: 'chip', hw: 0.42, hd: 0.42, h: 22, cap: 0.3, capH: 13 };
+      return { type: 'chip', hw: 0.5, hd: 0.5, h: 26, cap: 0.36, capH: 15 };
     case 'external':
-      return { type: 'crate', hw: 0.38, hd: 0.38, h: 26, lid: 0.45, lidH: 8 };
+      return { type: 'crate', hw: 0.45, hd: 0.45, h: 31, lid: 0.53, lidH: 9 };
     case 'threat':
-      return { type: 'hazard', hw: 0.4, hd: 0.4, h: 32 };
+      return { type: 'hazard', hw: 0.48, hd: 0.48, h: 38 };
     case 'client':
       return n.icon === 'phone'
-        ? { type: 'phone', hw: 0.24, hd: 0.13, h: 50 }
-        : { type: 'laptop', hw: 0.46, hd: 0.36, h: 7, screenH: 38 };
+        ? { type: 'phone', hw: 0.29, hd: 0.16, h: 60 }
+        : { type: 'laptop', hw: 0.55, hd: 0.43, h: 8, screenH: 46 };
     case 'person':
-      return { type: 'person', hw: 0.31, hd: 0.31, h: 8, figure: n.icon === 'users' ? 2 : 1, figH: 56 };
+      return { type: 'person', hw: 0.37, hd: 0.37, h: 9, figure: n.icon === 'users' ? 2 : 1, figH: 66 };
     default:
-      return { type: 'box', hw: 0.4, hd: 0.4, h: 26 };
+      return { type: 'box', hw: 0.48, hd: 0.48, h: 31 };
   }
 }
 
@@ -67,6 +85,7 @@ export function shapeHeight(s) {
   if (s.type === 'crate') return s.h + s.lidH;
   if (s.type === 'laptop') return s.h + s.screenH;
   if (s.type === 'person') return s.h + s.figH;
+  if (s.type === 'flag') return s.h + s.poleH;
   return s.h;
 }
 
@@ -82,12 +101,13 @@ export function boxCorners(hw, hd, z) {
 }
 
 /** Outline polygon (screen, relative to node centre) that hides what is behind the node. */
+export const FLAG_W = 46;
 export function silhouette(s, lift = 0) {
   const G = ISO.G;
   if (s.type === 'person') {
     const b0 = boxCorners(s.hw, s.hd, 0);
     const b1 = boxCorners(s.hw, s.hd, s.h + lift);
-    const fw = s.figure === 2 ? 30 : 17;
+    const fw = s.figure === 2 ? 36 : 20;
     const top = -s.h - lift - s.figH - (s.hw + s.hd) * G * 0.1;
     return [b0.W, b1.W, { x: -fw, y: b1.N.y }, { x: -fw, y: top }, { x: fw, y: top }, { x: fw, y: b1.N.y }, b1.E, b0.E, b0.S];
   }
@@ -97,6 +117,13 @@ export function silhouette(s, lift = 0) {
     const t = boxCorners(s.hw, s.hd, s.h + lift + s.screenH);
     // screen panel stands on the back-right edge (N..E)
     return [b0.W, b1.W, { x: t.N.x, y: t.N.y }, { x: t.E.x, y: t.E.y }, b0.E, b0.S];
+  }
+  if (s.type === 'flag') {
+    const b0 = boxCorners(s.hw, s.hd, 0);
+    const b1 = boxCorners(s.hw, s.hd, s.h + lift);
+    const top = -s.h - lift - s.poleH;
+    const fw = FLAG_W;
+    return [b0.W, b1.W, { x: -2, y: b1.N.y }, { x: -2, y: top }, { x: fw, y: top + 6 }, { x: fw, y: top + 34 }, { x: 3, y: top + 34 }, { x: 3, y: b1.E.y }, b1.E, b0.E, b0.S];
   }
   const hw = s.type === 'crate' ? s.lid : s.hw;
   const hd = s.type === 'crate' ? s.lid : s.hd;
@@ -113,7 +140,9 @@ export function cardSize(n) {
   return { w: Math.max(c.minW, Math.ceil(tw + c.padX * 2)), h: n.sublabel ? c.h2 : c.h1 };
 }
 export const tagWidth = (t) => Math.ceil(monoWidth(t, ISO.tag.size) + ISO.tag.padX * 2);
-export const edgeLabelWidth = (label) => (label ? Math.ceil(monoWidth(label, ISO.edge.size) + ISO.edge.padX * 2) : 0);
+/** Edge labels use the text sans (Instrument Sans 600); widths scale from the measured 14.5px / 500 table. */
+export const sansWidth = (text, size) => textWidth(text, 'sub') * (size / 14.5) * 1.045;
+export const edgeLabelWidth = (label) => (label ? Math.ceil(sansWidth(label, ISO.edge.size) + ISO.edge.padX * 2) : 0);
 export const packetWidth = (label) => (label ? Math.ceil(monoWidth(label, ISO.packet.size) + ISO.packet.padX * 2) : ISO.packet.r * 2 + 6);
 export const noteWidth = (text) => Math.ceil(textWidth(text, 'note') + ISO.note.padX * 2);
 export const zoneLabelWidth = (label) => Math.ceil(monoWidth(String(label).toUpperCase(), ISO.zone.size) * (0.68 / 0.6) + ISO.zone.padX * 2);
@@ -231,7 +260,22 @@ export function edgeLayout(e, A, B, bend = 0) {
 
   const at = (u) => scr(t0 + (t1 - t0) * u); // u in 0..1 along the visible part
   let length = 0;
-  { let p = at(0); for (let i = 1; i <= 24; i++) { const n = at(i / 24); length += Math.hypot(n.x - p.x, n.y - p.y); p = n; } }
+  const cum = [0];
+  { let p = at(0); for (let i = 1; i <= 32; i++) { const n = at(i / 32); length += Math.hypot(n.x - p.x, n.y - p.y); cum.push(length); p = n; } }
+  /** share of the drawn length -> screen point */
+  const atS = (sv) => {
+    const target = Math.max(0, Math.min(1, sv)) * length;
+    let i = 0;
+    while (i < 31 && cum[i + 1] < target) i++;
+    const seg = cum[i + 1] - cum[i] || 1;
+    return at((i + (target - cum[i]) / seg) / 32);
+  };
+  /** u (curve parameter share) -> share of the drawn length (what SVG animateMotion keyPoints use) */
+  const sOf = (u) => {
+    const f = Math.max(0, Math.min(1, u)) * 32;
+    const i = Math.min(31, Math.floor(f));
+    return length ? (cum[i] + (cum[i + 1] - cum[i]) * (f - i)) / length : u;
+  };
 
   // arrowheads lie flat on the floor
   const head = (t, dir) => {
@@ -254,7 +298,7 @@ export function edgeLayout(e, A, B, bend = 0) {
   const lw = edgeLabelWidth(e.label);
   const labelAt = (u) => { const p = at(u); return rect(p.x - lw / 2, p.y - ISO.edge.h / 2, lw, ISO.edge.h); };
   const label = e.label ? labelAt(0.5) : null;
-  return { d, at, mid, length, heads, label, labelU: 0.5, labelAt };
+  return { d, at, atS, sOf, mid, length, heads, label, labelU: 0.5, labelAt, tip: arrowEnd ? at(1) : null, tail: arrowStart ? at(0) : null };
 }
 const r1 = (v) => Math.round(v * 10) / 10;
 
@@ -287,21 +331,28 @@ export function stillPacket(e, g, which, avoid = () => 0) {
 
 // ---------------------------------------------------------------- zones & notes
 export function zoneLayout(z) {
-  const N = project(z.x, z.y), E = project(z.x + z.w, z.y), S = project(z.x + z.w, z.y + z.h), W = project(z.x, z.y + z.h);
+  const k = Math.min(ISO.zone.inset, z.w / 4, z.h / 4);
+  const x0 = z.x + k, y0 = z.y + k, x1 = z.x + z.w - k, y1 = z.y + z.h - k;
+  const N = project(x0, y0), E = project(x1, y0), S = project(x1, y1), W = project(x0, y1);
   const poly = [N, E, S, W];
   const candidates = [];
   if (z.label) {
     const w = zoneLabelWidth(z.label);
     const h = ISO.zone.h;
-    // name tab positions, in order of preference: back corner, left corner,
-    // right corner, front corner. The first one that covers no text wins.
-    const a = project(z.x + 0.12, z.y + 0.12);
-    candidates.push(rect(a.x - 14, a.y - h / 2 - 2, w, h));
-    candidates.push(rect(W.x + 10, W.y - h / 2, w, h));
-    candidates.push(rect(E.x - 10 - w, E.y - h / 2, w, h));
+    // name tab positions, in order of preference: the plate's left corner
+    // (front-left edge), along that edge, the right corner, the back corner,
+    // then in front of the plate. The first one that covers no text wins.
+    const left = project(x0 + 0.22, y1 - 0.22);
+    candidates.push(rect(left.x, left.y - h / 2, w, h));
+    const mid = project(x0 + Math.min(1.6, (x1 - x0) * 0.4), y1 - 0.2);
+    candidates.push(rect(mid.x - 6, mid.y - h - 2, w, h));
+    const right = project(x1 - 0.22, y0 + 0.22);
+    candidates.push(rect(right.x - w, right.y - h / 2, w, h));
+    const back = project(x0 + 0.3, y0 + 0.3);
+    candidates.push(rect(back.x - w / 2, back.y - h / 2 + 4, w, h));
     candidates.push(rect(S.x - w / 2, S.y + ISO.zone.thick + 6, w, h));
   }
-  return { poly, label: candidates[0] ?? null, candidates };
+  return { poly, label: candidates[0] ?? null, candidates, depth: x0 + y0 };
 }
 
 export function noteLayout(n) {
@@ -315,7 +366,7 @@ export function noteLayout(n) {
 export function autoBends(edges) {
   const keys = new Set(edges.map((e) => `${e.from}>${e.to}`));
   const m = new Map();
-  for (const e of edges) if (e.bend === undefined && keys.has(`${e.to}>${e.from}`)) m.set(e.id, 0.4);
+  for (const e of edges) if (e.bend === undefined && keys.has(`${e.to}>${e.from}`)) m.set(e.id, 0.55);
   return m;
 }
 
@@ -332,7 +383,13 @@ export function sceneLayout(scene, poses) {
     else if (Number.isFinite(n.x) && Number.isFinite(n.y)) nodes.set(n.id, nodeLayout(n));
   }
   const bends = autoBends(scene.edges);
-  const notes = scene.notes.filter((n) => Number.isFinite(n.x) && Number.isFinite(n.y)).map((n) => ({ n, ...noteLayout(n) }));
+  const notes = scene.notes.filter((n) => Number.isFinite(n.x) && Number.isFinite(n.y)).map((n) => {
+    // a note points at something only when its spot is next to a block;
+    // otherwise it is a free-standing sticker without a tail
+    let near = Infinity;
+    for (const L of nodes.values()) near = Math.min(near, Math.hypot(L.x - n.x, L.y - n.y));
+    return { n, ...noteLayout(n), attached: near <= 1.5 };
+  });
   const fixed = [];
   for (const L of nodes.values()) fixed.push(L.card, ...L.tags);
   for (const n of notes) fixed.push(n.rect);
@@ -370,7 +427,10 @@ export function sceneLayout(scene, poses) {
       for (const r of L.candidates) {
         let blocks = 0;
         for (const N of nodes.values()) blocks += blockHit(r, N);
-        const cost = hits(r, fixed) + hits(r, placed) + 0.4 * blocks;
+        // stay off edge lines too (packets travel there)
+        let lines = 0;
+        for (const { g } of edges) for (let i = 1; i < 12; i++) { const p = g.at(i / 12); if (p.x > r.x - 4 && p.x < r.x + r.w + 4 && p.y > r.y - 4 && p.y < r.y + r.h + 4) lines += 3; }
+        const cost = hits(r, fixed) + hits(r, placed) + 0.4 * blocks + lines;
         if (!best || cost < best.cost - 0.01) best = { r, cost };
         if (cost === 0) break;
       }
@@ -378,6 +438,44 @@ export function sceneLayout(scene, poses) {
       placed.push(best.r);
     }
     zones.push({ z, ...L });
+  }
+  // moving packets: each one travels only along the longest stretch of its
+  // edge where it covers no text (its own label ducks while it passes)
+  const owned = [];
+  for (const [id, L] of nodes) { owned.push({ r: L.card, id }); L.tags.forEach((r) => owned.push({ r, id, tag: true })); }
+  for (const n of notes) owned.push({ r: n.rect, id: n.n.id });
+  for (const { e, g } of edges) {
+    const pk = e.packet === true ? {} : e.packet;
+    if (!pk || typeof pk !== 'object') continue;
+    const pw = packetWidth(pk.label), ph = ISO.packet.h;
+    // the end blocks' own floor tags are drawn above packets, so a packet may slip under them
+    const others = [...owned.filter((o) => !(o.tag && (o.id === e.from || o.id === e.to))), ...zones.filter((z) => z.label).map((z) => ({ r: z.label, id: z.z.id })), ...edges.filter((x) => x.e !== e && x.g.label).map((x) => ({ r: x.g.label, id: x.e.from }))];
+    const N = 48;
+    const clear = [];
+    const blockers = new Set();
+    for (let i = 0; i <= N; i++) {
+      const p = g.at(i / N);
+      const r = rect(p.x - pw / 2, p.y - ph / 2, pw, ph);
+      const hit = others.filter((o) => rectOverlap(r, o.r, -1) > 0);
+      hit.forEach((o) => blockers.add(o.id));
+      clear.push(!hit.length);
+    }
+    g.blockers = [...blockers];
+    let best = null;
+    for (let i = 0; i <= N; ) {
+      if (!clear[i]) { i++; continue; }
+      let j = i;
+      while (j + 1 <= N && clear[j + 1]) j++;
+      if (!best || j - i > best.b - best.a) best = { a: i, b: j };
+      i = j + 1;
+    }
+    const minPx = Math.min(80, g.length * 0.4);
+    if (best && ((best.b - best.a) / N) * g.length >= minPx) g.run = { a: best.a / N, b: best.b / N, ok: true };
+    else g.run = best && best.b > best.a ? { a: best.a / N, b: best.b / N, ok: false } : { a: 0, b: 1, ok: false };
+    if (g.label) {
+      const half = (g.label.w / 2 + pw / 2 + 4) / Math.max(1, g.length);
+      g.duck = { a: g.labelU - half, b: g.labelU + half };
+    }
   }
   // resting spots for packets (used when motion is reduced)
   for (const { e, g } of edges) {
@@ -397,9 +495,75 @@ export function sceneLayout(scene, poses) {
       if (sp) placed.push(sp.rect);
     }
   }
+  if (!poses) assignPacketPhases(edges);
   return { nodes, edges, zones, notes };
 }
-const LABEL_SPOTS = [0.5, 0.42, 0.58, 0.35, 0.65, 0.28, 0.72];
+
+// ---------------------------------------------------------------- packet timing
+/** Seconds per loop, by speed. */
+export const PACKET_SPEED = { slow: 3.6, normal: 2.5, fast: 1.5 };
+/** Share of each loop spent travelling (the rest: fade in at the start, fade out at the end). */
+export const PACKET_MOVE = { start: 0.06, end: 0.88, visibleFrom: 0.04, visibleTo: 0.88 };
+
+/** Timing of the packet(s) on one edge, with begin offsets (s) for the forward and backward packet. */
+function packetMotionFor(e, g, phase) {
+  const pk = e.packet === true ? {} : e.packet;
+  if (!pk || typeof pk !== 'object') return null;
+  const dur = PACKET_SPEED[pk.speed ?? 'normal'] ?? PACKET_SPEED.normal;
+  const dir = pk.direction ?? 'forward';
+  const run = g.run ?? { a: 0, b: 1 };
+  return {
+    dur,
+    fwd: dir === 'forward' || dir === 'both' ? phase : null,
+    back: dir === 'backward' || dir === 'both' ? (dir === 'both' ? phase + dur / 2 : phase) : null,
+    sa: g.sOf(run.a),
+    sb: g.sOf(run.b),
+    w: packetWidth(pk.label),
+  };
+}
+
+/** Screen rect of a moving packet at time t (s), or null while it is faded out. */
+export function packetRectAt(g, m, begin, reverse, t) {
+  const local = ((((t - begin) % m.dur) + m.dur) % m.dur) / m.dur;
+  if (local < PACKET_MOVE.visibleFrom || local > PACKET_MOVE.visibleTo) return null;
+  const k = Math.max(0, Math.min(1, (local - PACKET_MOVE.start) / (PACKET_MOVE.end - PACKET_MOVE.start)));
+  let s = m.sa + (m.sb - m.sa) * k;
+  if (reverse) s = m.sb - (m.sb - m.sa) * k;
+  const p = g.atS(s);
+  return rect(p.x - m.w / 2, p.y - ISO.packet.h / 2, m.w, ISO.packet.h);
+}
+
+const PHASE_T = Array.from({ length: 160 }, (_, i) => i * 0.05); // 8 s of timeline
+
+/** Packets of different edges should not run into each other: pick each edge's start offset greedily. */
+function assignPacketPhases(edges) {
+  const done = [];
+  edges.forEach(({ e, g }, index) => {
+    if (!g.run) return;
+    const base = packetMotionFor(e, g, 0);
+    if (!base) return;
+    let best = null;
+    for (let k = 0; k < 8; k++) {
+      const phase = ((index * 0.43) + (k * base.dur) / 8) % base.dur;
+      const m = packetMotionFor(e, g, phase);
+      let cost = 0;
+      for (const t of PHASE_T) {
+        const mine = [m.fwd !== null && packetRectAt(g, m, m.fwd, false, t), m.back !== null && packetRectAt(g, m, m.back, true, t)].filter(Boolean);
+        if (!mine.length) continue;
+        for (const o of done) {
+          const theirs = [o.m.fwd !== null && packetRectAt(o.g, o.m, o.m.fwd, false, t), o.m.back !== null && packetRectAt(o.g, o.m, o.m.back, true, t)].filter(Boolean);
+          for (const a of mine) for (const b of theirs) cost += rectOverlap(a, b, 2);
+        }
+      }
+      if (!best || cost < best.cost - 0.01) best = { m, cost };
+      if (cost === 0) break;
+    }
+    g.motion = best.m;
+    g.motionClash = best.cost;
+    done.push({ g, m: best.m });
+  });
+}
+const LABEL_SPOTS = [0.5, 0.42, 0.58, 0.35, 0.65, 0.28, 0.72, 0.22, 0.78];
 /** Overlap depth between a rect and a node's block outline (bounding box). */
 function blockHit(r, L) {
   const b = polyBox(L.sil);
@@ -471,6 +635,36 @@ export function layoutProblems(scene) {
       const limit = t.ends?.includes(id) ? 0.22 : 0.3;
       if (cov > limit) out.push({ level: 'warn', msg: `${t.what} hides ${Math.round(cov * 100)}% of block "${id}"`, ids: [...t.ids, id], depth: cov * 20 });
     }
+  }
+  // zone plates may nest, but must not partly overlap
+  const zs = L.zones.map((z) => z.z);
+  for (let i = 0; i < zs.length; i++) for (let j = i + 1; j < zs.length; j++) {
+    const a = zs[i], b = zs[j];
+    const ox = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);
+    const oy = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
+    if (ox <= 0.05 || oy <= 0.05) continue;
+    const inside = (p, q) => p.x >= q.x - 0.01 && p.y >= q.y - 0.01 && p.x + p.w <= q.x + q.w + 0.01 && p.y + p.h <= q.y + q.h + 0.01;
+    if (inside(a, b) || inside(b, a)) continue;
+    out.push({ level: 'error', msg: `zones "${a.id}" and "${b.id}" partly overlap (${ox.toFixed(1)} x ${oy.toFixed(1)} grid units). Leave a gap between them, or put one fully inside the other.`, ids: [a.id, b.id], depth: Math.min(ox, oy) * 20 });
+  }
+  // arrowheads must stay visible: not under a card, tag, note or other label
+  const cover = [];
+  for (const [id, n] of nodes) { cover.push({ what: `the card of "${id}"`, r: { ...n.card, h: n.card.h + ISO.card.tail }, id }); n.tags.forEach((r) => cover.push({ what: `a tag of "${id}"`, r, id })); }
+  for (const n of L.notes) cover.push({ what: `note "${n.n.id}"`, r: n.rect, id: n.n.id });
+  for (const { e, g } of L.edges) {
+    for (const p of [g.tip, g.tail]) {
+      if (!p) continue;
+      const hit = cover.find((c) => p.x > c.r.x - 3 && p.x < c.r.x + c.r.w + 3 && p.y > c.r.y - 3 && p.y < c.r.y + c.r.h + 3);
+      if (hit) out.push({ level: 'error', msg: `the arrowhead of edge "${e.id}" hides under ${hit.what}`, ids: [e.from, e.to, hit.id], depth: 6 });
+    }
+  }
+  // moving packets need a clear stretch of their edge
+  for (const { e, g } of L.edges) {
+    if (g.run && !g.run.ok) out.push({ level: 'error', msg: `the packet on edge "${e.id}" has no clear stretch to travel: it would pass over other text (cards, tags, labels) almost all the way`, ids: [e.from, e.to, ...(g.blockers ?? [])], depth: 8 });
+  }
+  // moving packets of different edges should not run into each other
+  for (const { e, g } of L.edges) {
+    if (g.motionClash > 30) out.push({ level: 'warn', msg: `the packet on edge "${e.id}" runs into another packet while moving; lower the number of packets or move the edges apart`, ids: [e.from, e.to], depth: 4 });
   }
   // an edge whose line runs mostly underneath cards cannot be followed
   for (const { e, g } of L.edges) {

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CodeSnippet } from '../../shared/schema.js';
 
 // A deliberately tiny highlighter: comments, strings, numbers, keywords,
@@ -69,9 +69,36 @@ export function CodeBlock({ snippet }: { snippet: CodeSnippet }) {
       /* clipboard blocked */
     }
   };
-  const lines = snippet.code.split(NL).length;
+  // split tokens into lines so each line carries its own number (lets long lines wrap)
+  const lines = useMemo(() => {
+    const out: Tok[][] = [[]];
+    for (const t of toks) {
+      const parts = t.t.split(NL);
+      parts.forEach((part, i) => {
+        if (i > 0) out.push([]);
+        if (part) out[out.length - 1].push({ t: part, c: t.c });
+      });
+    }
+    return out;
+  }, [toks]);
+  const wrap = ['json', 'text', 'http', 'env'].includes(snippet.language);
+  const pre = useRef<HTMLPreElement>(null);
+  const [more, setMore] = useState(false);
+  useEffect(() => {
+    const el = pre.current;
+    if (!el) return;
+    const update = () => setMore(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
+    update();
+    el.addEventListener('scroll', update, { passive: true });
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => {
+      el.removeEventListener('scroll', update);
+      ro.disconnect();
+    };
+  }, [lines]);
   return (
-    <figure className="code">
+    <figure className={`code${wrap ? ' wrap' : ''}`}>
       <div className="code-head">
         <span className="code-dots" aria-hidden="true">
           <i />
@@ -79,26 +106,38 @@ export function CodeBlock({ snippet }: { snippet: CodeSnippet }) {
           <i />
         </span>
         <span className="code-name">{snippet.filename ?? 'snippet'}</span>
+        {more && (
+          <span className="code-more" aria-hidden="true">
+            scroll →
+          </span>
+        )}
         <span className="code-lang">{snippet.language}</span>
         <button type="button" className={`code-copy${copied ? ' done' : ''}`} onClick={copy} aria-label="Copy code">
           {copied ? 'Copied' : 'Copy'}
         </button>
       </div>
-      <div className="code-body">
-        <div className="code-gutter" aria-hidden="true">
-          {Array.from({ length: lines }, (_, i) => i + 1).join(NL)}
-        </div>
-        <pre tabIndex={0}>
+      <div className={`code-body${more ? ' more' : ''}`}>
+        <pre tabIndex={0} ref={pre}>
           <code>
-            {toks.map((t, i) =>
-              t.c ? (
-                <span key={i} className={`tk-${t.c}`}>
-                  {t.t}
+            {lines.map((line, n) => (
+              <span className="cl" key={n}>
+                <span className="cl-n" aria-hidden="true">
+                  {n + 1}
                 </span>
-              ) : (
-                t.t
-              ),
-            )}
+                <span className="cl-c">
+                  {line.map((t, i) =>
+                    t.c ? (
+                      <span key={i} className={`tk-${t.c}`}>
+                        {t.t}
+                      </span>
+                    ) : (
+                      t.t
+                    ),
+                  )}
+                  {line.length === 0 ? ' ' : null}
+                </span>
+              </span>
+            ))}
           </code>
         </pre>
       </div>

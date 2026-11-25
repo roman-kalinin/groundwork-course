@@ -32,7 +32,7 @@
       "scene": {
         "caption": "Too many notes to send, and the right one does not contain the search word.",
         "nodes": [
-          { "id": "q", "x": 2, "y": 4, "label": "Maya's question", "sublabel": "\"the logo?\"", "icon": "chat", "kind": "person" },
+          { "id": "q", "x": 2, "y": 3.8, "label": "Maya's question", "sublabel": "\"the logo?\"", "icon": "chat", "kind": "person" },
           { "id": "route", "x": 6.4, "y": 4, "label": "Chat route", "sublabel": "Notely server", "icon": "function", "kind": "server" },
           { "id": "notes", "x": 10.2, "y": 4, "label": "notes table", "sublabel": "2,000 notes", "icon": "database", "kind": "data", "status": "warn", "tags": ["0 rows match"] }
         ],
@@ -41,7 +41,7 @@
           { "from": "route", "to": "notes", "label": "ILIKE '%logo%'", "status": "warn", "packet": true }
         ],
         "notes": [
-          { "id": "miss", "x": 10, "y": 6.2, "text": "The note says \"brand mark\"", "status": "warn" }
+          { "id": "miss", "x": 9.8, "y": 6.2, "text": "The note says \"brand mark\"", "status": "warn" }
         ]
       }
     },
@@ -62,7 +62,7 @@
           { "id": "space", "x": 0.4, "y": 0.5, "w": 11.2, "h": 7, "label": "Meaning space" }
         ],
         "nodes": [
-          { "id": "q", "x": 2.6, "y": 3, "label": "\"Logo decision?\"", "sublabel": "the question", "icon": "chat", "kind": "person", "status": "active" },
+          { "id": "q", "x": 2.6, "y": 2.8, "label": "\"Logo decision?\"", "sublabel": "the question", "icon": "chat", "kind": "person", "status": "active" },
           { "id": "n1", "x": 6.8, "y": 3, "label": "Blue brand mark", "sublabel": "brand call note", "icon": "file", "kind": "data", "status": "ok" },
           { "id": "n2", "x": 3.6, "y": 5.4, "label": "Font shortlist", "sublabel": "design note", "icon": "file", "kind": "data" },
           { "id": "n3", "x": 9.8, "y": 6.4, "label": "Grocery list", "icon": "file", "kind": "data", "status": "dim" },
@@ -118,7 +118,7 @@
         "caption": "The question is embedded the same way, then matched to its nearest chunks.",
         "nodes": [
           { "id": "notes", "status": "dim" },
-          { "id": "q", "x": 2, "y": 4.8, "label": "Maya's question", "sublabel": "\"the logo?\"", "icon": "chat", "kind": "person", "status": "active" },
+          { "id": "q", "x": 2, "y": 4.6, "label": "Maya's question", "sublabel": "\"the logo?\"", "icon": "chat", "kind": "person", "status": "active" },
           { "id": "chunks", "status": "ok", "tags": ["top 5 by <=>"] }
         ],
         "edges": [
@@ -146,7 +146,7 @@
         "nodes": [
           { "id": "embedder", "status": "normal" },
           { "id": "route", "x": 6.4, "y": 6.4, "label": "Chat route", "sublabel": "builds the prompt", "icon": "function", "kind": "server", "status": "active" },
-          { "id": "llm", "x": 10.7, "y": 6.8, "label": "Claude API", "sublabel": "answers + cites", "icon": "sparkle", "kind": "ai", "status": "ok" }
+          { "id": "llm", "x": 11.1, "y": 6.8, "label": "Claude API", "sublabel": "answers + cites", "icon": "sparkle", "kind": "ai", "status": "ok" }
         ],
         "edges": [
           { "id": "embedder>chunks", "packet": false },

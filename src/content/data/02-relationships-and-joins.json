@@ -36,7 +36,7 @@
         "nodes": [
           { "id": "screen", "x": 6.1, "y": 1.4, "label": "Note list", "sublabel": "title · author · tags", "icon": "list", "kind": "client", "status": "warn" },
           { "id": "users", "x": 1.5, "y": 4.6, "label": "users", "sublabel": "people", "icon": "table", "kind": "data" },
-          { "id": "notes", "x": 3.2, "y": 4.6, "label": "notes", "sublabel": "the notes", "icon": "table", "kind": "data" },
+          { "id": "notes", "x": 3, "y": 4.6, "label": "notes", "sublabel": "the notes", "icon": "table", "kind": "data" },
           { "id": "tags", "x": 10.6, "y": 4.6, "label": "tags", "sublabel": "labels", "icon": "table", "kind": "data" }
         ],
         "edges": [

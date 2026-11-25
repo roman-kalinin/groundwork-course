@@ -68,7 +68,7 @@
         ],
         "nodes": [
           { "id": "mon", "x": 1.9, "y": 4, "label": "Mon 03:00", "sublabel": "nightly backup", "icon": "calendar", "kind": "data" },
-          { "id": "tue", "x": 5.9, "y": 4, "label": "Tue 03:00", "sublabel": "nightly backup", "icon": "calendar", "kind": "data" },
+          { "id": "tue", "x": 5.7, "y": 4, "label": "Tue 03:00", "sublabel": "nightly backup", "icon": "calendar", "kind": "data" },
           { "id": "good", "x": 7.5, "y": 4, "label": "Tue 14:04", "sublabel": "last good second", "icon": "clock", "kind": "neutral", "status": "ok" },
           { "id": "bad", "x": 10.3, "y": 4, "label": "Tue 14:05", "sublabel": "the DELETE", "icon": "trash", "kind": "threat", "status": "error" }
         ],

@@ -33,7 +33,7 @@
       "scene": {
         "caption": "Maya asks for notes and gets everyone's. Nothing filters the rows.",
         "nodes": [
-          { "id": "browser", "x": 2, "y": 4, "label": "Browser", "sublabel": "Maya, logged in", "icon": "browser", "kind": "client", "status": "error" },
+          { "id": "browser", "x": 1.2, "y": 4, "label": "Browser", "sublabel": "Maya, logged in", "icon": "browser", "kind": "client", "status": "error" },
           { "id": "api", "x": 6.4, "y": 4, "label": "Supabase API", "sublabel": "Data API", "icon": "api", "kind": "server" },
           { "id": "notes", "x": 10.4, "y": 4, "label": "notes table", "icon": "table", "kind": "data", "status": "warn", "tags": ["maya: 12 rows", "ben: 30 rows"] }
         ],

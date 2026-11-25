@@ -141,7 +141,7 @@
         "caption": "An update becomes a pull request, gets a preview, and only then reaches production.",
         "nodes": [
           { "id": "bot", "x": 2, "y": 4, "label": "Dependabot", "sublabel": "weekly", "icon": "robot", "kind": "external" },
-          { "id": "pr", "x": 6.4, "y": 4, "label": "Pull request", "sublabel": "grouped updates", "icon": "git", "kind": "neutral", "status": "active" },
+          { "id": "pr", "x": 6.2, "y": 4, "label": "Pull request", "sublabel": "grouped updates", "icon": "git", "kind": "neutral", "status": "active" },
           { "id": "preview", "x": 10.4, "y": 1.6, "label": "Preview deploy", "sublabel": "on Vercel", "icon": "browser", "kind": "server", "status": "ok" },
           { "id": "prod", "x": 10.4, "y": 6.4, "label": "Production", "sublabel": "after you check", "icon": "rocket", "kind": "server" }
         ],

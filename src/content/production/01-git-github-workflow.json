@@ -62,7 +62,7 @@
         "nodes": [
           { "id": "c1", "x": 1.8, "y": 5.2, "label": "Notes list", "sublabel": "commit a1f3", "icon": "git", "kind": "neutral" },
           { "id": "c2", "x": 4.6, "y": 5.2, "label": "AI summary", "sublabel": "commit 7c2e", "icon": "git", "kind": "neutral", "status": "ok" },
-          { "id": "c3", "x": 7.4, "y": 5.2, "label": "Add tags", "sublabel": "commit e91b", "icon": "git", "kind": "neutral", "status": "error" }
+          { "id": "c3", "x": 7.8, "y": 5.2, "label": "Add tags", "sublabel": "commit e91b", "icon": "git", "kind": "neutral", "status": "error" }
         ],
         "edges": [
           { "from": "c1", "to": "c2" },

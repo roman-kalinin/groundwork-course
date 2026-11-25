@@ -29,7 +29,7 @@
       "scene": {
         "caption": "A vague request goes in. Guesses come out. The loop keeps turning.",
         "nodes": [
-          { "id": "you", "x": 2, "y": 4, "label": "Maya", "sublabel": "\"fix it\"", "icon": "user", "kind": "person" },
+          { "id": "you", "x": 0.8, "y": 4, "label": "Maya", "sublabel": "\"fix it\"", "icon": "user", "kind": "person" },
           { "id": "cc", "x": 6.4, "y": 4, "label": "Claude Code", "sublabel": "guessing", "icon": "robot", "kind": "ai", "status": "warn" },
           { "id": "repo", "x": 10.4, "y": 4, "label": "Notely code", "sublabel": "6 files changed", "icon": "code", "status": "error" }
         ],

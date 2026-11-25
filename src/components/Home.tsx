@@ -1,6 +1,8 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { resolveLessonScenes } from '../../shared/schema.js';
+import { polyBox, sceneLayout } from '../../shared/iso.js';
 import type { ResolvedScene } from '../../shared/schema.js';
-import { allLessons, findModule, modules, moduleNumber } from '../content';
+import { allLessons, findModule, loadLesson, modules, moduleNumber } from '../content';
 import { lessonRatio, useProgress } from '../progress';
 import { href } from '../router';
 import { IsoBadge, LEVEL_LABEL, ProgressRing, useReducedMotion } from './bits';
@@ -10,11 +12,11 @@ import { UiIcon } from './UiIcon';
 // The home page hero diagram: the stack every lesson builds on.
 const HERO: ResolvedScene = {
   nodes: [
-    { id: 'you', x: 1.6, y: 2.6, label: 'You', sublabel: 'designer who ships', kind: 'person', icon: 'user' },
-    { id: 'app', x: 4.2, y: 2.6, label: 'Your app', icon: 'browser', kind: 'client' },
-    { id: 'api', x: 6.8, y: 2.6, label: 'API', icon: 'function', kind: 'server', status: 'active' },
-    { id: 'db', x: 6.8, y: 5.0, label: 'Postgres', icon: 'database', kind: 'data' },
-    { id: 'llm', x: 9.4, y: 2.6, label: 'Claude', icon: 'sparkle', kind: 'ai' },
+    { id: 'you', x: 1.3, y: 3.5, label: 'You', sublabel: 'designer who ships', kind: 'person', icon: 'user' },
+    { id: 'app', x: 3.6, y: 3.5, label: 'Your app', icon: 'browser', kind: 'client' },
+    { id: 'api', x: 6.2, y: 3.5, label: 'API', icon: 'function', kind: 'server', status: 'active' },
+    { id: 'llm', x: 6.2, y: 1.2, label: 'Claude', icon: 'sparkle', kind: 'ai' },
+    { id: 'db', x: 6.2, y: 6.3, label: 'Postgres', icon: 'database', kind: 'data' },
   ],
   edges: [
     { id: 'you>app', from: 'you', to: 'app', packet: { speed: 'slow' } },
@@ -22,7 +24,10 @@ const HERO: ResolvedScene = {
     { id: 'api>db', from: 'api', to: 'db', packet: { status: 'ok', direction: 'both', speed: 'slow' } },
     { id: 'api>llm', from: 'api', to: 'llm', style: 'dashed', packet: { status: 'normal' } },
   ],
-  zones: [{ id: 'server', x: 5.6, y: 1.2, w: 4.8, h: 4.8 }],
+  zones: [
+    { id: 'client', x: 0.3, y: 2.5, w: 4.4, h: 2.0, label: 'Your side' },
+    { id: 'server', x: 5.1, y: 0.2, w: 2.2, h: 7.2, label: 'Server', status: 'active' },
+  ],
   notes: [],
 };
 
@@ -90,7 +95,7 @@ export function Home() {
         </div>
         {heroBounds && (
           <div className="hero-art" aria-hidden="true">
-            <SceneView scene={HERO} bounds={heroBounds} reduced={reduced} stepKey={0} legend={false} />
+            <SceneView scene={HERO} bounds={heroBounds} reduced={reduced} stepKey={0} legend={false} frame="content" />
           </div>
         )}
       </header>
@@ -202,6 +207,7 @@ export function ModulePage({ moduleId }: { moduleId: string }) {
                       <span>{l.stepCount} steps</span>
                     </span>
                   </span>
+                  <LessonThumb lessonKey={l.key} />
                   <ProgressRing ratio={lessonRatio(p, l.stepCount)} done={p?.completed} size={26} />
                 </a>
               </li>
@@ -210,6 +216,44 @@ export function ModulePage({ moduleId }: { moduleId: string }) {
         </ol>
       )}
     </div>
+  );
+}
+
+/** Bounds of the blocks and plates only (thumbnails leave the text out). */
+function blockBounds(scene: ResolvedScene) {
+  const L = sceneLayout(scene);
+  const boxes = [...[...L.nodes.values()].map((n) => polyBox(n.sil)), ...L.zones.map((z) => polyBox(z.poly))];
+  if (!boxes.length) return null;
+  const x0 = Math.min(...boxes.map((b) => b.x)), y0 = Math.min(...boxes.map((b) => b.y));
+  const x1 = Math.max(...boxes.map((b) => b.x + b.w)), y1 = Math.max(...boxes.map((b) => b.y + b.h));
+  const pad = 30;
+  let w = x1 - x0 + pad * 2, h = y1 - y0 + pad * 2;
+  // a fixed 16:10 frame, centred
+  const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+  if (w / h > 1.6) h = w / 1.6; else w = h * 1.6;
+  return { x: cx - w / 2, y: cy - h / 2, w, h };
+}
+
+/** A small, still picture of a lesson's first diagram (blocks only). */
+function LessonThumb({ lessonKey }: { lessonKey: string }) {
+  const [scene, setScene] = useState<ResolvedScene | null>(null);
+  useEffect(() => {
+    let alive = true;
+    loadLesson(lessonKey)
+      .then((l) => {
+        const first = resolveLessonScenes(l.steps).find(Boolean);
+        if (alive && first) setScene(first);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [lessonKey]);
+  const bounds = useMemo(() => (scene ? blockBounds(scene) : null), [scene]);
+  return (
+    <span className="lesson-thumb" aria-hidden="true">
+      {scene && bounds && <SceneView scene={scene} bounds={bounds} reduced stepKey={0} legend={false} compact />}
+    </span>
   );
 }
 

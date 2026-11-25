@@ -452,7 +452,7 @@
           {
             "id": "card",
             "x": 10,
-            "y": 0.7,
+            "y": 1.9,
             "label": "Scorecard",
             "sublabel": "what to fix next",
             "icon": "list",

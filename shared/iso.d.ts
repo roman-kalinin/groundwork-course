@@ -3,12 +3,13 @@ import type { ResolvedScene, SceneEdge, SceneNode, SceneNote, SceneZone } from '
 export interface Pt { x: number; y: number }
 export interface Rect { x: number; y: number; w: number; h: number }
 export interface Shape {
-  type: 'server' | 'cylinder' | 'chip' | 'crate' | 'hazard' | 'phone' | 'laptop' | 'person' | 'box';
+  type: 'server' | 'cylinder' | 'chip' | 'crate' | 'hazard' | 'phone' | 'laptop' | 'person' | 'box' | 'tile' | 'token' | 'flag' | 'stack';
   hw: number; hd: number; h: number;
-  r?: number; cap?: number; capH?: number; lid?: number; lidH?: number; screenH?: number; figure?: number; figH?: number;
+  r?: number; cap?: number; capH?: number; lid?: number; lidH?: number; screenH?: number; figure?: number; figH?: number; poleH?: number;
 }
 export interface NodeLayout { c: Pt; shape: Shape; sil: Pt[]; topY: number; card: Rect; tags: Rect[]; depth: number; x: number; y: number }
-export interface EdgeGeom { d: string; at: (u: number) => Pt; mid: Pt; length: number; heads: string[]; label: Rect | null; labelU: number; labelAt: (u: number) => Rect; stills?: { fwd?: { p: Pt; rect: Rect } | null; back?: { p: Pt; rect: Rect } | null } }
+export interface PacketMotion { dur: number; fwd: number | null; back: number | null; sa: number; sb: number; w: number }
+export interface EdgeGeom { motion?: PacketMotion; motionClash?: number; blockers?: string[]; d: string; at: (u: number) => Pt; atS: (s: number) => Pt; sOf: (u: number) => number; mid: Pt; length: number; heads: string[]; label: Rect | null; labelU: number; labelAt: (u: number) => Rect; tip: Pt | null; tail: Pt | null; run?: { a: number; b: number; ok: boolean }; duck?: { a: number; b: number }; stills?: { fwd?: { p: Pt; rect: Rect } | null; back?: { p: Pt; rect: Rect } | null } }
 export const ISO: {
   G: number; pad: number; lift: number;
   card: { label: number; sub: number; padX: number; h1: number; h2: number; gap: number; tail: number; minW: number };
@@ -16,8 +17,15 @@ export const ISO: {
   tag: { size: number; padX: number; h: number; gap: number; below: number };
   note: { padX: number; h: number; rise: number };
   packet: { size: number; padX: number; h: number; r: number };
-  zone: { size: number; padX: number; h: number; thick: number };
+  zone: { size: number; padX: number; h: number; thick: number; inset: number };
+  minView: { w: number; h: number };
 };
+export const NODE_SHAPES: string[];
+export const PACKET_SPEED: Record<'slow' | 'normal' | 'fast', number>;
+export const PACKET_MOVE: { start: number; end: number; visibleFrom: number; visibleTo: number };
+export function packetRectAt(g: EdgeGeom, m: PacketMotion, begin: number, reverse: boolean, t: number): Rect | null;
+export const FLAG_W: number;
+export function sansWidth(text: string, size: number): number;
 export function project(x: number, y: number, z?: number): Pt;
 export function nodeShape(n: SceneNode): Shape;
 export function shapeHeight(s: Shape): number;
@@ -35,14 +43,14 @@ export function polyBox(poly: Pt[]): Rect;
 export function rectOverlap(a: Rect, b: Rect, pad?: number): number;
 export function edgeLayout(e: SceneEdge, A: NodeLayout, B: NodeLayout, bend?: number): EdgeGeom;
 export function stillPacket(e: SceneEdge, g: EdgeGeom, which: 'fwd' | 'back', avoid?: (r: Rect) => number): { p: Pt; rect: Rect } | null;
-export function zoneLayout(z: SceneZone): { poly: Pt[]; label: Rect | null };
+export function zoneLayout(z: SceneZone): { poly: Pt[]; label: Rect | null; candidates: Rect[]; depth: number };
 export function noteLayout(n: SceneNote): { anchor: Pt; rect: Rect };
 export function autoBends(edges: SceneEdge[]): Map<string, number>;
 export function sceneLayout(scene: ResolvedScene, poses?: Map<string, { x: number; y: number; lift: number }>): {
   nodes: Map<string, NodeLayout>;
   edges: { e: SceneEdge; g: EdgeGeom }[];
-  zones: { z: SceneZone; poly: Pt[]; label: Rect | null }[];
-  notes: { n: SceneNote; anchor: Pt; rect: Rect }[];
+  zones: { z: SceneZone; poly: Pt[]; label: Rect | null; depth: number }[];
+  notes: { n: SceneNote; anchor: Pt; rect: Rect; attached: boolean }[];
 };
 export function layoutBounds(scenes: (ResolvedScene | undefined)[]): Rect | null;
 export function layoutProblems(scene: ResolvedScene): { level: 'error' | 'warn'; msg: string }[];

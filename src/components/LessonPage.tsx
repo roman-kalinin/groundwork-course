@@ -4,7 +4,7 @@ import type { Lesson, Step } from '../../shared/schema.js';
 import { findLesson, findModule, loadLesson, moduleNumber, nextLesson, type LessonMeta } from '../content';
 import { getLessonProgress, resetLesson, updateLesson, useProgress } from '../progress';
 import { href, navigate } from '../router';
-import { CHAPTER_LABEL, IsoBadge, LEVEL_LABEL, shortTitle, useReducedMotion } from './bits';
+import { CHAPTER_LABEL, IsoBadge, LEVEL_LABEL, useReducedMotion } from './bits';
 import { CodeBlock } from './CodeBlock';
 import { GlossaryProvider, Rich } from './Rich';
 import { SceneView, sceneBounds } from './SceneView';
@@ -151,7 +151,7 @@ function LessonPlayer({ meta, lesson, at }: { meta: LessonMeta; lesson: Lesson; 
           <div className={`stage${bounds ? ' has-scene' : ''}`}>
             {bounds && (
               <div className="stage-scene">
-                <SceneView scene={scenes[pos]} bounds={bounds} reduced={reduced} stepKey={pos} />
+                <SceneView scene={scenes[pos]} prevScene={pos > 0 ? scenes[pos - 1] : undefined} bounds={bounds} reduced={reduced} stepKey={pos} frame="fill" controls />
               </div>
             )}
             <div className="stage-text" ref={textRef}>
@@ -281,7 +281,7 @@ const CALLOUT_TITLE: Record<string, string> = {
 function Controls({ pos, steps, furthest, onGo }: { pos: number; steps: Step[]; furthest: number; onGo: (p: number | 'intro') => void }) {
   const n = steps.length;
   const items = [
-    ...steps.map((s, i) => ({ full: `Step ${i + 1}: ${s.title}`, short: shortTitle(s.title), kind: 'step', num: String(i + 1) })),
+    ...steps.map((s, i) => ({ full: `Step ${i + 1}: ${s.title}`, short: s.title.replace(/<[^>]+>/g, ''), kind: 'step', num: String(i + 1) })),
     { full: 'Quiz', short: 'Quiz', kind: 'quiz', num: '' },
     { full: 'Recap', short: 'Recap', kind: 'recap', num: '' },
   ];
@@ -303,7 +303,7 @@ function Controls({ pos, steps, furthest, onGo }: { pos: number; steps: Step[]; 
       <ol className="timeline" ref={railRef} style={{ ['--done' as string]: ratio, ['--count' as string]: items.length }}>
         {items.map((it, i) => (
           <li key={i} className={`tl-item k-${it.kind}${i === pos ? ' current' : ''}${i < pos ? ' past' : ''}${i <= furthest ? ' seen' : ''}`}>
-            <button type="button" className="tl-btn" onClick={() => onGo(i)} aria-label={it.full} aria-current={i === pos ? 'step' : undefined} title={it.full}>
+            <button type="button" className="tl-btn" onClick={() => onGo(i)} aria-label={it.full} aria-current={i === pos ? 'step' : undefined}>
               <span className="tl-dot" aria-hidden="true">
                 {it.kind === 'quiz' ? <UiIcon name="quiz" size={13} strokeWidth={2.2} /> : it.kind === 'recap' ? <UiIcon name="flag" size={13} strokeWidth={2.2} /> : it.num}
               </span>

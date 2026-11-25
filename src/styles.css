@@ -41,7 +41,7 @@
   --shade: #3a2617;
   --card-bg: #fffcf6;
   --tag-bg: #efe5d3;
-  --edge: #8f8070;
+  --edge: #3b3027;
   --floor-dot: rgba(70, 52, 34, 0.26);
   --floor-line: rgba(70, 52, 34, 0.055);
   --pk: #2f62d0;
@@ -50,10 +50,10 @@
 
   --k-neutral: #d9ccb6;
   --k-person: #f2a576;
-  --k-client: #86b2ee;
-  --k-server: #8c8fe6;
+  --k-client: #7cc4e6;
+  --k-server: #8a9cc8;
   --k-data: #5fbfa5;
-  --k-ai: #bd92ee;
+  --k-ai: #ad74f2;
   --k-external: #f0c457;
   --k-threat: #ec6b56;
 
@@ -96,7 +96,7 @@
   --shade: #120b06;
   --card-bg: #2b251e;
   --tag-bg: #352d24;
-  --edge: #8d806f;
+  --edge: #c9bba6;
   --floor-dot: rgba(255, 230, 200, 0.16);
   --floor-line: rgba(255, 230, 200, 0.035);
   --pk: #6f97ff;
@@ -105,10 +105,10 @@
 
   --k-neutral: #b8ab95;
   --k-person: #df8e5f;
-  --k-client: #6c9be0;
-  --k-server: #7b7ed8;
+  --k-client: #5eaed4;
+  --k-server: #7486b8;
   --k-data: #48aa90;
-  --k-ai: #a77de0;
+  --k-ai: #9d66e6;
   --k-external: #dcae43;
   --k-threat: #dd5a45;
   color-scheme: dark;
@@ -120,14 +120,14 @@
 [data-color='amber'] { --mod: #d0860f; --mod-soft: #f8e8c9; }
 [data-color='rose'] { --mod: #d0425f; --mod-soft: #f8dde2; }
 [data-color='violet'] { --mod: #7c56d6; --mod-soft: #e7defa; }
-[data-color='slate'] { --mod: #5a6a7e; --mod-soft: #dfe4ea; }
+[data-color='slate'] { --mod: #4450b4; --mod-soft: #e0e2f6; }
 [data-theme='dark'] [data-color='blue'] { --mod: #7298f2; --mod-soft: #23314f; }
 [data-theme='dark'] [data-color='teal'] { --mod: #3fb8ad; --mod-soft: #173b38; }
 [data-theme='dark'] [data-color='green'] { --mod: #67c27a; --mod-soft: #1f3a25; }
 [data-theme='dark'] [data-color='amber'] { --mod: #e8a63f; --mod-soft: #3d2f16; }
 [data-theme='dark'] [data-color='rose'] { --mod: #ee6f8a; --mod-soft: #42202a; }
 [data-theme='dark'] [data-color='violet'] { --mod: #a888f2; --mod-soft: #2f2548; }
-[data-theme='dark'] [data-color='slate'] { --mod: #9aa9bc; --mod-soft: #2a3038; }
+[data-theme='dark'] [data-color='slate'] { --mod: #9aa4f4; --mod-soft: #262a4a; }
 
 *,
 *::before,
@@ -730,9 +730,9 @@ kbd {
 /* home */
 .hero {
   display: grid;
-  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
-  align-items: center;
-  gap: 24px 40px;
+  grid-template-columns: minmax(0, 0.86fr) minmax(0, 1.14fr);
+  align-items: start;
+  gap: 24px 28px;
   margin-bottom: 64px;
 }
 .hero-text {
@@ -775,9 +775,10 @@ kbd {
 }
 .hero-art {
   position: relative;
+  margin: -18px -24px 0 0;
 }
-.hero-art .scene-scroll {
-  background: radial-gradient(ellipse at 50% 55%, var(--scene-bg), transparent 72%);
+.hero-art .scene-content .scene-stage {
+  background: radial-gradient(ellipse at 50% 55%, var(--scene-bg), transparent 70%);
   border: 0;
   box-shadow: none;
 }
@@ -991,7 +992,7 @@ kbd {
 }
 .lesson-row {
   display: grid;
-  grid-template-columns: 44px 1fr auto;
+  grid-template-columns: 44px 1fr auto auto;
   align-items: center;
   gap: 16px;
   padding: 18px 20px;
@@ -1001,6 +1002,16 @@ kbd {
   text-decoration: none;
   box-shadow: 0 3px 0 var(--lip);
   transition: transform 0.15s var(--ease), box-shadow 0.15s var(--ease), border-color 0.15s;
+}
+.lesson-thumb {
+  display: block;
+  width: 168px;
+}
+.lesson-thumb .scene-stage {
+  border-radius: 12px;
+}
+.lesson-row:hover .lesson-thumb .scene-stage {
+  border-color: color-mix(in oklab, var(--mod), var(--iso-line) 30%);
 }
 .lesson-row:hover {
   transform: translateY(-2px);
@@ -1162,15 +1173,14 @@ kbd {
 }
 .stage-scene {
   min-height: 0;
-  padding: 18px 6px 14px 22px;
+  padding: 16px 4px 16px 20px;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
 }
 .stage-text {
   min-height: 0;
   overflow-y: auto;
-  padding: 34px 34px 40px 26px;
+  padding: 26px 34px 40px 26px;
 }
 .stage:not(.has-scene) .stage-text {
   padding: 48px 24px;
@@ -1180,46 +1190,104 @@ kbd {
 .scene {
   margin: 0;
   width: 100%;
-  max-height: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.scene-scroll {
-  position: relative;
-  border-radius: 20px;
-  background:
-    radial-gradient(ellipse at 50% 45%, color-mix(in srgb, var(--scene-bg) 40%, transparent), transparent 70%),
-    var(--scene-bg);
-  border: 1.5px solid var(--line);
-  box-shadow: inset 0 0 0 6px color-mix(in srgb, var(--surface) 55%, transparent), var(--shadow);
-  overflow: hidden;
-  min-height: 0;
-  display: flex;
-  justify-content: center;
 }
 .scene-svg {
   display: block;
-  width: 100%;
-  height: auto;
-  max-height: calc(100dvh - 72px - 84px - 92px);
   font-family: var(--font);
   user-select: none;
-  overflow: visible;
+  overflow: hidden;
+}
+/* lesson player: the panel fills the stage, the camera frames each step */
+.scene-fill {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.scene-panel {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border-radius: 20px;
+  background:
+    radial-gradient(ellipse at 50% 42%, color-mix(in srgb, var(--card-bg) 55%, transparent), transparent 72%),
+    var(--scene-bg);
+  border: 1.5px solid var(--line-2);
+  box-shadow: 0 3px 0 var(--line), var(--shadow);
+  overflow: hidden;
+}
+.scene-fill .scene-stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+.scene-fill .scene-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+/* phone, zoomed in on what changed: fade the edges so it reads as "there is more" */
+.scene.zoomed .scene-svg {
+  mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
+}
+.scene-tools {
+  position: absolute;
+  z-index: 2;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  gap: 6px;
+}
+.tool-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 11px 0 9px;
+  border-radius: 9px;
+  border: 1.5px solid var(--iso-line);
+  background: var(--card-bg);
+  color: var(--ink);
+  box-shadow: 0 2px 0 var(--iso-line);
+  font-family: var(--mono);
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.12s var(--ease), box-shadow 0.12s var(--ease), background 0.15s;
+}
+.tool-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 0 var(--iso-line);
+}
+.tool-btn:active {
+  transform: translateY(1.5px);
+  box-shadow: 0 0.5px 0 var(--iso-line);
+}
+.tool-btn[aria-pressed='true'] {
+  background: color-mix(in srgb, var(--mod, var(--accent)) 16%, var(--card-bg));
+}
+[data-theme='dark'] .tool-btn {
+  border-color: var(--line-2);
+  box-shadow: 0 2px 0 #000;
 }
 .scene-foot {
+  flex: none;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 6px 18px;
-  padding: 0 6px;
+  padding: 10px 16px 11px;
+  border-top: 1.5px solid var(--line);
+  background: color-mix(in srgb, var(--surface) 70%, var(--scene-bg));
 }
 .scene-caption {
-  font-size: 13.5px;
-  color: var(--muted);
+  font-size: 14px;
+  color: var(--ink-2);
   line-height: 1.45;
-  max-width: 62ch;
+  max-width: 64ch;
 }
 .scene-legend {
   list-style: none;
@@ -1229,7 +1297,7 @@ kbd {
   flex-wrap: wrap;
   gap: 4px 14px;
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 11.5px;
   color: var(--muted);
 }
 .scene-legend li {
@@ -1261,6 +1329,91 @@ kbd {
   border-top-style: dotted;
   border-top-width: 3px;
 }
+/* paused: freeze CSS motion too (SMIL is paused from script) */
+.scene.paused *,
+.scene.paused *::before {
+  animation-play-state: paused !important;
+}
+/* hero, intro preview, thumbnails: the panel takes the diagram's shape */
+.scene-content .scene-stage {
+  border-radius: 20px;
+  background:
+    radial-gradient(ellipse at 50% 45%, color-mix(in srgb, var(--card-bg) 50%, transparent), transparent 70%),
+    var(--scene-bg);
+  border: 1.5px solid var(--line-2);
+  box-shadow: 0 3px 0 var(--line), var(--shadow);
+  overflow: hidden;
+}
+.scene-content .scene-svg {
+  width: 100%;
+  height: auto;
+}
+.scene-content .scene-foot {
+  border: 0;
+  background: none;
+  padding: 8px 4px 0;
+}
+.scene.compact .layer-cards,
+.scene.compact .layer-labels,
+.scene.compact .layer-notes,
+.scene.compact .layer-packets,
+.scene.compact .layer-tags {
+  display: none;
+}
+.scene.compact .scene-stage {
+  border-radius: 12px;
+  box-shadow: none;
+}
+/* phone: full-screen sheet */
+.scene-full {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  background: var(--scene-bg);
+  animation: fade-in 0.2s var(--ease) both;
+}
+.scene-full-bar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: calc(10px + env(safe-area-inset-top)) 12px 10px 16px;
+  border-bottom: 1.5px solid var(--line);
+  background: var(--surface);
+}
+.scene-full-hint {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--muted);
+}
+.scene-full-scroll {
+  flex: 1;
+  display: flex;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.scene-fill .scene-full-scroll .scene-svg {
+  display: block;
+  position: static;
+  width: auto;
+  height: auto;
+  margin: auto;
+  flex: none;
+  max-width: none;
+  mask-image: none;
+}
+.scene-full-caption {
+  flex: none;
+  margin: 0;
+  padding: 12px 16px calc(14px + env(safe-area-inset-bottom));
+  border-top: 1.5px solid var(--line);
+  background: var(--surface);
+  font-size: 14px;
+  color: var(--ink-2);
+}
 
 /* ---------------------------------------------------------------- the iso scene */
 .floor-dot {
@@ -1275,10 +1428,10 @@ kbd {
 /* zones: floor plates */
 .iso-zone {
   --zc: var(--ink);
-  animation: fade-in 0.5s var(--ease) both;
+  animation: fade-in 0.5s var(--d, 0s) var(--ease) both;
 }
 .iso-zone.leaving {
-  animation: fade-out 0.38s var(--ease) both;
+  animation: fade-out 0.26s var(--ease) both;
 }
 .zone-top {
   fill: color-mix(in oklab, var(--scene-bg), var(--zc) 6%);
@@ -1318,17 +1471,17 @@ kbd {
 }
 .iso-zlabel {
   --zc: var(--ink);
-  animation: fade-in 0.5s var(--ease) both;
+  animation: fade-in 0.5s calc(var(--d, 0s) + 0.1s) var(--ease) both;
 }
 .iso-zlabel.leaving {
-  animation: fade-out 0.38s var(--ease) both;
+  animation: fade-out 0.22s var(--ease) both;
 }
 .iso-zlabel rect {
   fill: var(--zc);
 }
 .iso-zlabel text {
   font-family: var(--mono);
-  font-size: 11.5px;
+  font-size: 12.5px;
   font-weight: 600;
   letter-spacing: 0.08em;
   fill: var(--scene-bg);
@@ -1341,11 +1494,10 @@ kbd {
 
 /* floor marks under blocks */
 .iso-floor {
-  animation: fade-in 0.6s var(--ease) both;
-  animation-delay: calc(var(--i, 0) * 45ms);
+  animation: fade-in 0.6s var(--d, 0s) var(--ease) both;
 }
 .iso-floor.leaving {
-  animation: fade-out 0.38s var(--ease) both;
+  animation: fade-out 0.26s var(--ease) both;
 }
 .iso-floor .shadow {
   fill: var(--iso-line);
@@ -1416,6 +1568,40 @@ kbd {
 }
 .iso-node .f-top {
   fill: color-mix(in oklab, var(--kk), var(--top-light) var(--top-mix));
+}
+.iso-node.kind-ai {
+  --top-light: #fff4e2;
+}
+.iso-node.st-active .f-top {
+  fill: color-mix(in oklab, var(--kk), #fff 56%);
+}
+[data-theme='dark'] .iso-node.st-active .f-top {
+  fill: color-mix(in oklab, var(--kk), #fff 40%);
+}
+.iso-node.st-active .iso-node-bob {
+  filter: drop-shadow(0 0 10px color-mix(in srgb, var(--accent) 35%, transparent));
+}
+/* neutral blocks take a faint tint from their zone */
+.iso-node.kind-neutral.zt-ok { --k: color-mix(in oklab, var(--k-neutral), var(--ok) 26%); }
+.iso-node.kind-neutral.zt-warn { --k: color-mix(in oklab, var(--k-neutral), var(--warn) 26%); }
+.iso-node.kind-neutral.zt-error { --k: color-mix(in oklab, var(--k-neutral), var(--error) 24%); }
+.iso-node.kind-neutral.zt-active { --k: color-mix(in oklab, var(--k-neutral), var(--accent) 24%); }
+.iso-node.kind-neutral.zt-plain { --k: color-mix(in oklab, var(--k-neutral), var(--k-server) 22%); }
+.iso-node .f-inset {
+  fill: none;
+  stroke-width: 1.1;
+  opacity: 0.35;
+}
+.iso-node .f-rim {
+  fill: none;
+  stroke-width: 1.2;
+  opacity: 0.4;
+}
+.iso-node .f-pole {
+  fill: color-mix(in oklab, var(--kk), var(--shade) 45%);
+}
+.iso-node .cloth {
+  fill: var(--kk);
 }
 .iso-node .f-left {
   fill: var(--kk);
@@ -1512,11 +1698,10 @@ kbd {
 }
 
 .iso-node-in {
-  animation: block-in 0.62s var(--spring) both;
-  animation-delay: calc(var(--i, 0) * 45ms);
+  animation: block-in 0.62s var(--d, 0s) var(--spring) both;
 }
 .iso-node.leaving .iso-node-in {
-  animation: block-out 0.38s var(--ease) both;
+  animation: block-out 0.26s var(--ease) both;
 }
 @keyframes block-in {
   from { transform: translateY(26px); opacity: 0; }
@@ -1552,10 +1737,10 @@ kbd {
 /* edges on the floor */
 .iso-edge {
   --ec: var(--edge);
-  animation: fade-in 0.55s var(--ease) both;
+  animation: fade-in 0.55s calc(var(--d, 0s) + 0.12s) var(--ease) both;
 }
 .iso-edge.leaving {
-  animation: fade-out 0.36s var(--ease) both;
+  animation: fade-out 0.22s var(--ease) both;
 }
 .iso-edge.st-active { --ec: var(--accent); }
 .iso-edge.st-ok { --ec: var(--ok); }
@@ -1565,20 +1750,22 @@ kbd {
 .edge-track {
   fill: none;
   stroke: var(--scene-bg);
-  stroke-width: 8;
+  stroke-width: 9;
   stroke-linecap: round;
-  opacity: 0.85;
+  opacity: 0.9;
 }
 .edge-line {
   fill: none;
   stroke: var(--ec);
-  stroke-width: 2.4;
+  stroke-width: 2.6;
   stroke-linecap: round;
   transition: stroke 0.4s;
 }
 .iso-edge.st-active .edge-line,
-.iso-edge.st-error .edge-line {
-  stroke-width: 2.8;
+.iso-edge.st-error .edge-line,
+.iso-edge.st-ok .edge-line,
+.iso-edge.st-warn .edge-line {
+  stroke-width: 3;
 }
 .iso-edge.style-dashed .edge-line {
   stroke-dasharray: 9 7;
@@ -1590,16 +1777,16 @@ kbd {
 .edge-head {
   fill: var(--ec);
   stroke: var(--ec);
-  stroke-width: 1.2;
+  stroke-width: 1.6;
   stroke-linejoin: round;
   transition: fill 0.4s, stroke 0.4s;
 }
 .iso-elabel {
   --ec: var(--edge);
-  animation: fade-in 0.55s 0.1s var(--ease) both;
+  animation: fade-in 0.5s calc(var(--d, 0s) + 0.22s) var(--ease) both;
 }
 .iso-elabel.leaving {
-  animation: fade-out 0.3s var(--ease) both;
+  animation: fade-out 0.2s var(--ease) both;
 }
 .iso-elabel.st-active { --ec: var(--accent); }
 .iso-elabel.st-ok { --ec: var(--ok); }
@@ -1608,14 +1795,14 @@ kbd {
 .iso-elabel.st-dim { opacity: 0.45; }
 .iso-elabel rect {
   fill: var(--card-bg);
-  stroke: color-mix(in oklab, var(--ec), var(--card-bg) 15%);
-  stroke-width: 1.4;
+  stroke: var(--ec);
+  stroke-width: 1.5;
 }
 .iso-elabel text {
-  font-family: var(--mono);
-  font-size: 13.5px;
-  font-weight: 500;
-  fill: var(--ink-2);
+  font-family: var(--font);
+  font-size: 14.5px;
+  font-weight: 600;
+  fill: var(--ink);
 }
 .iso-elabel:not(.st-normal):not(.st-dim) text {
   fill: color-mix(in oklab, var(--ec), var(--ink) 30%);
@@ -1623,6 +1810,9 @@ kbd {
 }
 
 /* packets */
+.pk-in {
+  animation: fade-in 0.4s calc(var(--d, 0s) + 0.55s) var(--ease) both;
+}
 .packet {
   --pc: var(--pk);
 }
@@ -1646,7 +1836,7 @@ kbd {
 }
 .packet text {
   font-family: var(--mono);
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 600;
   fill: #fff;
 }
@@ -1660,14 +1850,20 @@ kbd {
   --cb: var(--iso-line);
 }
 .iso-card-in {
-  animation: card-in 0.5s var(--ease) both;
-  animation-delay: calc(var(--i, 0) * 45ms + 120ms);
+  animation: card-in 0.5s calc(var(--d, 0s) + 0.14s) var(--ease) both;
 }
-.iso-card.leaving {
-  animation: fade-out 0.32s var(--ease) both;
+.iso-tag {
+  animation: fade-in 0.45s calc(var(--d, 0s) + 0.2s) var(--ease) both;
+}
+.iso-card.leaving .iso-card-in,
+.iso-tags.leaving .iso-tag {
+  animation: card-out 0.22s var(--ease) both;
 }
 @keyframes card-in {
   from { opacity: 0; transform: translateY(8px); }
+}
+@keyframes card-out {
+  to { opacity: 0; transform: translateY(10px); }
 }
 .card-bg,
 .card-tail {
@@ -1721,7 +1917,7 @@ kbd {
 }
 .iso-tag text {
   font-family: var(--mono);
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 500;
   fill: var(--ink-2);
 }
@@ -1756,10 +1952,18 @@ kbd {
 /* notes: speech bubbles */
 .iso-note {
   --nc: var(--iso-line);
-  animation: fade-in 0.5s 0.15s var(--ease) both;
+  animation: fade-in 0.5s calc(var(--d, 0s) + 0.25s) var(--ease) both;
 }
 .iso-note.leaving {
-  animation: fade-out 0.3s var(--ease) both;
+  animation: fade-out 0.22s var(--ease) both;
+}
+.note-tab {
+  fill: color-mix(in srgb, var(--nc) 30%, var(--card-bg));
+  stroke: var(--nc);
+  stroke-width: 1.2;
+}
+.iso-note.sticker .note-bg {
+  fill: color-mix(in srgb, var(--nc) 7%, var(--card-bg));
 }
 .iso-note.st-active { --nc: var(--accent); }
 .iso-note.st-ok { --nc: var(--ok); }
@@ -2038,10 +2242,9 @@ code {
   min-width: 0;
   font-family: var(--mono);
   font-size: 12px;
+  line-height: 1.35;
   color: #cbbfb0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
 }
 .code-lang {
   font-family: var(--mono);
@@ -2073,28 +2276,65 @@ code {
   border-color: rgba(155, 227, 178, 0.4);
 }
 .code-body {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  position: relative;
 }
-.code-gutter {
-  padding: 13px 10px 14px 14px;
+.code-body.more::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 56px;
+  pointer-events: none;
+  background: linear-gradient(to right, transparent, var(--code-bg) 85%);
+}
+.code-more {
+  flex: none;
+  padding: 1px 7px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #b9ab9a;
   font-family: var(--mono);
-  font-size: 13px;
-  line-height: 1.65;
-  color: #5d5045;
-  text-align: right;
-  white-space: pre;
-  user-select: none;
-  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 10.5px;
+  pointer-events: none;
 }
 .code pre {
   margin: 0;
-  padding: 13px 16px 14px 12px;
+  padding: 13px 0 14px;
   overflow-x: auto;
   font-family: var(--mono);
   font-size: 13px;
   line-height: 1.65;
   color: #ece2d5;
+}
+.code pre code {
+  display: block;
+  min-width: max-content;
+}
+.code.wrap pre code {
+  min-width: 0;
+}
+.cl {
+  display: grid;
+  grid-template-columns: 3.1em minmax(0, 1fr);
+}
+.cl-n {
+  position: sticky;
+  left: 0;
+  padding: 0 12px 0 0;
+  text-align: right;
+  color: #6d5f52;
+  background: var(--code-bg);
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  user-select: none;
+}
+.cl-c {
+  padding: 0 18px 0 12px;
+  white-space: pre;
+}
+.code.wrap .cl-c {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 .code pre code {
   font-size: inherit;
@@ -2141,7 +2381,7 @@ code {
   position: relative;
   list-style: none;
   margin: 0;
-  padding: 2px 4px 0;
+  padding: 2px 24px 22px;
   display: flex;
   align-items: flex-start;
   overflow-x: auto;
@@ -2176,9 +2416,9 @@ code {
   background: var(--mod, var(--accent));
 }
 .tl-btn {
+  position: relative;
   display: grid;
   justify-items: center;
-  gap: 5px;
   width: 100%;
   padding: 0 3px;
   border: 0;
@@ -2223,24 +2463,47 @@ code {
   transform: scale(1.12) translateY(-2px);
 }
 .tl-label {
-  font-family: var(--mono);
-  font-size: 10.5px;
-  line-height: 1.25;
-  color: var(--faint);
-  text-align: center;
-  max-width: 100%;
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  min-height: 2.5em;
-}
-.tl-item.seen .tl-label {
+  position: absolute;
+  top: calc(var(--dot) + 5px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: 360px;
+  font-family: var(--font);
+  font-size: 12.5px;
+  line-height: 1.2;
   color: var(--muted);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+}
+.tl-item:first-child .tl-label {
+  left: 0;
+  transform: none;
+}
+.tl-item:last-child .tl-label {
+  left: auto;
+  right: 0;
+  transform: none;
 }
 .tl-item.current .tl-label {
+  opacity: 1;
   color: var(--ink);
   font-weight: 600;
+}
+.timeline:hover .tl-item.current .tl-label {
+  opacity: 0.25;
+}
+.timeline .tl-btn:hover .tl-label,
+.timeline .tl-btn:focus-visible .tl-label {
+  opacity: 1;
+  z-index: 1;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: var(--surface);
+  box-shadow: 0 0 0 1.5px var(--line-2);
+  color: var(--ink);
 }
 
 /* ---------------------------------------------------------------- intro */
@@ -2329,6 +2592,9 @@ code {
 }
 .intro-preview .scene-svg {
   max-height: 62vh;
+}
+.intro-preview .scene-foot {
+  display: none;
 }
 
 /* ---------------------------------------------------------------- quiz + recap */
@@ -2613,6 +2879,7 @@ code {
   }
   .hero-art {
     max-width: 720px;
+    margin: 0;
   }
   .intro.has-preview {
     grid-template-columns: minmax(0, 1fr);
@@ -2733,59 +3000,31 @@ code {
   .stage-scene {
     padding: 12px 10px 2px;
   }
-  .scene-scroll {
-    overflow-x: auto;
-    justify-content: flex-start;
-    scrollbar-width: none;
+  .scene-fill {
+    flex: none;
+  }
+  .scene-panel {
+    flex: none;
     border-radius: 16px;
   }
-  .scene-scroll::-webkit-scrollbar {
-    display: none;
-  }
-  .scene {
-    position: relative;
-  }
-  .scene.fade-r .scene-scroll {
-    mask-image: linear-gradient(to right, #000 85%, transparent);
-  }
-  .scene.fade-l .scene-scroll {
-    mask-image: linear-gradient(to left, #000 85%, transparent);
-  }
-  .scene.fade-l.fade-r .scene-scroll {
-    mask-image: linear-gradient(to right, transparent, #000 12%, #000 88%, transparent);
-  }
-  .swipe-hint {
-    position: absolute;
-    z-index: 2;
-    right: 10px;
-    top: 10px;
-    padding: 4px 10px;
-    border-radius: 20px;
-    background: var(--ink);
-    color: var(--bg);
-    font-family: var(--mono);
-    font-size: 11px;
-    font-weight: 500;
-    pointer-events: none;
-    animation: fade-in 0.4s 0.6s var(--ease) both;
-  }
-  .scene-svg {
-    /* phones: keep text legible; the diagram pans sideways and centres on the action */
-    width: max(100%, calc(var(--vbw) * 0.56px));
+  .scene-fill .scene-stage {
     flex: none;
-    max-height: none;
+    height: clamp(280px, 82vw, 460px);
   }
-  .hero-art .scene-svg {
-    width: 100%;
+  .tool-btn {
+    height: 32px;
   }
-  .hero-art .swipe-hint {
+  .scene-tools .tool-btn:not(:first-child) .tool-text {
     display: none;
+  }
+  .scene-tools .tool-btn:not(:first-child) {
+    padding: 0 8px;
   }
   .scene-caption {
-    font-size: 12.5px;
+    font-size: 13px;
   }
   .scene-foot {
-    padding: 0 4px;
+    padding: 8px 12px 9px;
   }
   .stage-text,
   .stage:not(.has-scene) .stage-text {
@@ -2824,7 +3063,7 @@ code {
   }
   .timeline {
     --dot: 22px;
-    padding-top: 3px;
+    padding: 3px 12px 2px;
     mask-image: linear-gradient(to right, transparent, #000 10px, #000 calc(100% - 10px), transparent);
   }
   .tl-item {
@@ -2865,6 +3104,9 @@ code {
     grid-template-columns: 36px 1fr auto;
     padding: 14px;
     gap: 12px;
+  }
+  .lesson-thumb {
+    display: none;
   }
   .lesson-row-num {
     width: 34px;

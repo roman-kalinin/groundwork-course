@@ -30,7 +30,7 @@
       "scene": {
         "caption": "The model replies in friendly prose. The server's JSON parser chokes on it.",
         "nodes": [
-          { "id": "route", "x": 2.4, "y": 4, "label": "Tasks route", "sublabel": "Notely server", "icon": "function", "kind": "server", "status": "error", "tags": ["JSON.parse ✗"] },
+          { "id": "route", "x": 1.2, "y": 4, "label": "Tasks route", "sublabel": "Notely server", "icon": "function", "kind": "server", "status": "error", "tags": ["JSON.parse ✗"] },
           { "id": "llm", "x": 9.8, "y": 4, "label": "Claude API", "sublabel": "friendly by default", "icon": "sparkle", "kind": "ai" }
         ],
         "edges": [
@@ -55,7 +55,7 @@
         "caption": "The schema rides along with the request. The answer comes back in exactly that shape.",
         "nodes": [
           { "id": "route", "status": "ok", "tags": ["parsed ✓"] },
-          { "id": "schema", "x": 6.1, "y": 1.3, "label": "JSON schema", "sublabel": "title, due date", "icon": "list", "kind": "data", "status": "active" }
+          { "id": "schema", "x": 6.1, "y": 2.9, "label": "JSON schema", "sublabel": "title, due date", "icon": "list", "kind": "data", "status": "active" }
         ],
         "edges": [
           { "from": "schema", "to": "llm", "label": "answer must fit", "style": "dashed" },
@@ -122,7 +122,7 @@
       "scene": {
         "caption": "The model gets a list of tools it may ask for. It replies with a request, not an answer.",
         "nodes": [
-          { "id": "route", "x": 2.4, "y": 3, "label": "Chat route", "sublabel": "Notely server", "icon": "function", "kind": "server", "status": "active" },
+          { "id": "route", "x": 1.2, "y": 3, "label": "Chat route", "sublabel": "Notely server", "icon": "function", "kind": "server", "status": "active" },
           { "id": "llm", "x": 9.8, "y": 3, "label": "Claude API", "sublabel": "can ask for tools", "icon": "sparkle", "kind": "ai" },
           { "id": "tooldef", "x": 9.8, "y": 6.2, "label": "Tool list", "sublabel": "search_notes", "icon": "gear", "kind": "neutral" },
           { "id": "db", "x": 2.4, "y": 6.2, "label": "notes table", "sublabel": "Maya's notes", "icon": "database", "kind": "data", "status": "dim" }

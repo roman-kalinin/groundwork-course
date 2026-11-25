@@ -87,9 +87,9 @@
         "caption": "The notes table: three columns, one row per note.",
         "nodes": [
           { "id": "notes", "status": "normal", "tags": ["id", "user_id", "title"] },
-          { "id": "n1", "x": 9.6, "y": 3.8, "label": "Groceries", "sublabel": "id 101 · user_id 7", "icon": "file", "kind": "data", "status": "active" },
-          { "id": "n2", "x": 9.6, "y": 5.4, "label": "Book ideas", "sublabel": "id 102 · user_id 7", "icon": "file", "kind": "data", "status": "active" },
-          { "id": "n3", "x": 9.6, "y": 7.0, "label": "Trip plan", "sublabel": "id 103 · user_id 8", "icon": "file", "kind": "data", "status": "active" }
+          { "id": "n1", "x": 9.6, "y": 3.8, "label": "Groceries", "sublabel": "id 101 · user_id 7", "icon": "file", "shape": "tile", "kind": "data", "status": "active" },
+          { "id": "n2", "x": 9.6, "y": 5.4, "label": "Book ideas", "sublabel": "id 102 · user_id 7", "icon": "file", "shape": "tile", "kind": "data", "status": "active" },
+          { "id": "n3", "x": 9.6, "y": 7.0, "label": "Trip plan", "sublabel": "id 103 · user_id 8", "icon": "file", "shape": "tile", "kind": "data", "status": "active" }
         ]
       }
     },
@@ -107,7 +107,7 @@
           { "id": "n1", "status": "ok" },
           { "id": "n2", "status": "normal" },
           { "id": "n3", "status": "normal" },
-          { "id": "dup", "x": 6.0, "y": 5.4, "label": "Another id 101", "sublabel": "insert refused", "icon": "x", "kind": "neutral", "status": "error" }
+          { "id": "dup", "x": 8.4, "y": 5.4, "label": "Another id 101", "sublabel": "insert refused", "icon": "x", "kind": "neutral", "status": "error" }
         ],
         "edges": [
           { "from": "dup", "to": "n1", "label": "id taken", "style": "dashed", "status": "error" }
@@ -127,8 +127,8 @@
         "remove": ["dup"],
         "nodes": [
           { "id": "n1", "status": "normal" },
-          { "id": "maya", "x": 5.6, "y": 3.8, "label": "Maya", "sublabel": "users row, id 7", "icon": "user", "kind": "data", "status": "active" },
-          { "id": "leo", "x": 5.6, "y": 6.4, "label": "Leo", "sublabel": "users row, id 8", "icon": "user", "kind": "data" }
+          { "id": "maya", "x": 5.6, "y": 3.8, "label": "Maya", "sublabel": "users row, id 7", "icon": "user", "shape": "tile", "kind": "data", "status": "active" },
+          { "id": "leo", "x": 5.6, "y": 6.4, "label": "Leo", "sublabel": "users row, id 8", "icon": "user", "shape": "tile", "kind": "data" }
         ],
         "edges": [
           { "from": "n1", "to": "maya", "label": "user_id 7", "packet": { "label": "7" } },

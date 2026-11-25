@@ -228,7 +228,7 @@
           { "id": "logs", "x": 2, "y": 1.6, "label": "console.log", "sublabel": "prints phone numbers", "icon": "log", "kind": "threat", "status": "error" },
           { "id": "todo", "x": 2, "y": 6.4, "label": "TODOs", "sublabel": "nobody owns them", "icon": "list", "kind": "neutral", "status": "warn" },
           { "id": "route", "x": 10.4, "y": 1.6, "label": "/test-page", "sublabel": "forgotten route", "icon": "file", "kind": "neutral", "status": "warn" },
-          { "id": "claude", "x": 10.4, "y": 6.4, "label": "Claude Code", "sublabel": "handoff audit", "icon": "terminal", "kind": "ai", "status": "active" }
+          { "id": "claude", "x": 10.4, "y": 5.2, "label": "Claude Code", "sublabel": "handoff audit", "icon": "terminal", "kind": "ai", "status": "active" }
         ],
         "edges": [
           { "from": "logs", "to": "repo", "style": "dashed", "status": "error" },

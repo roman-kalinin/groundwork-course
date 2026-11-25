@@ -14,6 +14,7 @@ export interface SceneNode {
   sublabel?: string;
   icon?: string;
   kind?: NodeKind;
+  shape?: 'block' | 'tile' | 'token' | 'flag' | 'stack';
   status?: Status;
   tags?: string[];
   w?: number;

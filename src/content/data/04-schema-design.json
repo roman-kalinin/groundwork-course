@@ -33,7 +33,7 @@
         "caption": "Three quick choices in version 1, three problems a few months later.",
         "nodes": [
           { "id": "app", "x": 2, "y": 6.4, "label": "Notely API", "sublabel": "Next.js on Vercel", "icon": "server", "kind": "server" },
-          { "id": "notes", "x": 6.2, "y": 3.8, "label": "notes", "sublabel": "version 1", "icon": "table", "kind": "data", "status": "warn", "tags": ["author_email", "date as text", "hard delete"] }
+          { "id": "notes", "x": 6.2, "y": 5.4, "label": "notes", "sublabel": "version 1", "icon": "table", "kind": "data", "status": "warn", "tags": ["author_email", "date as text", "hard delete"] }
         ],
         "edges": [
           { "from": "app", "to": "notes", "label": "save note", "packet": true }

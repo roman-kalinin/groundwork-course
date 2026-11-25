@@ -33,9 +33,9 @@
         "nodes": [
           { "id": "evil", "x": 2, "y": 1.6, "label": "Clipped web page", "sublabel": "hidden instructions", "icon": "globe", "kind": "threat", "status": "error" },
           { "id": "notes", "x": 2, "y": 4.4, "label": "Maya's notes", "sublabel": "incl. the clipping", "icon": "database", "kind": "data" },
-          { "id": "route", "x": 6.2, "y": 4.4, "label": "Assistant", "sublabel": "agent loop", "icon": "robot", "kind": "server", "status": "warn" },
+          { "id": "route", "x": 6, "y": 4.4, "label": "Assistant", "sublabel": "agent loop", "icon": "robot", "kind": "server", "status": "warn" },
           { "id": "llm", "x": 10.2, "y": 1, "label": "Claude API", "sublabel": "reads everything", "icon": "sparkle", "kind": "ai" },
-          { "id": "email", "x": 10.2, "y": 7, "label": "send_email", "sublabel": "any address", "icon": "mail", "kind": "external", "status": "error" }
+          { "id": "email", "x": 10.4, "y": 7.4, "label": "send_email", "sublabel": "any address", "icon": "mail", "kind": "external", "status": "error" }
         ],
         "edges": [
           { "from": "evil", "to": "notes", "label": "saved", "status": "error", "style": "dashed" },
@@ -103,7 +103,7 @@
         "extends": "previous",
         "caption": "Actions with consequences wait for Maya's explicit yes.",
         "nodes": [
-          { "id": "approve", "x": 6.2, "y": 6.8, "label": "Confirm dialog", "sublabel": "\"Delete 14 notes?\"", "icon": "check", "kind": "client", "status": "active" },
+          { "id": "approve", "x": 6.2, "y": 7.2, "label": "Confirm dialog", "sublabel": "\"Delete 14 notes?\"", "icon": "check", "kind": "client", "status": "active" },
           { "id": "evil", "status": "dim", "tags": null },
           { "id": "notes", "tags": null },
           { "id": "email", "tags": null }

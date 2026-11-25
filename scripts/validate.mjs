@@ -11,7 +11,7 @@ import {
   PACKET_DIRECTIONS, PACKET_SPEEDS, MODULE_COLORS, CODE_LANGUAGES, LESSON_FILE_RE,
   resolveLessonScenes, sanitizeInline, wordCount, plainText,
 } from '../shared/schema.js';
-import { layoutProblems } from '../shared/iso.js';
+import { layoutProblems, NODE_SHAPES } from '../shared/iso.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CONTENT = join(ROOT, 'src', 'content');
@@ -177,7 +177,7 @@ function checkResolvedScene(path, scene, stepSpec) {
     const p = where('nodes', n.id);
     claim(n.id, 'node', p);
     nodeIds.add(n.id);
-    checkKeys(p, n, ['id', 'x', 'y', 'label', 'sublabel', 'icon', 'kind', 'status', 'tags', 'w']);
+    checkKeys(p, n, ['id', 'x', 'y', 'label', 'sublabel', 'icon', 'kind', 'shape', 'status', 'tags', 'w']);
     if (!isNum(n.x) || n.x < 0 || n.x > GRID.cols) err(p, `x must be a number from 0 to ${GRID.cols} (got ${JSON.stringify(n.x)})${n.x === undefined ? ' - a new node needs x and y; to change an existing node, make sure the id matches exactly' : ''}`);
     if (!isNum(n.y) || n.y < 0 || n.y > GRID.rows) err(p, `y must be a number from 0 to ${GRID.rows} (got ${JSON.stringify(n.y)})`);
     if (!isStr(n.label)) err(p, `node "${n.id}" needs a non-empty "label"`);
@@ -189,6 +189,7 @@ function checkResolvedScene(path, scene, stepSpec) {
       err(`${p}.icon`, `unknown icon "${n.icon}"${hint ? ` (did you mean "${hint}"?)` : ''}. See WRITING_GUIDE.md for the icon list.`);
     }
     enumField(p, n, 'kind', NODE_KINDS);
+    enumField(p, n, 'shape', NODE_SHAPES);
     enumField(p, n, 'status', STATUSES);
     if (opt(p, n, 'tags', (v) => Array.isArray(v) && v.every(isStr), 'an array of strings')) {
       if (n.tags.length > 3) warn(`${p}.tags`, `has ${n.tags.length} tags; keep it to 3 or fewer`);

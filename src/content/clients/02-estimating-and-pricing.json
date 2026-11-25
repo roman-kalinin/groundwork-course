@@ -61,7 +61,7 @@
           { "id": "story", "x": 2, "y": 4, "label": "Online booking", "sublabel": "Must story", "icon": "list", "kind": "neutral", "status": "active" },
           { "id": "t1", "x": 6.4, "y": 1.6, "label": "Slot picker UI", "sublabel": "1-2 days", "icon": "code", "kind": "neutral" },
           { "id": "t2", "x": 6.4, "y": 4, "label": "Bookings table", "sublabel": "about half a day", "icon": "table", "kind": "neutral" },
-          { "id": "t3", "x": 6.4, "y": 6.4, "label": "Double-book guard", "sublabel": "1-2 days", "icon": "shield", "kind": "neutral" },
+          { "id": "t3", "x": 6.4, "y": 6.6, "label": "Double-book guard", "sublabel": "1-2 days", "icon": "shield", "kind": "neutral" },
           { "id": "total", "x": 10.4, "y": 4, "label": "Story total", "sublabel": "sum of tasks", "icon": "chart", "kind": "neutral", "status": "ok" }
         ],
         "edges": [

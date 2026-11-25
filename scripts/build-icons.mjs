@@ -37,7 +37,7 @@ const UI = {
   terms: 'book-open', level: 'chart-no-axes-column', steps: 'footprints', timer: 'timer', target: 'target', 'shield-check': 'shield-check',
   'bug-play': 'bug-play', activity: 'activity', 'database-zap': 'database-zap',
   'circle-check': 'circle-check', 'octagon-alert': 'octagon-alert', 'message-circle': 'message-circle', 'book-marked': 'book-marked',
-  'list-checks': 'list-checks', play: 'play', pause: 'pause', 'rotate-ccw': 'rotate-ccw', sparkles: 'sparkles', compass: 'compass',
+  'list-checks': 'list-checks', play: 'play', pause: 'pause', 'rotate-ccw': 'rotate-ccw', sparkles: 'sparkles', compass: 'compass', expand: 'maximize-2',
 };
 
 function inner(name) {

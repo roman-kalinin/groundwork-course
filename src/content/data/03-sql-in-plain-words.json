@@ -36,17 +36,17 @@
       "scene": {
         "caption": "A query from Claude Code, and the notes table it will touch.",
         "zones": [
-          { "id": "tbl", "x": 6.9, "y": 0.2, "w": 4.6, "h": 7.7, "label": "notes table" }
+          { "id": "tbl", "x": 0.3, "y": 0.2, "w": 4.6, "h": 7.7, "label": "notes table" }
         ],
         "nodes": [
-          { "id": "q", "x": 1.4, "y": 4, "label": "Claude's query", "sublabel": "in an API route", "icon": "code", "kind": "ai", "status": "warn" },
-          { "id": "r1", "x": 9.2, "y": 1, "label": "Groceries", "sublabel": "maya · Nov 3", "icon": "file", "kind": "data" },
-          { "id": "r2", "x": 9.2, "y": 2.7, "label": "Trip plan", "sublabel": "leo · Nov 5", "icon": "file", "kind": "data" },
-          { "id": "r3", "x": 9.2, "y": 4.4, "label": "Book ideas", "sublabel": "maya · Nov 9", "icon": "file", "kind": "data" },
-          { "id": "r4", "x": 9.2, "y": 6.1, "label": "Standup notes", "sublabel": "maya · Nov 1", "icon": "file", "kind": "data" }
+          { "id": "q", "x": 9.8, "y": 3.4, "label": "Claude's query", "sublabel": "in an API route", "icon": "code", "kind": "ai", "status": "warn" },
+          { "id": "r1", "x": 2.6, "y": 1, "label": "Groceries", "sublabel": "maya · Nov 3", "icon": "file", "shape": "tile", "kind": "data" },
+          { "id": "r2", "x": 2.6, "y": 2.7, "label": "Trip plan", "sublabel": "leo · Nov 5", "icon": "file", "shape": "tile", "kind": "data" },
+          { "id": "r3", "x": 2.6, "y": 4.4, "label": "Book ideas", "sublabel": "maya · Nov 9", "icon": "file", "shape": "tile", "kind": "data" },
+          { "id": "r4", "x": 2.6, "y": 6.1, "label": "Standup notes", "sublabel": "maya · Nov 1", "icon": "file", "shape": "tile", "kind": "data" }
         ],
         "notes": [
-          { "id": "n-what", "x": 2.2, "y": 2.4, "text": "What will this touch?", "status": "warn" }
+          { "id": "n-what", "x": 10.2, "y": 2.4, "text": "What will this touch?", "status": "warn" }
         ]
       }
     },
@@ -69,7 +69,7 @@
           { "id": "q", "label": "SQL sentence", "sublabel": "verb · table · rows", "status": "active" }
         ],
         "notes": [
-          { "id": "n-shape", "x": 2.2, "y": 2.4, "text": "\"Get titles from notes where…\"", "status": "active" }
+          { "id": "n-shape", "x": 10.2, "y": 2.4, "text": "\"Get titles from notes where…\"", "status": "active" }
         ]
       }
     },
@@ -152,7 +152,7 @@
           { "id": "r3", "status": "normal" },
           { "id": "r4", "status": "normal" },
           { "id": "r2", "status": "normal" },
-          { "id": "r5", "x": 9.2, "y": 7.6, "label": "Pitch deck", "sublabel": "maya · Nov 25", "icon": "file", "kind": "data", "status": "ok" }
+          { "id": "r5", "x": 2.6, "y": 7.6, "label": "Pitch deck", "sublabel": "maya · Nov 25", "icon": "file", "shape": "tile", "kind": "data", "status": "ok" }
         ],
         "edges": [
           { "from": "q", "to": "r5", "label": "returning id", "packet": { "label": "row", "direction": "both" } }
@@ -215,7 +215,7 @@
           { "id": "r5", "status": "error" }
         ],
         "notes": [
-          { "id": "n-all", "x": 2.2, "y": 6.2, "text": "Every row, every user", "status": "error" }
+          { "id": "n-all", "x": 10.2, "y": 6.2, "text": "Every row, every user", "status": "error" }
         ]
       }
     },

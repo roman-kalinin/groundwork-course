@@ -34,11 +34,11 @@
         "caption": "A shared note carries hidden instructions. The model reads it and calls the email tool.",
         "nodes": [
           { "id": "browser", "x": 2, "y": 4, "label": "Maya", "sublabel": "\"summarize my week\"", "icon": "browser", "kind": "client" },
-          { "id": "shared", "x": 2, "y": 1.4, "label": "Shared note", "sublabel": "hidden instructions", "icon": "file", "kind": "threat", "status": "warn" },
+          { "id": "shared", "x": 2, "y": 0.8, "label": "Shared note", "sublabel": "hidden instructions", "icon": "file", "kind": "threat", "status": "warn" },
           { "id": "server", "x": 6.4, "y": 4, "label": "Ask route", "sublabel": "Notely API", "icon": "function", "kind": "server" },
           { "id": "notes", "x": 6.4, "y": 1.8, "label": "notes table", "icon": "table", "kind": "data" },
-          { "id": "claude", "x": 10.8, "y": 4, "label": "Claude API", "icon": "sparkle", "kind": "ai", "status": "active" },
-          { "id": "email", "x": 10.4, "y": 6.6, "label": "send_email", "sublabel": "tool", "icon": "mail", "kind": "external", "status": "error" }
+          { "id": "claude", "x": 11, "y": 4, "label": "Claude API", "icon": "sparkle", "kind": "ai", "status": "active" },
+          { "id": "email", "x": 10.4, "y": 7.4, "label": "send_email", "sublabel": "tool", "icon": "mail", "kind": "external", "status": "error" }
         ],
         "edges": [
           { "from": "browser", "to": "server", "label": "ask", "packet": { "label": "question" } },
@@ -193,7 +193,7 @@
           { "id": "notes", "status": "normal", "tags": null },
           { "id": "shared", "status": "warn" },
           { "id": "browser", "status": "error", "tags": ["renders image"] },
-          { "id": "evil", "x": 6.4, "y": 6.6, "label": "evil.example", "sublabel": "logs every request", "icon": "incognito", "kind": "threat", "status": "error" }
+          { "id": "evil", "x": 7.6, "y": 6.6, "label": "evil.example", "sublabel": "logs every request", "icon": "incognito", "kind": "threat", "status": "error" }
         ],
         "edges": [
           { "id": "notes>server", "status": "normal", "packet": false },

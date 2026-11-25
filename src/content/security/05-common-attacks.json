@@ -34,7 +34,7 @@
         "nodes": [
           { "id": "browser", "x": 2, "y": 4, "label": "Maya", "sublabel": "browser, logged in", "icon": "browser", "kind": "client" },
           { "id": "attacker", "x": 2, "y": 1.4, "label": "Attacker", "sublabel": "also has an account", "icon": "incognito", "kind": "threat", "status": "warn" },
-          { "id": "server", "x": 6.4, "y": 4, "label": "Notely API", "sublabel": "on Vercel", "icon": "server", "kind": "server", "status": "active" },
+          { "id": "server", "x": 6.8, "y": 4, "label": "Notely API", "sublabel": "on Vercel", "icon": "server", "kind": "server", "status": "active" },
           { "id": "db", "x": 10.4, "y": 4, "label": "Postgres", "sublabel": "Supabase", "icon": "database", "kind": "data" }
         ],
         "edges": [

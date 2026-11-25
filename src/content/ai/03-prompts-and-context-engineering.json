@@ -32,9 +32,9 @@
         "nodes": [
           { "id": "ask", "x": 2.2, "y": 4, "label": "Prompt", "sublabel": "\"Summarize this note\"", "icon": "pencil", "kind": "neutral", "status": "warn" },
           { "id": "llm", "x": 6.4, "y": 4, "label": "Claude API", "sublabel": "guessing", "icon": "sparkle", "kind": "ai" },
-          { "id": "out1", "x": 10.2, "y": 1.6, "label": "12 bullets", "sublabel": "far too long", "icon": "list", "kind": "neutral", "status": "warn" },
+          { "id": "out1", "x": 10.2, "y": 1.2, "label": "12 bullets", "sublabel": "far too long", "icon": "list", "kind": "neutral", "status": "warn" },
           { "id": "out2", "x": 10.2, "y": 4, "label": "Invented to-do", "sublabel": "not in the note", "icon": "alert", "kind": "neutral", "status": "error" },
-          { "id": "out3", "x": 10.2, "y": 6.4, "label": "Wrong language", "sublabel": "Spanish in, English out", "icon": "globe", "kind": "neutral", "status": "warn" }
+          { "id": "out3", "x": 10.2, "y": 6.6, "label": "Wrong language", "sublabel": "Spanish in, English out", "icon": "globe", "kind": "neutral", "status": "warn" }
         ],
         "edges": [
           { "from": "ask", "to": "llm", "packet": { "label": "note" } },
@@ -61,7 +61,7 @@
           { "id": "window", "x": 0.4, "y": 0.5, "w": 6.2, "h": 7, "label": "Context window" }
         ],
         "nodes": [
-          { "id": "sys", "x": 3.5, "y": 0.9, "label": "System prompt", "sublabel": "role and rules", "icon": "gear", "kind": "neutral", "status": "dim" },
+          { "id": "sys", "x": 3.4, "y": 0.8, "label": "System prompt", "sublabel": "role and rules", "icon": "gear", "kind": "neutral", "status": "dim" },
           { "id": "ex", "x": 3.5, "y": 2.9, "label": "Examples", "sublabel": "what good looks like", "icon": "check", "kind": "neutral", "status": "dim" },
           { "id": "ctx", "x": 3.5, "y": 5, "label": "Note + facts", "sublabel": "the data", "icon": "file", "kind": "data" },
           { "id": "ask", "x": 3.5, "y": 6.4, "label": "The request", "sublabel": "\"Summarize this note\"", "icon": "pencil", "kind": "neutral", "status": "normal" },

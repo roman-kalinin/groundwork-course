@@ -36,11 +36,11 @@
       "scene": {
         "caption": "Four separate services, each with its own idea of who Maya is.",
         "nodes": [
-          { "id": "app", "x": 1.8, "y": 3.4, "label": "Notely app", "sublabel": "Next.js on Vercel", "icon": "browser", "kind": "client" },
-          { "id": "auth", "x": 4.2, "y": 1.6, "label": "Auth provider", "sublabel": "service 1", "icon": "key", "kind": "external", "status": "warn" },
+          { "id": "app", "x": 1.8, "y": 2.2, "label": "Notely app", "sublabel": "Next.js on Vercel", "icon": "browser", "kind": "client" },
+          { "id": "auth", "x": 4.4, "y": 1.6, "label": "Auth provider", "sublabel": "service 1", "icon": "key", "kind": "external", "status": "warn" },
           { "id": "storage", "x": 5, "y": 7.2, "label": "File host", "sublabel": "service 2", "icon": "folder", "kind": "external", "status": "warn" },
           { "id": "realtime", "x": 10.2, "y": 1.6, "label": "Live server", "sublabel": "service 3", "icon": "bolt", "kind": "external", "status": "warn" },
-          { "id": "vector", "x": 10.2, "y": 6.8, "label": "Vector DB", "sublabel": "service 4", "icon": "vector", "kind": "external", "status": "warn" }
+          { "id": "vector", "x": 10.2, "y": 7, "label": "Vector DB", "sublabel": "service 4", "icon": "vector", "kind": "external", "status": "warn" }
         ],
         "edges": [
           { "from": "app", "to": "auth", "style": "dashed" },
@@ -69,7 +69,7 @@
         "caption": "Every service is built on the same Postgres database.",
         "remove": ["n-bills", "app>auth", "app>storage", "app>realtime", "app>vector"],
         "nodes": [
-          { "id": "pg", "x": 6.8, "y": 3, "label": "Postgres", "sublabel": "one database", "icon": "database", "kind": "data", "status": "active" },
+          { "id": "pg", "x": 9.2, "y": 3, "label": "Postgres", "sublabel": "one database", "icon": "database", "kind": "data", "status": "active" },
           { "id": "auth", "label": "Supabase Auth", "sublabel": "sign-in", "icon": "shield", "kind": "server", "status": "normal" },
           { "id": "storage", "label": "Storage", "sublabel": "files", "kind": "server", "status": "normal" },
           { "id": "realtime", "label": "Realtime", "sublabel": "live updates", "kind": "server", "status": "normal" },
@@ -214,7 +214,7 @@
         "caption": "The app calls one named function. It runs the search inside Postgres.",
         "nodes": [
           { "id": "vector", "status": "normal" },
-          { "id": "fn", "x": 7.2, "y": 1.2, "label": "Functions", "sublabel": "rpc + Edge Functions", "icon": "function", "kind": "server", "status": "active" }
+          { "id": "fn", "x": 7.2, "y": 1.6, "label": "Functions", "sublabel": "rpc + Edge Functions", "icon": "function", "kind": "server", "status": "active" }
         ],
         "edges": [
           { "id": "app>pg", "label": "supabase-js", "packet": false },

@@ -38,8 +38,8 @@
         "caption": "Users hit the error for hours. Nothing tells Maya.",
         "nodes": [
           { "id": "users", "x": 2, "y": 4, "label": "Users", "sublabel": "spinner forever", "icon": "users", "kind": "person", "status": "warn" },
-          { "id": "app", "x": 6.4, "y": 4, "label": "Notely", "sublabel": "/api/summary", "icon": "server", "kind": "server", "status": "error" },
-          { "id": "maya", "x": 10.4, "y": 4, "label": "Maya", "sublabel": "no idea yet", "icon": "phone", "kind": "person", "status": "dim" }
+          { "id": "app", "x": 6.4, "y": 2.8, "label": "Notely", "sublabel": "/api/summary", "icon": "server", "kind": "server", "status": "error" },
+          { "id": "maya", "x": 10.4, "y": 4.4, "label": "Maya", "sublabel": "no idea yet", "icon": "phone", "kind": "person", "status": "dim" }
         ],
         "edges": [
           { "from": "users", "to": "app", "label": "AI summary", "packet": { "label": "click", "speed": "fast" } }
@@ -59,7 +59,7 @@
       "scene": {
         "caption": "The app sends signals to four tools. Each one watches something different.",
         "nodes": [
-          { "id": "app", "x": 6.4, "y": 4, "label": "Notely", "sublabel": "live app", "icon": "server", "kind": "server", "status": "normal" },
+          { "id": "app", "x": 6.4, "y": 2.8, "label": "Notely", "sublabel": "live app", "icon": "server", "kind": "server", "status": "normal" },
           { "id": "errors", "x": 2, "y": 1.6, "label": "Errors", "sublabel": "Sentry", "icon": "bug", "kind": "external" },
           { "id": "uptime", "x": 2, "y": 6.4, "label": "Uptime", "sublabel": "pings every minute", "icon": "clock", "kind": "external" },
           { "id": "logs", "x": 10.4, "y": 1.6, "label": "Logs", "sublabel": "per request", "icon": "log", "kind": "external" },
@@ -193,7 +193,7 @@
           { "id": "analytics", "status": "normal", "tags": null },
           { "id": "errors", "status": "error", "tags": ["new issue", "61 users"] },
           { "id": "uptime", "status": "ok" },
-          { "id": "maya", "x": 1.6, "y": 4, "label": "Maya", "sublabel": "alert on phone", "icon": "bell", "kind": "person", "status": "active" }
+          { "id": "maya", "x": 1.6, "y": 4.4, "label": "Maya", "sublabel": "alert on phone", "icon": "bell", "kind": "person", "status": "active" }
         ],
         "edges": [
           { "id": "app>analytics", "packet": false, "style": "dashed", "label": null },

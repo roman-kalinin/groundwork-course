@@ -31,7 +31,7 @@
       "scene": {
         "caption": "One manual check passed. The cases nobody tried quietly broke.",
         "nodes": [
-          { "id": "cases", "x": 2, "y": 4, "label": "One test note", "sublabel": "tried by hand", "icon": "user", "kind": "person" },
+          { "id": "cases", "x": 1.2, "y": 4, "label": "One test note", "sublabel": "tried by hand", "icon": "user", "kind": "person" },
           { "id": "app", "x": 6.2, "y": 4, "label": "Summary prompt", "sublabel": "version 2", "icon": "pencil", "kind": "ai", "status": "active" },
           { "id": "o1", "x": 10.2, "y": 1.6, "label": "Spanish note", "sublabel": "fixed", "icon": "check", "kind": "neutral", "status": "ok" },
           { "id": "o2", "x": 10.2, "y": 4, "label": "Long notes", "sublabel": "lost the decisions", "icon": "file", "kind": "neutral", "status": "error" },
@@ -59,7 +59,7 @@
       "scene": {
         "caption": "A fixed set of cases, the real feature, a grader, a score.",
         "nodes": [
-          { "id": "cases", "x": 2, "y": 4, "label": "Test set", "sublabel": "60 notes", "icon": "list", "kind": "data", "status": "active" },
+          { "id": "cases", "x": 1.2, "y": 4, "label": "Test set", "sublabel": "60 notes", "icon": "list", "kind": "data", "status": "active" },
           { "id": "app", "x": 6.2, "y": 4, "label": "Summary prompt", "sublabel": "the real code", "icon": "pencil", "kind": "ai" },
           { "id": "grader", "x": 10.2, "y": 4, "label": "Grader", "sublabel": "pass or fail", "icon": "check", "kind": "server" }
         ],
@@ -132,7 +132,7 @@
         "caption": "Code checks the format. A judge model checks faithfulness against the rubric.",
         "nodes": [
           { "id": "grader", "y": 2.6 },
-          { "id": "judge", "x": 10.2, "y": 6.6, "label": "LLM judge", "sublabel": "rubric: pass / fail", "icon": "brain", "kind": "ai", "status": "active" }
+          { "id": "judge", "x": 11, "y": 6.6, "label": "LLM judge", "sublabel": "rubric: pass / fail", "icon": "brain", "kind": "ai", "status": "active" }
         ],
         "edges": [
           { "from": "app", "to": "judge", "label": "note + summary", "packet": { "label": "grade" } }

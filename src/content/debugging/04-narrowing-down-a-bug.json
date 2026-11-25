@@ -31,7 +31,7 @@
         "caption": "No errors anywhere. Every part of the system is a suspect.",
         "nodes": [
           { "id": "browser", "x": 2, "y": 4, "label": "Notely tab", "sublabel": "summary is blank", "icon": "browser", "kind": "client", "status": "warn" },
-          { "id": "api", "x": 6, "y": 4, "label": "Summary route", "sublabel": "/api/summary", "icon": "function", "kind": "server", "status": "warn" },
+          { "id": "api", "x": 5.8, "y": 4, "label": "Summary route", "sublabel": "/api/summary", "icon": "function", "kind": "server", "status": "warn" },
           { "id": "db", "x": 10.4, "y": 1.8, "label": "notes table", "sublabel": "Supabase", "icon": "database", "kind": "data", "status": "warn" },
           { "id": "claude", "x": 10.4, "y": 6.2, "label": "Claude API", "sublabel": "summaries", "icon": "sparkle", "kind": "ai", "status": "warn" }
         ],
@@ -236,7 +236,7 @@
         "caption": "One small fix on top of today's code, tested with the same repro steps.",
         "nodes": [
           { "id": "c5", "status": "normal" },
-          { "id": "fix", "x": 11, "y": 6.4, "label": "Fix", "sublabel": "1 line: .text", "icon": "check", "kind": "neutral", "status": "ok" }
+          { "id": "fix", "x": 11, "y": 6.8, "label": "Fix", "sublabel": "1 line: .text", "icon": "check", "kind": "neutral", "status": "ok" }
         ],
         "edges": [
           { "id": "c3>c4", "packet": false },

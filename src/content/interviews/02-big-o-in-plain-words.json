@@ -112,6 +112,7 @@
             "label": "n items",
             "sublabel": "notes, tags, rows",
             "icon": "list",
+            "shape": "stack",
             "kind": "data"
           },
           {
@@ -263,7 +264,7 @@
           },
           {
             "id": "ologn",
-            "x": 9.2,
+            "x": 10,
             "y": 2.55,
             "label": "O(log n)",
             "sublabel": "halve each step",
@@ -276,7 +277,7 @@
           },
           {
             "id": "onlogn",
-            "x": 9.2,
+            "x": 10,
             "y": 5.9,
             "label": "O(n log n)",
             "sublabel": "good sorting",

@@ -30,7 +30,7 @@
         "caption": "A task whose steps depend on what each previous step finds.",
         "nodes": [
           { "id": "user", "x": 2, "y": 4, "label": "Maya", "sublabel": "\"plan my week\"", "icon": "user", "kind": "person" },
-          { "id": "loop", "x": 6.2, "y": 4, "label": "Planner route", "sublabel": "Notely server", "icon": "function", "kind": "server", "status": "warn" },
+          { "id": "loop", "x": 4.6, "y": 4, "label": "Planner route", "sublabel": "Notely server", "icon": "function", "kind": "server", "status": "warn" },
           { "id": "llm", "x": 10.2, "y": 1.6, "label": "Claude API", "icon": "sparkle", "kind": "ai" },
           { "id": "search", "x": 10.2, "y": 3.8, "label": "search_notes", "sublabel": "tool", "icon": "search", "kind": "server", "status": "dim" },
           { "id": "cal", "x": 10.2, "y": 6.6, "label": "read_calendar", "sublabel": "tool", "icon": "calendar", "kind": "external", "status": "dim" }
@@ -136,9 +136,9 @@
       "scene": {
         "caption": "One MCP server, many AI apps that can use its tools.",
         "nodes": [
-          { "id": "cc", "x": 2.2, "y": 1.6, "label": "Claude Code", "icon": "terminal", "kind": "client" },
+          { "id": "cc", "x": 2.2, "y": 2, "label": "Claude Code", "icon": "terminal", "kind": "client" },
           { "id": "app", "x": 2.2, "y": 4, "label": "Claude app", "sublabel": "Maya's account", "icon": "chat", "kind": "client" },
-          { "id": "loop", "x": 2.2, "y": 6.4, "label": "Your own agent", "icon": "robot", "kind": "client" },
+          { "id": "loop", "x": 0.6, "y": 6.4, "label": "Your own agent", "icon": "robot", "kind": "client" },
           { "id": "mcp", "x": 6.6, "y": 4, "label": "Notely MCP", "sublabel": "search_notes, add_note", "icon": "link", "kind": "server", "status": "active" },
           { "id": "db", "x": 10.4, "y": 4, "label": "notes table", "sublabel": "RLS per user", "icon": "database", "kind": "data" }
         ],
@@ -200,7 +200,7 @@
         "caption": "A workflow: code fetches the data, one model call writes the plan.",
         "nodes": [
           { "id": "user", "x": 2, "y": 4, "label": "Maya", "sublabel": "\"plan my week\"", "icon": "user", "kind": "person" },
-          { "id": "loop", "x": 6.2, "y": 4, "label": "Planner route", "sublabel": "fixed steps", "icon": "function", "kind": "server", "status": "ok" },
+          { "id": "loop", "x": 4.6, "y": 4, "label": "Planner route", "sublabel": "fixed steps", "icon": "function", "kind": "server", "status": "ok" },
           { "id": "llm", "x": 10.2, "y": 1.6, "label": "Claude API", "sublabel": "one call", "icon": "sparkle", "kind": "ai" },
           { "id": "search", "x": 10.2, "y": 3.8, "label": "Recent notes", "sublabel": "fetched by code", "icon": "database", "kind": "data" },
           { "id": "cal", "x": 10.2, "y": 6.6, "label": "Calendar", "sublabel": "fetched by code", "icon": "calendar", "kind": "external" }
@@ -228,7 +228,7 @@
         "caption": "A stuck agent repeats itself. Limits and approvals stop it.",
         "nodes": [
           { "id": "user", "x": 2, "y": 4, "label": "Maya", "sublabel": "waiting…", "icon": "user", "kind": "person", "status": "dim" },
-          { "id": "loop", "x": 6.2, "y": 4, "label": "Agent loop", "sublabel": "your code", "icon": "refresh", "kind": "server", "status": "warn", "tags": ["step 10 of 10", "stop"] },
+          { "id": "loop", "x": 4.6, "y": 4, "label": "Agent loop", "sublabel": "your code", "icon": "refresh", "kind": "server", "status": "warn", "tags": ["step 10 of 10", "stop"] },
           { "id": "llm", "x": 10.2, "y": 1.6, "label": "Claude API", "sublabel": "same call again", "icon": "sparkle", "kind": "ai", "status": "warn" },
           { "id": "search", "x": 10.2, "y": 3.8, "label": "search_notes", "sublabel": "called 9 times", "icon": "search", "kind": "server", "status": "warn" },
           { "id": "cal", "x": 10.2, "y": 6.6, "label": "create_event", "sublabel": "blocked", "icon": "calendar", "kind": "external", "status": "ok", "tags": ["needs approval"] }

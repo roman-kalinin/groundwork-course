@@ -37,6 +37,7 @@
             "y": 4,
             "label": "All notes",
             "icon": "folder",
+            "shape": "stack",
             "kind": "data",
             "tags": [
               "3 notes"
@@ -48,6 +49,7 @@
             "y": 4,
             "label": "Work",
             "icon": "folder",
+            "shape": "stack",
             "kind": "data",
             "tags": [
               "4 notes"
@@ -59,6 +61,7 @@
             "y": 4,
             "label": "Clients",
             "icon": "folder",
+            "shape": "stack",
             "kind": "data",
             "tags": [
               "1 note"
@@ -70,6 +73,7 @@
             "y": 4,
             "label": "Acme",
             "icon": "folder",
+            "shape": "stack",
             "kind": "data",
             "tags": [
               "2 notes"
@@ -325,6 +329,7 @@
             "x": 6.4,
             "y": 1,
             "label": "[8, 3, 5, 1]",
+            "shape": "tile",
             "kind": "data"
           },
           {
@@ -333,6 +338,7 @@
             "y": 3,
             "label": "[8, 3]",
             "sublabel": "split",
+            "shape": "tile",
             "kind": "data"
           },
           {
@@ -341,6 +347,7 @@
             "y": 3,
             "label": "[5, 1]",
             "sublabel": "split",
+            "shape": "tile",
             "kind": "data"
           },
           {
@@ -349,6 +356,7 @@
             "y": 5,
             "label": "[3, 8]",
             "sublabel": "sorted",
+            "shape": "tile",
             "kind": "data",
             "status": "ok"
           },
@@ -358,15 +366,17 @@
             "y": 5,
             "label": "[1, 5]",
             "sublabel": "sorted",
+            "shape": "tile",
             "kind": "data",
             "status": "ok"
           },
           {
             "id": "ms-out",
             "x": 6.4,
-            "y": 6.4,
+            "y": 6.2,
             "label": "[1, 3, 5, 8]",
             "sublabel": "merged",
+            "shape": "tile",
             "kind": "data",
             "status": "active"
           }
@@ -435,6 +445,7 @@
             "y": 4.4,
             "label": "08:10",
             "sublabel": "index 0",
+            "shape": "tile",
             "kind": "data"
           },
           {
@@ -443,6 +454,7 @@
             "y": 4.4,
             "label": "08:45",
             "sublabel": "index 1",
+            "shape": "tile",
             "kind": "data"
           },
           {
@@ -451,6 +463,7 @@
             "y": 4.4,
             "label": "09:02",
             "sublabel": "index 2, mid",
+            "shape": "tile",
             "kind": "data",
             "status": "active"
           },
@@ -460,6 +473,7 @@
             "y": 4.4,
             "label": "09:30",
             "sublabel": "index 3",
+            "shape": "tile",
             "kind": "data",
             "status": "dim"
           },
@@ -469,6 +483,7 @@
             "y": 4.4,
             "label": "11:40",
             "sublabel": "index 4",
+            "shape": "tile",
             "kind": "data",
             "status": "dim"
           },
@@ -479,6 +494,7 @@
             "label": "Since 09:00",
             "sublabel": "first match?",
             "icon": "clock",
+            "shape": "flag",
             "kind": "client"
           }
         ],

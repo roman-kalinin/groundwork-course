@@ -37,7 +37,7 @@
         "nodes": [
           { "id": "browser", "x": 2, "y": 4, "label": "Browser", "sublabel": "Maya clicks Summary", "icon": "browser", "kind": "client" },
           { "id": "api", "x": 7.2, "y": 4, "label": "Notely API", "sublabel": "/api/summary", "icon": "function", "kind": "server", "status": "error" },
-          { "id": "claude", "x": 10.4, "y": 4, "label": "Claude API", "sublabel": "writes the summary", "icon": "sparkle", "kind": "ai" }
+          { "id": "claude", "x": 10.8, "y": 4, "label": "Claude API", "sublabel": "writes the summary", "icon": "sparkle", "kind": "ai" }
         ],
         "edges": [
           { "from": "browser", "to": "api", "label": "POST /api/summary", "packet": { "label": "note" } },
@@ -216,7 +216,7 @@
         "nodes": [
           { "id": "browser", "x": 2, "y": 4, "label": "Browser", "sublabel": "Maya clicks Summary", "icon": "browser", "kind": "client" },
           { "id": "api", "x": 7.2, "y": 4, "label": "Notely API", "sublabel": "/api/summary", "icon": "function", "kind": "server", "status": "ok", "tags": ["checks res.ok"] },
-          { "id": "claude", "x": 10.4, "y": 4, "label": "Claude API", "sublabel": "writes the summary", "icon": "sparkle", "kind": "ai", "status": "warn" }
+          { "id": "claude", "x": 10.8, "y": 4, "label": "Claude API", "sublabel": "writes the summary", "icon": "sparkle", "kind": "ai", "status": "warn" }
         ],
         "edges": [
           { "from": "browser", "to": "api", "label": "POST /api/summary" },

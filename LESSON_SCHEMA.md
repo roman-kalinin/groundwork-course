@@ -194,9 +194,9 @@ Inside JSON strings, quotes must be escaped: `<span class=\"term\">`. Write `&lt
 
 A scene is a drawing on a **12 x 8 grid**. `x` goes from 0 to 12, `y` from 0 to 8. Halves are fine (`6.5`).
 
-The app draws this grid as an **isometric floor** (classic 2:1 isometric): grid `x` runs down-right on screen, grid `y` runs down-left. Every node becomes a 3D block whose shape follows its `kind` (server = rack block, data = cylinder, person = figure on a plinth, client = laptop or phone, ai = chip with a sparkle, external = crate with a lid, threat = block with hazard stripes, neutral = plain block). Text stays upright: a card with the label and sublabel floats above each block, tags lie on the floor in front of it, edges run along the floor with flat arrowheads, zones are floor plates and notes are speech bubbles. The geometry lives in `shared/iso.js`, used by both the renderer and the validator.
+The app draws this grid as an **isometric floor** (classic 2:1 isometric): grid `x` runs down-right on screen, grid `y` runs down-left. Every node becomes a 3D block whose shape follows its `kind` (server = rack block, data = cylinder, person = figure on a plinth, client = laptop or phone, ai = chip with a sparkle, external = crate with a lid, threat = block with hazard stripes, neutral = plain block), or its `shape` when one is set (tile, token, flag, stack, block). Text stays upright: a card with the label and sublabel floats above each block, tags lie on the floor in front of it, edges run along the floor as ink lines with flat arrowheads, zones are floor plates and notes are speech bubbles. The geometry lives in `shared/iso.js`, used by both the renderer and the validator.
 
-The app animates between steps: nodes that keep their `id` glide to their new position, new things fade in, removed things fade out, status colours cross-fade, and packets travel along edges. The view is framed around everything the lesson ever shows, so it does not jump.
+The app animates between steps: things that leave fade out first, then new things rise in; nodes that keep their `id` glide to their new position (block and card move as one), status colours cross-fade, and packets travel along edges, staying off other text (their own edge label fades while they pass). **The camera frames each step on what that step shows** and pans and zooms smoothly between steps. Each diagram has Replay and Pause buttons. On a phone the diagram fits the screen width, zooms in on what changed when the whole step would be too small to read, and opens full screen with **Whole diagram**.
 
 ### Scene object
 
@@ -227,12 +227,13 @@ The first step that has a scene must be a full scene.
 | `label` | string | | Main text. Under ~18 characters. |
 | `sublabel` | string | | Second line, smaller. Under ~24 characters. |
 | `icon` | string | none | One of the icon names below. |
-| `kind` | enum | `neutral` | Shape and colour of the block: `neutral`, `person`, `client`, `server`, `data`, `ai`, `external`, `threat`. |
-| `status` | enum | `normal` | `normal`, `active` (block floats up, accent ring on the floor, gentle bob), `ok` (green check badge), `warn` (amber ! badge), `error` (red block + x badge, small shake), `dim` (faded). |
+| `kind` | enum | `neutral` | What the thing is; sets the colour and the default shape: `neutral`, `person`, `client`, `server`, `data`, `ai`, `external`, `threat`. |
+| `shape` | enum | by kind | Optional shape override: `tile` (flat slab: a row, an array cell, a list item), `token` (round disc: a tree or graph node), `flag` (pin with a flag: a pointer or marker), `stack` (stacked slabs: a folder or a pile), `block` (plain box). |
+| `status` | enum | `normal` | `normal`, `active` (block floats up with a bright top, accent ring on the floor, gentle bob), `ok` (green ring), `warn` (amber ring), `error` (red block and ring, small shake), `dim` (faded). A badge (check, !, x) is added to the card only in the step where the status changes, at most three per step. |
 | `tags` | string[] | | Up to 3 small monospace chips on the floor in front of the block (`"HttpOnly"`, `"10 / min"`). |
 | `w` | number | | Kept for older lessons; the isometric renderer ignores it (cards size themselves to their text). |
 
-A block covers about 0.8 x 0.8 grid units of floor. Its card is as wide as the longer of label and sublabel. Two nodes stacked in `y` (same `x`) need about 1.7 grid units between centres so their cards do not touch, about 2 when the lower one is `active`.
+A block covers about 1 x 1 grid unit of floor. Its card is as wide as the longer of label and sublabel. Two nodes stacked in `y` (same `x`) need about 1.7 grid units between centres so their cards do not touch, about 2 when the lower one is `active`.
 
 ### Edge
 
@@ -247,15 +248,15 @@ A block covers about 0.8 x 0.8 grid units of floor. Its card is as wide as the l
 | `bend` | number | 0 | Curve along the floor, -3 to 3 grid units. Two edges going opposite ways between the same nodes curve apart automatically. |
 | `packet` | `true` / `false` / object | none | Something travelling along the edge, on a loop. |
 
-**Packet object:** `{ "label"?: "JWT", "status"?: "active", "direction"?: "forward" | "backward" | "both", "speed"?: "slow" | "normal" | "fast" }`. `true` = a plain glowing dot. Keep packet labels under ~10 characters. The packet colour follows `status`; the legend under the diagram explains the colours in use (blue = data moving, orange = in focus, green = allowed / success, amber = slow or at risk, red = blocked / failed). With reduced motion the packet rests beside the edge label, or is left out when there is no free spot.
+**Packet object:** `{ "label"?: "JWT", "status"?: "active", "direction"?: "forward" | "backward" | "both", "speed"?: "slow" | "normal" | "fast" }`. `true` = a plain glowing dot. Keep packet labels under ~10 characters. Packets are drawn above cards and labels; each one travels only along the longest stretch of its edge where it covers no other text (it may slip under the floor tags of its own end blocks), and packets on different edges are timed so they do not run into each other. The packet colour follows `status`; the legend under the diagram explains the colours in use (blue = data moving, orange = in focus, green = allowed / success, amber = slow or at risk, red = blocked / failed). With reduced motion the packet rests beside the edge label, or is left out when there is no free spot.
 
 ### Zone
 
-`{ "id", "x", "y", "w", "h", "label"?, "status"? }`. Here `x`/`y` is the **top-left corner** (unlike nodes), `w`/`h` the size. Must fit inside the 12 x 8 grid. It is drawn as a low plate on the floor; its name sits on a tab at the back corner (or another corner when that spot would cover text).
+`{ "id", "x", "y", "w", "h", "label"?, "status"? }`. Here `x`/`y` is the **top-left corner** (unlike nodes), `w`/`h` the size. Must fit inside the 12 x 8 grid. It is drawn as a low plate on the floor, inset a little so neighbouring plates keep a gap; its name sits on a tab at the plate's left corner (or another spot when that one would cover text or an edge). Zones may nest, but two zones must not partly overlap. Neutral blocks standing in a zone take a faint tint of the zone's colour.
 
 ### Note
 
-`{ "id", "x", "y", "text", "status"? }`. A speech bubble whose tail points at the floor spot (`x`, `y`). Under ~40 characters. Use `status` to colour it (`warn`, `error`, `ok`, `active`).
+`{ "id", "x", "y", "text", "status"? }`. A speech bubble above the floor spot (`x`, `y`). When the spot is within ~1.5 grid units of a block, the bubble has a tail pointing at it; otherwise it is a free-standing sticker without a tail (a caption). Under ~40 characters. Use `status` to colour it (`warn`, `error`, `ok`, `active`).
 
 ### Icons
 
@@ -283,6 +284,6 @@ business           mail calendar money cart handshake graduation-cap
 - enum values (chapter, level, kind, status, style, arrow, callout type, code language) with suggestions
 - inline HTML: only allowed tags, tags closed, stray `<`/`>`, every term exists in the glossary
 - scenes: `extends` without a previous scene, `remove` of unknown ids, nodes without `x`/`y`/`label`, edges pointing at unknown nodes, unknown icons, coordinates outside the grid, duplicate ids
-- isometric layout, measured in screen space with `shared/iso.js`: blocks standing on each other and any two pieces of text covering each other (cards, tags, edge labels, notes, zone names) are errors; a card hiding most of another block, or an edge running mostly underneath cards, is a warning
+- isometric layout, measured in screen space with `shared/iso.js`, at rest and in motion: blocks standing on each other, any two pieces of text covering each other (cards, tags, edge labels, notes, zone names), zone plates partly overlapping, an arrowhead hidden under a card, tag or note, and a packet with no clear stretch of its edge to travel are errors; a card hiding most of another block, an edge running mostly underneath cards, or packets on different edges running into each other is a warning
 - quiz: 2-4 questions, 2-4 options, exactly one correct, a `why` on every option
 - warnings (do not fail): long text, too many tags/nodes, glossary terms never used, long code lines

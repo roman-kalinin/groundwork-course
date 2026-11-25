@@ -50,6 +50,7 @@
             "label": "Typed title",
             "sublabel": "1st edit",
             "icon": "pencil",
+            "shape": "tile",
             "kind": "data"
           },
           {
@@ -59,6 +60,7 @@
             "label": "Bold a word",
             "sublabel": "2nd edit",
             "icon": "pencil",
+            "shape": "tile",
             "kind": "data"
           },
           {
@@ -68,6 +70,7 @@
             "label": "Deleted line",
             "sublabel": "3rd edit, newest",
             "icon": "pencil",
+            "shape": "tile",
             "kind": "data",
             "status": "active"
           },
@@ -120,6 +123,7 @@
             "label": "Added link",
             "sublabel": "4th edit, top",
             "icon": "pencil",
+            "shape": "tile",
             "kind": "data",
             "status": "active"
           },
@@ -262,6 +266,7 @@
             "y": 4,
             "label": "Job 3",
             "sublabel": "newest",
+            "shape": "tile",
             "kind": "data"
           },
           {
@@ -269,6 +274,7 @@
             "x": 6.4,
             "y": 4,
             "label": "Job 2",
+            "shape": "tile",
             "kind": "data"
           },
           {
@@ -277,6 +283,7 @@
             "y": 4,
             "label": "Job 1",
             "sublabel": "oldest, front",
+            "shape": "tile",
             "kind": "data",
             "status": "active"
           },
@@ -382,6 +389,7 @@
             "y": 4,
             "label": "head",
             "icon": "link",
+            "shape": "flag",
             "kind": "client",
             "status": "active"
           },
@@ -390,6 +398,7 @@
             "x": 4.2,
             "y": 4,
             "label": "Note A",
+            "shape": "token",
             "kind": "data"
           },
           {
@@ -397,6 +406,7 @@
             "x": 6.8,
             "y": 4,
             "label": "Note B",
+            "shape": "token",
             "kind": "data"
           },
           {
@@ -404,6 +414,7 @@
             "x": 9.4,
             "y": 4,
             "label": "Note C",
+            "shape": "token",
             "kind": "data"
           }
         ],
@@ -526,6 +537,7 @@
             "y": 4,
             "label": "Msg 1",
             "sublabel": "oldest",
+            "shape": "tile",
             "kind": "data",
             "status": "dim",
             "tags": [
@@ -537,6 +549,7 @@
             "x": 3.8,
             "y": 4,
             "label": "Msg 2",
+            "shape": "tile",
             "kind": "data",
             "tags": [
               "250 tok"
@@ -547,6 +560,7 @@
             "x": 6,
             "y": 4,
             "label": "Msg 3",
+            "shape": "tile",
             "kind": "data",
             "tags": [
               "300 tok"
@@ -558,6 +572,7 @@
             "y": 4,
             "label": "Msg 4",
             "sublabel": "newest",
+            "shape": "tile",
             "kind": "client",
             "status": "active",
             "tags": [
