@@ -110,7 +110,7 @@
           { "id": "confirm", "status": "ok" },
           { "id": "stop", "status": "active" },
           { "id": "dep-bad", "x": 3.1, "y": 4.4, "label": "Deploy 18:25", "sublabel": "broken", "icon": "rocket", "kind": "server", "status": "error" },
-          { "id": "dep-good", "x": 7.8, "y": 4.4, "label": "Deploy 17:10", "sublabel": "last good", "icon": "rocket", "kind": "server", "status": "ok" }
+          { "id": "dep-good", "x": 7.6, "y": 4.4, "label": "Deploy 17:10", "sublabel": "last good", "icon": "rocket", "kind": "server", "status": "ok" }
         ],
         "edges": [
           { "from": "stop", "to": "dep-good", "label": "promote", "status": "ok", "packet": { "label": "rollback", "status": "ok" } },

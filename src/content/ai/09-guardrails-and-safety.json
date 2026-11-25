@@ -34,7 +34,7 @@
           { "id": "evil", "x": 2, "y": 1.6, "label": "Clipped web page", "sublabel": "hidden instructions", "icon": "globe", "kind": "threat", "status": "error" },
           { "id": "notes", "x": 2, "y": 4.4, "label": "Maya's notes", "sublabel": "incl. the clipping", "icon": "database", "kind": "data" },
           { "id": "route", "x": 6.2, "y": 4.4, "label": "Assistant", "sublabel": "agent loop", "icon": "robot", "kind": "server", "status": "warn" },
-          { "id": "llm", "x": 10.2, "y": 2.2, "label": "Claude API", "sublabel": "reads everything", "icon": "sparkle", "kind": "ai" },
+          { "id": "llm", "x": 10.2, "y": 1, "label": "Claude API", "sublabel": "reads everything", "icon": "sparkle", "kind": "ai" },
           { "id": "email", "x": 10.2, "y": 7, "label": "send_email", "sublabel": "any address", "icon": "mail", "kind": "external", "status": "error" }
         ],
         "edges": [

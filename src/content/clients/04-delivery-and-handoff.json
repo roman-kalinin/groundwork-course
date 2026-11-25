@@ -192,7 +192,7 @@
       "scene": {
         "caption": "Sam tests every criterion. One fails and becomes a ticket; sign-off waits for it.",
         "nodes": [
-          { "id": "c1", "x": 2, "y": 1.6, "label": "Book a slot", "sublabel": "criterion", "icon": "check", "kind": "neutral", "status": "ok" },
+          { "id": "c1", "x": 2, "y": 1.8, "label": "Book a slot", "sublabel": "criterion", "icon": "check", "kind": "neutral", "status": "ok" },
           { "id": "c2", "x": 2, "y": 4, "label": "No double booking", "sublabel": "criterion", "icon": "check", "kind": "neutral", "status": "ok" },
           { "id": "c3", "x": 2, "y": 6.4, "label": "Text 24 h before", "sublabel": "criterion", "icon": "alert", "kind": "neutral", "status": "warn", "tags": ["bug ticket"] },
           { "id": "sam", "x": 6.4, "y": 4, "label": "Sam tests", "sublabel": "live app, real phone", "icon": "phone", "kind": "person", "status": "active" },

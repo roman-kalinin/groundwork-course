@@ -36,8 +36,8 @@
       "scene": {
         "caption": "Four separate services, each with its own idea of who Maya is.",
         "nodes": [
-          { "id": "app", "x": 1.8, "y": 3.8, "label": "Notely app", "sublabel": "Next.js on Vercel", "icon": "browser", "kind": "client" },
-          { "id": "auth", "x": 4.4, "y": 1.6, "label": "Auth provider", "sublabel": "service 1", "icon": "key", "kind": "external", "status": "warn" },
+          { "id": "app", "x": 1.8, "y": 3.4, "label": "Notely app", "sublabel": "Next.js on Vercel", "icon": "browser", "kind": "client" },
+          { "id": "auth", "x": 4.2, "y": 1.6, "label": "Auth provider", "sublabel": "service 1", "icon": "key", "kind": "external", "status": "warn" },
           { "id": "storage", "x": 5, "y": 7.2, "label": "File host", "sublabel": "service 2", "icon": "folder", "kind": "external", "status": "warn" },
           { "id": "realtime", "x": 10.2, "y": 1.6, "label": "Live server", "sublabel": "service 3", "icon": "bolt", "kind": "external", "status": "warn" },
           { "id": "vector", "x": 10.2, "y": 6.8, "label": "Vector DB", "sublabel": "service 4", "icon": "vector", "kind": "external", "status": "warn" }
@@ -69,7 +69,7 @@
         "caption": "Every service is built on the same Postgres database.",
         "remove": ["n-bills", "app>auth", "app>storage", "app>realtime", "app>vector"],
         "nodes": [
-          { "id": "pg", "x": 6.8, "y": 4.2, "label": "Postgres", "sublabel": "one database", "icon": "database", "kind": "data", "status": "active" },
+          { "id": "pg", "x": 6.8, "y": 3, "label": "Postgres", "sublabel": "one database", "icon": "database", "kind": "data", "status": "active" },
           { "id": "auth", "label": "Supabase Auth", "sublabel": "sign-in", "icon": "shield", "kind": "server", "status": "normal" },
           { "id": "storage", "label": "Storage", "sublabel": "files", "kind": "server", "status": "normal" },
           { "id": "realtime", "label": "Realtime", "sublabel": "live updates", "kind": "server", "status": "normal" },

@@ -730,7 +730,7 @@ kbd {
 /* home */
 .hero {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
   align-items: center;
   gap: 24px 40px;
   margin-bottom: 64px;
@@ -2825,6 +2825,7 @@ code {
   .timeline {
     --dot: 22px;
     padding-top: 3px;
+    mask-image: linear-gradient(to right, transparent, #000 10px, #000 calc(100% - 10px), transparent);
   }
   .tl-item {
     min-width: 26px;

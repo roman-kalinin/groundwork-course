@@ -79,8 +79,9 @@ The diagram is the lesson's whiteboard. The learner clicks Next and watches it c
 - Show **flow with packets** (`"packet": { "label": "JWT" }`). Show **trouble with status**: `error` on the node that breaks, `warn` for risk, `ok` once fixed, `active` for "look here". Use `dim` to push the rest of the story into the background instead of deleting it.
 - Use `kind` for **what a thing is** (client, server, data, ai, external, threat, person). Colour is only ever meaning: do not pick a kind for its colour.
 - Lay out left to right in the direction requests travel: person/browser on the left (x≈2), your server in the middle (x≈6.4), databases and third-party APIs on the right (x≈10.4). Rows at y≈1.6, 4 and 6.4 work well.
-- Leave **at least ~2.5 grid units between node centres in a row** (more when an edge has a long label) and ~2.2 between rows when nodes have tags. The validator flags overlaps.
-- **Keep it small**: 3-6 visible nodes. Labels of 1-2 words (the box grows with the text). Edge labels of 1-3 words. On phones the diagram is shown at about 600px wide and can be swiped, so tiny details get lost.
+- **The grid is drawn in isometric 3D.** Grid x runs down-right on screen, grid y runs down-left, and each node is a block with an upright card (label + sublabel) floating above it and its tags on the floor in front. So a row (same y) becomes a diagonal going down-right, and a column (same x) a diagonal going down-left. Nodes in a column need more room than on a flat board: keep **at least ~1.7 grid units between nodes stacked in y** (about 2 when the lower one is `active`, because active blocks float up), and ~2.2 between nodes in a row.
+- The validator measures the real isometric picture and fails when two pieces of text cover each other (cards, tags, edge labels, notes, zone names) or two blocks stand on each other. It warns when a card hides most of another block or an edge runs mostly underneath cards. Fix it by moving coordinates, not by shortening words. Edge labels slide along their edge and zone names move to another corner of their plate on their own when their first spot is taken.
+- **Keep it small**: 3-6 visible nodes. Labels of 1-2 words (the card grows with the text). Edge labels of 1-3 words. On phones the diagram is shown at about 56% of its full size and can be swiped (it centres on the highlighted nodes), so tiny details get lost.
 - Use `zones` to group things ("Browser" vs "Server", "Before" vs "After") and `notes` for the thought bubble ("Who is this?").
 - Always write a `caption`: one sentence that says what the learner should notice in this frame.
 - Steps without a meaningful picture can omit `scene` (the previous frame stays). A lesson with no scenes at all shows text only; that is fine for a few topics, but most lessons should have a diagram.
@@ -95,7 +96,7 @@ file folder list search chart
 code terminal git bug log gear flask pencil
 sparkle brain chat robot vector
 clock check x alert bell refresh link upload download trash
-mail calendar money cart
+mail calendar money cart handshake graduation-cap
 ```
 
 `incognito` = attacker / someone else, `function` = serverless function, `vector` = embeddings, `bolt` = cache or fast, `sparkle` = AI feature, `robot` = agent or script. Need another icon? Ask the maintainer; do not add it yourself.

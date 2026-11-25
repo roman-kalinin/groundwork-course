@@ -55,7 +55,7 @@ export function nodeShape(n) {
         ? { type: 'phone', hw: 0.24, hd: 0.13, h: 50 }
         : { type: 'laptop', hw: 0.46, hd: 0.36, h: 7, screenH: 38 };
     case 'person':
-      return { type: 'person', hw: 0.36, hd: 0.36, h: 7, figure: n.icon === 'users' ? 2 : 1, figH: 48 };
+      return { type: 'person', hw: 0.31, hd: 0.31, h: 8, figure: n.icon === 'users' ? 2 : 1, figH: 56 };
     default:
       return { type: 'box', hw: 0.4, hd: 0.4, h: 26 };
   }
@@ -471,6 +471,21 @@ export function layoutProblems(scene) {
       const limit = t.ends?.includes(id) ? 0.22 : 0.3;
       if (cov > limit) out.push({ level: 'warn', msg: `${t.what} hides ${Math.round(cov * 100)}% of block "${id}"`, ids: [...t.ids, id], depth: cov * 20 });
     }
+  }
+  // an edge whose line runs mostly underneath cards cannot be followed
+  for (const { e, g } of L.edges) {
+    const N = 24;
+    let hidden = 0;
+    const by = new Set();
+    for (let i = 0; i <= N; i++) {
+      const p = g.at(i / N);
+      for (const [id, n] of nodes) {
+        const r = n.card;
+        if (p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h + ISO.card.tail) { hidden++; by.add(id); break; }
+      }
+    }
+    const frac = hidden / (N + 1);
+    if (frac > 0.45) out.push({ level: 'warn', msg: `edge "${e.id}" runs ${Math.round(frac * 100)}% under the card of ${[...by].map((x) => `"${x}"`).join(', ')}; it is hard to follow`, ids: [e.from, e.to, ...by], depth: frac * 20 });
   }
   return out;
 }

@@ -64,7 +64,7 @@
         "nodes": [
           { "id": "q", "x": 2.6, "y": 3, "label": "\"Logo decision?\"", "sublabel": "the question", "icon": "chat", "kind": "person", "status": "active" },
           { "id": "n1", "x": 6.8, "y": 3, "label": "Blue brand mark", "sublabel": "brand call note", "icon": "file", "kind": "data", "status": "ok" },
-          { "id": "n2", "x": 4, "y": 5.4, "label": "Font shortlist", "sublabel": "design note", "icon": "file", "kind": "data" },
+          { "id": "n2", "x": 3.6, "y": 5.4, "label": "Font shortlist", "sublabel": "design note", "icon": "file", "kind": "data" },
           { "id": "n3", "x": 9.8, "y": 6.4, "label": "Grocery list", "icon": "file", "kind": "data", "status": "dim" },
           { "id": "n4", "x": 9.8, "y": 1.4, "label": "Gym plan", "icon": "file", "kind": "data", "status": "dim" }
         ],

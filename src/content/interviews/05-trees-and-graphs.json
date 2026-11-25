@@ -36,9 +36,9 @@
           { "id": "all", "x": 6.4, "y": 1.2, "label": "All notes", "icon": "folder", "kind": "data" },
           { "id": "work", "x": 3.2, "y": 3.4, "label": "Work", "icon": "folder", "kind": "data" },
           { "id": "personal", "x": 9.6, "y": 3.4, "label": "Personal", "icon": "folder", "kind": "data" },
-          { "id": "clients", "x": 1.8, "y": 5.8, "label": "Clients", "icon": "folder", "kind": "data" },
+          { "id": "clients", "x": 1.2, "y": 5.8, "label": "Clients", "icon": "folder", "kind": "data" },
           { "id": "pitch", "x": 4.4, "y": 5.8, "label": "Pitch deck", "icon": "file", "kind": "client", "status": "warn" },
-          { "id": "trip", "x": 8.2, "y": 5.8, "label": "Trip plan", "icon": "file", "kind": "client" },
+          { "id": "trip", "x": 7.8, "y": 5.8, "label": "Trip plan", "icon": "file", "kind": "client" },
           { "id": "recipes", "x": 10.8, "y": 5.8, "label": "Recipes", "icon": "file", "kind": "client" }
         ],
         "edges": [
@@ -88,7 +88,7 @@
       "scene": {
         "caption": "Each comparison picks one side and skips the other half.",
         "nodes": [
-          { "id": "b50", "x": 6.4, "y": 1.2, "label": "50", "sublabel": "60 > 50: right", "kind": "data", "status": "active" },
+          { "id": "b50", "x": 5.8, "y": 1.2, "label": "50", "sublabel": "60 > 50: right", "kind": "data", "status": "active" },
           { "id": "b30", "x": 3.6, "y": 3.4, "label": "30", "kind": "data", "status": "dim" },
           { "id": "b70", "x": 9.2, "y": 3.4, "label": "70", "sublabel": "60 < 70: left", "kind": "data", "status": "active" },
           { "id": "b20", "x": 2.2, "y": 5.8, "label": "20", "kind": "data", "status": "dim" },
@@ -124,9 +124,9 @@
           { "id": "all", "x": 6.4, "y": 1.2, "label": "All notes", "icon": "folder", "kind": "data", "status": "ok", "tags": ["DFS #1"] },
           { "id": "work", "x": 3.2, "y": 3.4, "label": "Work", "icon": "folder", "kind": "data", "status": "ok", "tags": ["DFS #2"] },
           { "id": "personal", "x": 9.6, "y": 3.4, "label": "Personal", "icon": "folder", "kind": "data", "tags": ["DFS #5"] },
-          { "id": "clients", "x": 1.8, "y": 5.8, "label": "Clients", "icon": "folder", "kind": "data", "status": "ok", "tags": ["DFS #3"] },
+          { "id": "clients", "x": 1.2, "y": 5.8, "label": "Clients", "icon": "folder", "kind": "data", "status": "ok", "tags": ["DFS #3"] },
           { "id": "pitch", "x": 4.4, "y": 5.8, "label": "Pitch deck", "icon": "file", "kind": "client", "status": "active", "tags": ["DFS #4"] },
-          { "id": "trip", "x": 8.2, "y": 5.8, "label": "Trip plan", "icon": "file", "kind": "client", "tags": ["DFS #6"] },
+          { "id": "trip", "x": 7.8, "y": 5.8, "label": "Trip plan", "icon": "file", "kind": "client", "tags": ["DFS #6"] },
           { "id": "recipes", "x": 10.8, "y": 5.8, "label": "Recipes", "icon": "file", "kind": "client", "tags": ["DFS #7"] }
         ],
         "edges": [
@@ -188,7 +188,7 @@
         "caption": "Notes link to notes. Call notes links back to the pitch deck: a loop.",
         "nodes": [
           { "id": "g-pitch", "x": 2, "y": 4, "label": "Pitch deck", "icon": "file", "kind": "client", "status": "active" },
-          { "id": "g-brief", "x": 5.4, "y": 1.8, "label": "Client brief", "icon": "file", "kind": "client" },
+          { "id": "g-brief", "x": 5.4, "y": 1.6, "label": "Client brief", "icon": "file", "kind": "client" },
           { "id": "g-budget", "x": 5.4, "y": 6.2, "label": "Budget", "icon": "file", "kind": "client" },
           { "id": "g-call", "x": 8.6, "y": 4, "label": "Call notes", "icon": "file", "kind": "client" },
           { "id": "g-ideas", "x": 10.6, "y": 1.6, "label": "Ideas", "icon": "file", "kind": "client" }

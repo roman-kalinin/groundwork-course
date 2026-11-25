@@ -10,11 +10,11 @@ import { UiIcon } from './UiIcon';
 // The home page hero diagram: the stack every lesson builds on.
 const HERO: ResolvedScene = {
   nodes: [
-    { id: 'you', x: 1.4, y: 3.4, label: 'You', sublabel: 'designer who ships', kind: 'person', icon: 'user' },
-    { id: 'app', x: 4.6, y: 3.4, label: 'Your app', icon: 'browser', kind: 'client' },
-    { id: 'api', x: 7.8, y: 3.4, label: 'API', icon: 'function', kind: 'server', status: 'active' },
-    { id: 'db', x: 7.8, y: 6.2, label: 'Postgres', icon: 'database', kind: 'data' },
-    { id: 'llm', x: 10.6, y: 3.4, label: 'Claude', icon: 'sparkle', kind: 'ai' },
+    { id: 'you', x: 1.6, y: 2.6, label: 'You', sublabel: 'designer who ships', kind: 'person', icon: 'user' },
+    { id: 'app', x: 4.2, y: 2.6, label: 'Your app', icon: 'browser', kind: 'client' },
+    { id: 'api', x: 6.8, y: 2.6, label: 'API', icon: 'function', kind: 'server', status: 'active' },
+    { id: 'db', x: 6.8, y: 5.0, label: 'Postgres', icon: 'database', kind: 'data' },
+    { id: 'llm', x: 9.4, y: 2.6, label: 'Claude', icon: 'sparkle', kind: 'ai' },
   ],
   edges: [
     { id: 'you>app', from: 'you', to: 'app', packet: { speed: 'slow' } },
@@ -22,7 +22,7 @@ const HERO: ResolvedScene = {
     { id: 'api>db', from: 'api', to: 'db', packet: { status: 'ok', direction: 'both', speed: 'slow' } },
     { id: 'api>llm', from: 'api', to: 'llm', style: 'dashed', packet: { status: 'normal' } },
   ],
-  zones: [{ id: 'server', x: 6.6, y: 2.2, w: 5.2, h: 5.2, label: 'Server side' }],
+  zones: [{ id: 'server', x: 5.6, y: 1.2, w: 4.8, h: 4.8 }],
   notes: [],
 };
 

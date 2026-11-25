@@ -27,7 +27,8 @@ The reference lesson is `src/content/security/02-sessions-vs-tokens.json`. When 
   "title": "Security for app builders",
   "order": 2,                             // position on the home page
   "summary": "One sentence about the module.",
-  "color": "rose"                         // optional: blue | teal | green | amber | rose | violet | slate
+  "color": "rose",                        // optional: blue | teal | green | amber | rose | violet | slate
+  "icon": "shield"                        // optional: a scene icon name, painted on the module's iso block
 }
 ```
 
@@ -191,7 +192,9 @@ Inside JSON strings, quotes must be escaped: `<span class=\"term\">`. Write `&lt
 
 ## Scenes (interactive diagrams)
 
-A scene is a whiteboard drawing on a **12 x 8 grid**. `x` goes from 0 (left) to 12 (right), `y` from 0 (top) to 8 (bottom). Halves are fine (`6.5`).
+A scene is a drawing on a **12 x 8 grid**. `x` goes from 0 to 12, `y` from 0 to 8. Halves are fine (`6.5`).
+
+The app draws this grid as an **isometric floor** (classic 2:1 isometric): grid `x` runs down-right on screen, grid `y` runs down-left. Every node becomes a 3D block whose shape follows its `kind` (server = rack block, data = cylinder, person = figure on a plinth, client = laptop or phone, ai = chip with a sparkle, external = crate with a lid, threat = block with hazard stripes, neutral = plain block). Text stays upright: a card with the label and sublabel floats above each block, tags lie on the floor in front of it, edges run along the floor with flat arrowheads, zones are floor plates and notes are speech bubbles. The geometry lives in `shared/iso.js`, used by both the renderer and the validator.
 
 The app animates between steps: nodes that keep their `id` glide to their new position, new things fade in, removed things fade out, status colours cross-fade, and packets travel along edges. The view is framed around everything the lesson ever shows, so it does not jump.
 
@@ -224,12 +227,12 @@ The first step that has a scene must be a full scene.
 | `label` | string | | Main text. Under ~18 characters. |
 | `sublabel` | string | | Second line, smaller. Under ~24 characters. |
 | `icon` | string | none | One of the icon names below. |
-| `kind` | enum | `neutral` | Colour of the icon tile: `neutral`, `person`, `client`, `server`, `data`, `ai`, `external`, `threat`. |
-| `status` | enum | `normal` | `normal`, `active` (accent outline, gentle pulse), `ok` (green + check badge), `warn` (amber + ! badge), `error` (red + x badge, small shake), `dim` (faded). |
-| `tags` | string[] | | Up to 3 small monospace chips under the box (`"HttpOnly"`, `"10 / min"`). |
-| `w` | number | 1.8 | Minimum width in grid units. Boxes grow automatically to fit their text. |
+| `kind` | enum | `neutral` | Shape and colour of the block: `neutral`, `person`, `client`, `server`, `data`, `ai`, `external`, `threat`. |
+| `status` | enum | `normal` | `normal`, `active` (block floats up, accent ring on the floor, gentle bob), `ok` (green check badge), `warn` (amber ! badge), `error` (red block + x badge, small shake), `dim` (faded). |
+| `tags` | string[] | | Up to 3 small monospace chips on the floor in front of the block (`"HttpOnly"`, `"10 / min"`). |
+| `w` | number | | Kept for older lessons; the isometric renderer ignores it (cards size themselves to their text). |
 
-A box is about 0.75 units tall. Its width is roughly 0.75 + 0.12 x (label characters) grid units (sublabel characters count about 0.09 each), at least 1.8. So `"Session store"` is about 2.3 units wide. Tags add about 0.45 units below the box.
+A block covers about 0.8 x 0.8 grid units of floor. Its card is as wide as the longer of label and sublabel. Two nodes stacked in `y` (same `x`) need about 1.7 grid units between centres so their cards do not touch, about 2 when the lower one is `active`.
 
 ### Edge
 
@@ -241,18 +244,18 @@ A box is about 0.75 units tall. Its width is roughly 0.75 + 0.12 x (label charac
 | `style` | enum | `solid` | `solid`, `dashed` (optional, async, "uses"), `dotted` (weak, background). |
 | `status` | enum | `normal` | Same values as nodes; colours the line, arrow and label. |
 | `arrow` | enum | `end` | `end`, `start`, `both`, `none`. |
-| `bend` | number | 0 | Curve, -3 to 3 grid units. Two edges going opposite ways between the same nodes curve apart automatically. |
+| `bend` | number | 0 | Curve along the floor, -3 to 3 grid units. Two edges going opposite ways between the same nodes curve apart automatically. |
 | `packet` | `true` / `false` / object | none | Something travelling along the edge, on a loop. |
 
-**Packet object:** `{ "label"?: "JWT", "status"?: "active", "direction"?: "forward" | "backward" | "both", "speed"?: "slow" | "normal" | "fast" }`. `true` = a plain dot. Keep packet labels under ~10 characters. With reduced motion the packet is shown still, in the middle of the edge.
+**Packet object:** `{ "label"?: "JWT", "status"?: "active", "direction"?: "forward" | "backward" | "both", "speed"?: "slow" | "normal" | "fast" }`. `true` = a plain glowing dot. Keep packet labels under ~10 characters. The packet colour follows `status`; the legend under the diagram explains the colours in use (blue = data moving, orange = in focus, green = allowed / success, amber = slow or at risk, red = blocked / failed). With reduced motion the packet rests beside the edge label, or is left out when there is no free spot.
 
 ### Zone
 
-`{ "id", "x", "y", "w", "h", "label"?, "status"? }`. Here `x`/`y` is the **top-left corner** (unlike nodes), `w`/`h` the size. Must fit inside the 12 x 8 grid.
+`{ "id", "x", "y", "w", "h", "label"?, "status"? }`. Here `x`/`y` is the **top-left corner** (unlike nodes), `w`/`h` the size. Must fit inside the 12 x 8 grid. It is drawn as a low plate on the floor; its name sits on a tab at the back corner (or another corner when that spot would cover text).
 
 ### Note
 
-`{ "id", "x", "y", "text", "status"? }`. Centred text. Under ~40 characters. Use `status` to colour it (`warn`, `error`, `ok`, `active`).
+`{ "id", "x", "y", "text", "status"? }`. A speech bubble whose tail points at the floor spot (`x`, `y`). Under ~40 characters. Use `status` to colour it (`warn`, `error`, `ok`, `active`).
 
 ### Icons
 
@@ -264,10 +267,10 @@ files & data       file folder list search chart
 dev tools          code terminal git bug log gear flask pencil
 AI                 sparkle brain chat robot vector
 status & time      clock check x alert bell refresh link upload download trash
-business           mail calendar money cart
+business           mail calendar money cart handshake graduation-cap
 ```
 
-`incognito` is the "attacker / someone else" icon. `function` is a serverless function (ƒ). `vector` means embeddings. `bolt` means cache or "fast". The source of truth is `shared/icons.js`.
+`incognito` is the "attacker / someone else" icon. `function` is a serverless function (ƒ). `vector` means embeddings. `bolt` means cache or "fast". The artwork comes from [Lucide](https://lucide.dev) (ISC licence); the names are the stable contract. The source of truth is `shared/icons.js`, generated by `node scripts/build-icons.mjs`.
 
 ---
 
@@ -279,6 +282,7 @@ business           mail calendar money cart
 - file name pattern, `id` = slug, duplicate `NN` in a module, module `id` = folder, duplicate module `order`
 - enum values (chapter, level, kind, status, style, arrow, callout type, code language) with suggestions
 - inline HTML: only allowed tags, tags closed, stray `<`/`>`, every term exists in the glossary
-- scenes: `extends` without a previous scene, `remove` of unknown ids, nodes without `x`/`y`/`label`, edges pointing at unknown nodes, unknown icons, coordinates outside the grid, overlapping nodes, duplicate ids
+- scenes: `extends` without a previous scene, `remove` of unknown ids, nodes without `x`/`y`/`label`, edges pointing at unknown nodes, unknown icons, coordinates outside the grid, duplicate ids
+- isometric layout, measured in screen space with `shared/iso.js`: blocks standing on each other and any two pieces of text covering each other (cards, tags, edge labels, notes, zone names) are errors; a card hiding most of another block, or an edge running mostly underneath cards, is a warning
 - quiz: 2-4 questions, 2-4 options, exactly one correct, a `why` on every option
 - warnings (do not fail): long text, too many tags/nodes, glossary terms never used, long code lines

@@ -143,10 +143,10 @@ function Cylinder({ r, z0, z1, bands = 0 }: { r: number; z0: number; z1: number;
 function Figure({ x, base, h, scale = 1 }: { x: number; base: number; h: number; scale?: number }) {
   // a friendly little person standing on the plinth (screen space, upright)
   const s = scale;
-  const bodyH = h * 0.5 * s;
-  const w = 14 * s;
+  const bodyH = h * 0.52 * s;
+  const w = 15.5 * s;
   const y0 = -base;
-  const headR = 9.5 * s;
+  const headR = 10.5 * s;
   const top = y0 - bodyH;
   const body = `M${x - w},${y0 - 2} C${x - w},${top + 4} ${x - w * 0.55},${top} ${x},${top} C${x + w * 0.55},${top} ${x + w},${top + 4} ${x + w},${y0 - 2} Q${x},${y0 + w * 0.42} ${x - w},${y0 - 2} Z`;
   return (
