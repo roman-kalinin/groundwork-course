@@ -1,0 +1,7 @@
+{
+  "id": "ai",
+  "title": "AI engineering",
+  "order": 5,
+  "summary": "Build reliable features on top of LLMs: prompts, tools, retrieval, evals, streaming and cost control.",
+  "color": "violet"
+}

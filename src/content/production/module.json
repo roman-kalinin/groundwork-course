@@ -1,0 +1,7 @@
+{
+  "id": "production",
+  "title": "Running in production",
+  "order": 4,
+  "summary": "What happens after deploy: environments, monitoring, migrations, backups and keeping a live app healthy.",
+  "color": "teal"
+}

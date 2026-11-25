@@ -1,0 +1,321 @@
+{
+  "id": "sessions-vs-tokens",
+  "title": "Sessions vs tokens",
+  "summary": "How an app remembers who is logged in: cookies, sessions, JWTs and refresh tokens, and what logging out really does.",
+  "minutes": 12,
+  "level": "beginner",
+  "youWillLearn": [
+    "Why a server forgets you between requests, and how a login proof fixes it",
+    "The difference between a <b>session</b> (the server remembers) and a <b>token</b> (the proof carries itself)",
+    "Which cookie settings keep that proof safe",
+    "Why logging out with tokens is tricky, and how refresh tokens make revoking possible"
+  ],
+  "glossary": {
+    "HTTP": "The language browsers and servers use to talk: one request, one response, then they hang up.",
+    "stateless": "Keeps no memory between requests. Each request has to carry everything the server needs.",
+    "session": "A login record the server keeps (who you are, until when), found again through a session ID.",
+    "session ID": "A long random string that points to a session record. Worthless to guess, valuable to steal.",
+    "cookie": "A small value the browser stores for a website and sends back to it automatically with every request.",
+    "XSS": "Cross-site scripting: an attacker gets their JavaScript to run on your page, with the same powers as your own code.",
+    "CSRF": "Cross-site request forgery: another website makes the browser send a request to your app, cookies included, without the user meaning to.",
+    "JWT": "JSON Web Token: a small piece of JSON plus a signature, sent as proof of who you are. Readable by anyone, forgeable by no one without the key.",
+    "signature": "A stamp computed from the token's content and a secret key. Change one character of the content and the stamp no longer matches.",
+    "access token": "The short-lived pass sent with each API request. Usually a JWT that expires in minutes.",
+    "refresh token": "A long-lived, single-purpose token used only to get new access tokens. The auth server keeps track of it, so it can be cancelled.",
+    "rotation": "Each refresh token works once. Using it returns a new one, so a stolen old copy is useless and can even raise an alarm.",
+    "revoke": "To cancel a token or session on the server before it would expire on its own."
+  },
+  "steps": [
+    {
+      "title": "Every request arrives as a stranger",
+      "chapter": "problem",
+      "body": [
+        "Your notes app, Notely, has a page called <b>My notes</b>. Maya logs in, then opens it. Simple? Not for the server.",
+        "<span class=\"term\">HTTP</span> is <span class=\"term\">stateless</span>: every request arrives alone, with no memory of the one before. Without help, the server cannot tell Maya from anyone else on the internet."
+      ],
+      "callout": {
+        "type": "analogy",
+        "text": "A busy coffee bar where the barista forgets every face the moment you step away. If you want \"the usual\", you have to show something each time you order."
+      },
+      "scene": {
+        "caption": "The browser asks for Maya's notes. The server has no idea who is asking.",
+        "nodes": [
+          { "id": "browser", "x": 2, "y": 4, "label": "Browser", "sublabel": "Maya's laptop", "icon": "browser", "kind": "client" },
+          { "id": "server", "x": 6.4, "y": 4, "label": "Notely API", "sublabel": "on Vercel", "icon": "server", "kind": "server", "status": "warn" }
+        ],
+        "edges": [
+          { "from": "browser", "to": "server", "label": "GET /my-notes", "packet": { "label": "request" } }
+        ],
+        "notes": [
+          { "id": "who", "x": 6.4, "y": 2.4, "text": "Who is this? No idea.", "status": "warn" }
+        ]
+      }
+    },
+    {
+      "title": "Log in once, carry proof after",
+      "chapter": "idea",
+      "body": [
+        "The fix: check the password <b>once</b>, then give the browser a proof to send with every later request.",
+        "Proofs come in two families. A <b>session</b>: the server keeps a note, and you hold a ticket that points to it. A <b>token</b>: the server hands you a signed pass that carries the facts itself."
+      ],
+      "callout": {
+        "type": "analogy",
+        "text": "Coat check vs festival wristband. The coat check keeps your coat and gives you a numbered ticket: that is a session. The festival gives you a wristband the guards just look at: that is a token."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Log in once. The server answers with a proof the browser keeps.",
+        "remove": ["who"],
+        "nodes": [
+          { "id": "server", "status": "active" }
+        ],
+        "edges": [
+          { "from": "browser", "to": "server", "label": "email + password", "bend": 0.6, "packet": { "label": "log in" } },
+          { "from": "server", "to": "browser", "label": "here is your proof", "bend": 0.6, "status": "ok", "packet": { "label": "proof", "status": "ok" } }
+        ]
+      }
+    },
+    {
+      "title": "Sessions: the server keeps the list",
+      "chapter": "how",
+      "body": [
+        "With a <span class=\"term\">session</span>, the server creates a random <span class=\"term\">session ID</span>, saves it in a session store next to Maya's user id, and sends the ID back in a <span class=\"term\">cookie</span>.",
+        "From then on, the browser sends that cookie with every request. The server looks the ID up. Found? Maya is logged in. Not found? Back to the login page."
+      ],
+      "callout": {
+        "type": "tip",
+        "text": "You met this in system design: with several servers, the session store must be shared (Redis or the database), so any server can look the ID up."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "The cookie carries only a random ID. The real record lives on the server side.",
+        "remove": ["server>browser"],
+        "nodes": [
+          { "id": "server", "status": "ok" },
+          { "id": "store", "x": 10.4, "y": 4, "label": "Session store", "sublabel": "Postgres or Redis", "icon": "database", "kind": "data", "tags": ["8f3a… → maya"] }
+        ],
+        "edges": [
+          { "from": "browser", "to": "server", "label": "cookie: sid=8f3a…", "bend": null, "packet": { "label": "sid", "status": "active" } },
+          { "from": "server", "to": "store", "label": "look up sid", "packet": true }
+        ]
+      }
+    },
+    {
+      "title": "Cookies: the browser's pocket",
+      "chapter": "how",
+      "body": [
+        "The server sets the cookie once, with a few flags that decide how safe it is.",
+        "<code>HttpOnly</code>: page JavaScript cannot read it, so a script injected through <span class=\"term\">XSS</span> cannot steal it. <code>Secure</code>: sent over HTTPS only. <code>SameSite=Lax</code>: left out when another site quietly triggers a request, which blocks most <span class=\"term\">CSRF</span> tricks."
+      ],
+      "code": {
+        "language": "http",
+        "filename": "Login response",
+        "code": "HTTP/1.1 200 OK\nSet-Cookie: sid=8f3a9c; HttpOnly; Secure; SameSite=Lax; Max-Age=604800",
+        "caption": "Max-Age is in seconds: 604800 is 7 days. After that the browser drops the cookie."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Even if a bad script runs on the page, it cannot read an HttpOnly cookie.",
+        "nodes": [
+          { "id": "browser", "tags": ["HttpOnly", "Secure", "SameSite=Lax"], "status": "ok" },
+          { "id": "server", "status": "normal" },
+          { "id": "store", "status": "dim" },
+          { "id": "evil", "x": 2, "y": 1.3, "label": "Injected script", "sublabel": "an XSS bug", "icon": "bug", "kind": "threat", "status": "error" }
+        ],
+        "edges": [
+          { "from": "evil", "to": "browser", "label": "read cookie? no", "status": "error", "style": "dashed" },
+          { "id": "server>store", "status": "dim", "packet": false }
+        ]
+      }
+    },
+    {
+      "title": "Tokens: a signed pass",
+      "chapter": "how",
+      "body": [
+        "The other family skips the lookup. At login, the server writes the facts into a <span class=\"term\">JWT</span>: who you are (<code>sub</code>) and when the pass expires (<code>exp</code>).",
+        "Then it adds a <span class=\"term\">signature</span> made with a key only the server side has. Anyone can <em>read</em> a JWT. Nobody can <em>change</em> it without breaking the signature."
+      ],
+      "code": {
+        "language": "json",
+        "filename": "JWT payload, decoded",
+        "code": "{\n  \"sub\": \"user_42\",\n  \"email\": \"maya@example.com\",\n  \"role\": \"authenticated\",\n  \"exp\": 1793000000\n}",
+        "caption": "A JWT is header.payload.signature. This is the middle part. It is encoded, not encrypted: never put secrets in it."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "The pass carries the facts. The server checks the signature instead of asking a database.",
+        "remove": ["store", "evil"],
+        "nodes": [
+          { "id": "browser", "tags": null, "status": "normal" },
+          { "id": "server", "status": "ok", "tags": ["checks signature"] },
+          { "id": "key", "x": 6.4, "y": 1.4, "label": "Signing key", "sublabel": "server side only", "icon": "key", "kind": "data" }
+        ],
+        "edges": [
+          { "from": "browser", "to": "server", "label": "Bearer eyJhbGci…", "packet": { "label": "JWT", "status": "active" } },
+          { "from": "key", "to": "server", "label": "verifies with", "style": "dashed", "arrow": "end" }
+        ],
+        "notes": [
+          { "id": "nolookup", "x": 10.3, "y": 4, "text": "No database lookup", "status": "ok" }
+        ]
+      }
+    },
+    {
+      "title": "The catch: you can't take a pass back",
+      "chapter": "watch-out",
+      "body": [
+        "A JWT stays valid until its <code>exp</code> time, wherever it ends up. If it leaks (a log file, a screenshot, an XSS bug), whoever holds it <em>is</em> Maya until it expires.",
+        "And \"Log out\" only deletes the browser's copy. The server never kept a list, so it has nothing to cross off."
+      ],
+      "callout": {
+        "type": "warn",
+        "text": "Avoid keeping long-lived tokens in <code>localStorage</code>. Every script on the page can read it, so one XSS bug can leak the token of every user who visits."
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Maya logged out, but a copied token still works. The signature is valid, so the server says yes.",
+        "remove": ["nolookup"],
+        "nodes": [
+          { "id": "browser", "sublabel": "Maya, logged out", "status": "dim" },
+          { "id": "server", "status": "warn" },
+          { "id": "thief", "x": 2, "y": 6.8, "label": "Someone else", "sublabel": "has a copy", "icon": "incognito", "kind": "threat", "status": "error" }
+        ],
+        "edges": [
+          { "id": "browser>server", "status": "dim", "packet": false, "label": "logged out" },
+          { "from": "thief", "to": "server", "label": "same JWT", "status": "error", "packet": { "label": "JWT", "status": "error" } }
+        ],
+        "notes": [
+          { "id": "fooled", "x": 10.2, "y": 6.6, "text": "Signature valid. Hi, Maya!", "status": "error" }
+        ]
+      }
+    },
+    {
+      "title": "Short passes, plus a refresh token",
+      "chapter": "how",
+      "body": [
+        "The standard fix: make the <span class=\"term\">access token</span> short-lived, minutes rather than days. Next to it, issue a <span class=\"term\">refresh token</span>: long-lived, stored carefully, and recorded by the auth server.",
+        "When the access token expires, the app quietly trades the refresh token for a fresh pair. Each refresh token works once. That is called <span class=\"term\">rotation</span>."
+      ],
+      "scene": {
+        "extends": "previous",
+        "caption": "Short access tokens for the API. A tracked refresh token to get new ones.",
+        "remove": ["thief", "fooled", "key"],
+        "nodes": [
+          { "id": "browser", "sublabel": "Maya's laptop", "status": "normal" },
+          { "id": "server", "x": 6.4, "y": 6.1, "status": "normal" },
+          { "id": "auth", "x": 6.4, "y": 1.6, "label": "Auth server", "sublabel": "e.g. Supabase Auth", "icon": "shield", "kind": "server", "status": "active" },
+          { "id": "rt", "x": 10.4, "y": 1.6, "label": "Refresh tokens", "sublabel": "one row per login", "icon": "database", "kind": "data", "tags": ["rt_91… → maya"] }
+        ],
+        "edges": [
+          { "id": "browser>server", "status": "normal", "label": "access token", "packet": { "label": "15 min", "status": "active" } },
+          { "from": "browser", "to": "auth", "label": "refresh token", "packet": { "label": "refresh" } },
+          { "from": "auth", "to": "browser", "label": "new pair", "status": "ok", "packet": { "label": "new", "status": "ok" } },
+          { "from": "auth", "to": "rt", "label": "check, rotate" }
+        ]
+      }
+    },
+    {
+      "title": "Logging out and revoking, for real",
+      "chapter": "how",
+      "body": [
+        "Now logout means something. The app asks the auth server to <span class=\"term\">revoke</span> the refresh token, then deletes its own copy. No new access tokens can be minted, and the last one dies within minutes.",
+        "Need someone out <em>this second</em>, like a fired employee? Sessions win: delete the row and their very next request fails."
+      ],
+      "scene": {
+        "extends": "previous",
+        "caption": "Logout revokes the refresh token. The old access token expires on its own soon after.",
+        "remove": ["auth>browser"],
+        "nodes": [
+          { "id": "auth", "status": "normal" },
+          { "id": "rt", "status": "ok", "tags": ["rt_91… revoked"] },
+          { "id": "server", "status": "warn" }
+        ],
+        "edges": [
+          { "id": "browser>auth", "label": "log out", "status": "error", "packet": { "label": "revoke", "status": "error" } },
+          { "id": "auth>rt", "label": "mark revoked", "status": "error" },
+          { "id": "browser>server", "label": "old access token", "status": "warn", "packet": false }
+        ],
+        "notes": [
+          { "id": "dies", "x": 10.2, "y": 6.1, "text": "Expires soon. Then: 401", "status": "warn" }
+        ]
+      }
+    },
+    {
+      "title": "What Notely should use",
+      "chapter": "example",
+      "body": [
+        "A web app on its own domain: a session in an <code>HttpOnly</code> cookie is simple and instantly revocable. Mobile apps, or many services checking identity: tokens.",
+        "Supabase Auth uses the token pattern: a short JWT plus a rotating refresh token. With its server-side helpers, both live in cookies instead of <code>localStorage</code>."
+      ],
+      "callout": {
+        "type": "claude-code",
+        "text": "Where is the token stored? Server code should check the user with <code>auth.getUser()</code> or <code>auth.getClaims()</code>, never trust <code>auth.getSession()</code>. Does logout call <code>auth.signOut()</code>, not just clear app state? Is any secret or service key reachable from browser code?"
+      },
+      "scene": {
+        "caption": "Two good defaults. Pick by who is calling your server.",
+        "zones": [
+          { "id": "z-sessions", "x": 0.4, "y": 0.5, "w": 5.4, "h": 7, "label": "Sessions" },
+          { "id": "z-tokens", "x": 6.2, "y": 0.5, "w": 5.4, "h": 7, "label": "Tokens" }
+        ],
+        "nodes": [
+          { "id": "s-cookie", "x": 3.1, "y": 2.4, "label": "HttpOnly cookie", "sublabel": "holds a session ID", "icon": "cookie", "kind": "client" },
+          { "id": "s-server", "x": 3.1, "y": 5.4, "label": "Server + store", "sublabel": "web app, one domain", "icon": "server", "kind": "server", "tags": ["revoke: instant"] },
+          { "id": "t-access", "x": 8.9, "y": 2.4, "label": "Access token", "sublabel": "JWT, minutes", "icon": "token", "kind": "client" },
+          { "id": "t-refresh", "x": 8.9, "y": 5.4, "label": "Refresh token", "sublabel": "rotated, revocable", "icon": "refresh", "kind": "data", "tags": ["mobile, many APIs"] }
+        ],
+        "edges": [
+          { "from": "s-cookie", "to": "s-server", "label": "every request", "packet": { "label": "sid" } },
+          { "from": "t-refresh", "to": "t-access", "label": "renews", "packet": { "label": "new", "status": "ok" } }
+        ]
+      }
+    },
+    {
+      "title": "Recap in one breath",
+      "chapter": "recap",
+      "body": [
+        "HTTP forgets, so after login the browser carries proof. <b>Sessions</b>: the server remembers, the cookie points to the record, and deleting it logs you out instantly. <b>Tokens</b>: the proof carries itself, so no lookup, but you cannot take it back.",
+        "The modern mix: short access tokens, revocable refresh tokens, kept where page scripts cannot read them."
+      ]
+    }
+  ],
+  "quiz": [
+    {
+      "question": "An app uses only long-lived JWTs: no refresh tokens, no server-side list. Someone copied Maya's token yesterday. Today Maya clicks <b>Log out</b>. What happens to the copy?",
+      "options": [
+        { "text": "It stops working right away.", "why": "Logout only deleted Maya's own copy. With no list on the server, there is nothing that marks the token as cancelled." },
+        { "text": "It keeps working until its <code>exp</code> time.", "correct": true, "why": "The server only checks the signature and the expiry. Both are still valid, so the copy still works. This is why access tokens should be short-lived." },
+        { "text": "The server sees two users with one token and blocks both.", "why": "A plain JWT setup keeps no record of who uses a token, so it cannot notice that two people share one." }
+      ]
+    },
+    {
+      "question": "Which cookie flag stops JavaScript on the page, including an injected script, from reading the session cookie?",
+      "options": [
+        { "text": "<code>Secure</code>", "why": "Secure makes the browser send the cookie over HTTPS only. Scripts can still read it." },
+        { "text": "<code>HttpOnly</code>", "correct": true, "why": "HttpOnly hides the cookie from page JavaScript. The browser still sends it with requests, but <code>document.cookie</code> cannot see it." },
+        { "text": "<code>SameSite=Lax</code>", "why": "SameSite controls whether the cookie is sent on requests started by other sites. It helps against CSRF, not against reading." }
+      ]
+    },
+    {
+      "question": "A client asks: \"If we fire someone, they must lose access to the admin panel immediately.\" Which setup makes that easiest?",
+      "options": [
+        { "text": "Server-side sessions: delete their session rows.", "correct": true, "why": "The server checks the store on every request, so a deleted row means the very next request is rejected." },
+        { "text": "JWTs that last 30 days.", "why": "A 30-day JWT keeps working for up to 30 days unless you add extra machinery, like a block list checked on every request." },
+        { "text": "Tokens in <code>localStorage</code>, plus an email asking them to clear it.", "why": "You cannot rely on a fired employee to delete their own access. Revoking has to happen on the server." }
+      ]
+    },
+    {
+      "question": "Claude Code wrote server code that decides whose notes to return using <code>supabase.auth.getSession()</code>. What should you ask it to change?",
+      "options": [
+        { "text": "Nothing. It is the standard way to read the user.", "why": "It is fine in the browser, but on the server it reads the session from cookies without proving the token is genuine." },
+        { "text": "Use <code>getUser()</code> or <code>getClaims()</code>, which verify the token.", "correct": true, "why": "Cookies come from the browser, so anyone can tamper with them. Server code must verify the token before trusting who the user is." },
+        { "text": "Move the call into a <code>useEffect</code> in the browser.", "why": "Checks in the browser can be skipped by anyone. The server must decide what data each user may see." }
+      ]
+    }
+  ],
+  "takeaways": [
+    "HTTP is stateless. After login, every request must carry proof of who you are.",
+    "A <b>session</b> is a record on the server, found through a random ID in a cookie. Delete the record and the user is out instantly.",
+    "A <b>JWT</b> carries signed facts, so no lookup is needed. But it stays valid until it expires, even after logout.",
+    "Keep access tokens short-lived and pair them with a rotating, revocable refresh token. Logout should revoke it on the server.",
+    "Store proofs where page scripts cannot read them: <code>HttpOnly</code>, <code>Secure</code>, <code>SameSite</code> cookies beat <code>localStorage</code>."
+  ]
+}

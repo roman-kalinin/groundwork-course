@@ -1,0 +1,7 @@
+{
+  "id": "security",
+  "title": "Security for app builders",
+  "order": 2,
+  "summary": "Logins, sessions, secrets and permissions: the minimum you need so a client app does not leak or get hijacked.",
+  "color": "rose"
+}

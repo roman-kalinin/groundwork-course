@@ -1,0 +1,7 @@
+{
+  "id": "data",
+  "title": "Data & SQL",
+  "order": 1,
+  "summary": "How apps store, shape and query their data: tables, relations, SQL and the Postgres behind Supabase.",
+  "color": "blue"
+}
