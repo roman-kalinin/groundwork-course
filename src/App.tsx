@@ -4,7 +4,7 @@ import { href, useRoute } from './router';
 import { Sidebar } from './components/Sidebar';
 import { Home, ModulePage } from './components/Home';
 import { LessonPage } from './components/LessonPage';
-import { ThemeToggle } from './components/bits';
+import { BrandMark, ThemeToggle } from './components/bits';
 import { UiIcon } from './components/UiIcon';
 
 export function App() {
@@ -74,6 +74,7 @@ export function App() {
             <UiIcon name="menu" />
           </button>
           <a className="topbar-brand" href={href.home()}>
+            <BrandMark size={26} />
             Groundwork
           </a>
           <div className="topbar-right">

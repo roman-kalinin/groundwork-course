@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { resolveLessonScenes } from '../../shared/schema.js';
 import type { Lesson, Step } from '../../shared/schema.js';
 import { findLesson, findModule, loadLesson, moduleNumber, nextLesson, type LessonMeta } from '../content';
 import { getLessonProgress, resetLesson, updateLesson, useProgress } from '../progress';
 import { href, navigate } from '../router';
-import { CHAPTER_LABEL, LEVEL_LABEL, useReducedMotion } from './bits';
+import { CHAPTER_LABEL, IsoBadge, LEVEL_LABEL, shortTitle, useReducedMotion } from './bits';
 import { CodeBlock } from './CodeBlock';
 import { GlossaryProvider, Rich } from './Rich';
 import { SceneView, sceneBounds } from './SceneView';
@@ -55,6 +55,8 @@ function LessonPlayer({ meta, lesson, at }: { meta: LessonMeta; lesson: Lesson; 
 
   const scenes = useMemo(() => resolveLessonScenes(lesson.steps), [lesson]);
   const bounds = useMemo(() => sceneBounds(scenes), [scenes]);
+  const firstScene = scenes.find(Boolean);
+  const previewBounds = useMemo(() => (firstScene ? sceneBounds([firstScene]) : null), [firstScene]);
 
   const go = (p: number | 'intro', replace = false) =>
     navigate(p === 'intro' ? href.lesson(meta.moduleId, meta.id) : href.lesson(meta.moduleId, meta.id, atFor(p, n)), replace);
@@ -103,15 +105,32 @@ function LessonPlayer({ meta, lesson, at }: { meta: LessonMeta; lesson: Lesson; 
     <GlossaryProvider glossary={lesson.glossary}>
       <div className={`lesson${pos === 'intro' ? ' is-intro' : ''}`} data-color={mod.color}>
         <header className="lesson-head">
-          <div className="crumbs">
-            <a href={href.module(mod.id)}>
-              <span className="crumb-num">{moduleNumber(mod)}</span> {mod.title}
-            </a>
-            <UiIcon name="chevron-right" size={14} />
-            <span className="crumb-current" aria-current="page">
+          <a className="lesson-badge-link" href={href.module(mod.id)} aria-label={`Module ${moduleNumber(mod)}: ${mod.title}`}>
+            <IsoBadge icon={mod.icon} size={40} />
+          </a>
+          <div className="lesson-head-text">
+            <div className="crumbs">
+              <a href={href.module(mod.id)}>
+                <span className="crumb-num">{moduleNumber(mod)}</span> <span className="crumb-text">{mod.title}</span>
+              </a>
+              <UiIcon name="chevron-right" size={13} />
+              <span className="crumb-lesson">Lesson {String(meta.nn).padStart(2, '0')}</span>
+            </div>
+            <p className="lesson-head-title" aria-current="page">
               {lesson.title}
-            </span>
+            </p>
           </div>
+          <ul className="chips lesson-chips" aria-label="About this lesson">
+            <li className="chip">
+              <UiIcon name="timer" size={14} /> {lesson.minutes} min
+            </li>
+            <li className="chip">
+              <UiIcon name="level" size={14} /> {LEVEL_LABEL[lesson.level] ?? lesson.level}
+            </li>
+            <li className="chip">
+              <UiIcon name="steps" size={14} /> {n} steps
+            </li>
+          </ul>
           {pos !== 'intro' && (
             <div className="lesson-bar" aria-hidden="true">
               <span style={{ width: `${((stepNo + 1) / (n + 2)) * 100}%` }} />
@@ -120,7 +139,14 @@ function LessonPlayer({ meta, lesson, at }: { meta: LessonMeta; lesson: Lesson; 
         </header>
 
         {pos === 'intro' ? (
-          <Intro lesson={lesson} meta={meta} resumeAt={lp && !lp.completed ? lp.pos : undefined} completed={!!lp?.completed} onStart={(p) => go(p)} />
+          <Intro
+            lesson={lesson}
+            meta={meta}
+            resumeAt={lp && !lp.completed ? lp.pos : undefined}
+            completed={!!lp?.completed}
+            onStart={(p) => go(p)}
+            preview={previewBounds ? <SceneView scene={firstScene} bounds={previewBounds} reduced={reduced} stepKey={-1} legend={false} /> : null}
+          />
         ) : pos < n ? (
           <div className={`stage${bounds ? ' has-scene' : ''}`}>
             {bounds && (
@@ -148,11 +174,12 @@ function LessonPlayer({ meta, lesson, at }: { meta: LessonMeta; lesson: Lesson; 
   );
 }
 
-function Intro({ lesson, meta, resumeAt, completed, onStart }: { lesson: Lesson; meta: LessonMeta; resumeAt?: number; completed: boolean; onStart: (p: number) => void }) {
+function Intro({ lesson, meta, resumeAt, completed, onStart, preview }: { lesson: Lesson; meta: LessonMeta; resumeAt?: number; completed: boolean; onStart: (p: number) => void; preview: ReactNode }) {
   const n = lesson.steps.length;
   const resuming = resumeAt !== undefined && resumeAt > 0;
   return (
-    <div className="intro">
+    <div className={`intro${preview ? ' has-preview' : ''}`}>
+      <div className="intro-text">
       <p className="eyebrow">
         Lesson {String(meta.nn).padStart(2, '0')}
         {completed && <span className="pill ok">Completed</span>}
@@ -161,15 +188,15 @@ function Intro({ lesson, meta, resumeAt, completed, onStart }: { lesson: Lesson;
         {lesson.title}
       </h1>
       <p className="lead">{lesson.summary}</p>
-      <ul className="intro-meta">
-        <li>
-          <UiIcon name="clock" size={16} /> {lesson.minutes} min
+      <ul className="chips intro-meta">
+        <li className="chip">
+          <UiIcon name="timer" size={14} /> {lesson.minutes} min
         </li>
-        <li>
-          <UiIcon name="layers" size={16} /> {n} steps + quiz
+        <li className="chip">
+          <UiIcon name="steps" size={14} /> {n} steps + quiz
         </li>
-        <li>
-          <UiIcon name="chart" size={16} /> {LEVEL_LABEL[lesson.level] ?? lesson.level}
+        <li className="chip">
+          <UiIcon name="level" size={14} /> {LEVEL_LABEL[lesson.level] ?? lesson.level}
         </li>
       </ul>
       <div className="learn">
@@ -204,6 +231,8 @@ function Intro({ lesson, meta, resumeAt, completed, onStart }: { lesson: Lesson;
       <p className="hint">
         Tip: use <kbd>←</kbd> <kbd>→</kbd> to move between steps. Underlined words show a definition.
       </p>
+      </div>
+      {preview && <div className="intro-preview">{preview}</div>}
     </div>
   );
 }
@@ -214,7 +243,7 @@ function StepText({ step, index, total }: { step: Step; index: number; total: nu
       <p className="step-eyebrow">
         <span className={`chapter ch-${step.chapter}`}>{CHAPTER_LABEL[step.chapter] ?? step.chapter}</span>
         <span className="step-count">
-          {index + 1} / {total}
+          Step {index + 1} <span className="of">of {total}</span>
         </span>
       </p>
       <h2 className="step-title" tabIndex={-1} data-step-heading>
@@ -227,11 +256,13 @@ function StepText({ step, index, total }: { step: Step; index: number; total: nu
       </div>
       {step.callout && (
         <aside className={`callout c-${step.callout.type}`}>
-          <div className="callout-head">
-            <UiIcon name={CALLOUT_ICON[step.callout.type]} size={16} />
-            <span>{step.callout.title ?? CALLOUT_TITLE[step.callout.type]}</span>
+          <span className="callout-icon" aria-hidden="true">
+            <UiIcon name={CALLOUT_ICON[step.callout.type]} size={17} strokeWidth={2.1} />
+          </span>
+          <div className="callout-body">
+            <p className="callout-title">{step.callout.title ?? CALLOUT_TITLE[step.callout.type]}</p>
+            <Rich html={step.callout.text} as="p" />
           </div>
-          <Rich html={step.callout.text} as="p" />
         </aside>
       )}
       {step.code && <CodeBlock snippet={step.code} />}
@@ -239,7 +270,7 @@ function StepText({ step, index, total }: { step: Step; index: number; total: nu
   );
 }
 
-const CALLOUT_ICON: Record<string, string> = { tip: 'sparkle', warn: 'alert', analogy: 'bulb', 'claude-code': 'terminal' };
+const CALLOUT_ICON: Record<string, string> = { tip: 'sparkles', warn: 'octagon-alert', analogy: 'bulb', 'claude-code': 'terminal' };
 const CALLOUT_TITLE: Record<string, string> = {
   tip: 'Tip',
   warn: 'Watch out',
@@ -250,30 +281,35 @@ const CALLOUT_TITLE: Record<string, string> = {
 function Controls({ pos, steps, furthest, onGo }: { pos: number; steps: Step[]; furthest: number; onGo: (p: number | 'intro') => void }) {
   const n = steps.length;
   const items = [
-    ...steps.map((s, i) => ({ label: `${i + 1}. ${s.title}`, kind: 'step' })),
-    { label: 'Quiz', kind: 'quiz' },
-    { label: 'Recap', kind: 'recap' },
+    ...steps.map((s, i) => ({ full: `Step ${i + 1}: ${s.title}`, short: shortTitle(s.title), kind: 'step', num: String(i + 1) })),
+    { full: 'Quiz', short: 'Quiz', kind: 'quiz', num: '' },
+    { full: 'Recap', short: 'Recap', kind: 'recap', num: '' },
   ];
   const nextLabel = pos < n - 1 ? 'Next' : pos === n - 1 ? 'Quiz' : pos === n ? 'Recap' : null;
+  const railRef = useRef<HTMLOListElement>(null);
+  useEffect(() => {
+    const rail = railRef.current;
+    const el = rail?.querySelector<HTMLElement>('.tl-item.current');
+    if (!rail || !el || rail.scrollWidth <= rail.clientWidth) return;
+    rail.scrollTo({ left: el.offsetLeft - rail.clientWidth / 2 + el.clientWidth / 2, behavior: 'smooth' });
+  }, [pos]);
+  const ratio = Math.max(0, Math.min(pos, items.length - 1)) / Math.max(1, items.length - 1);
   return (
     <nav className="controls" aria-label="Lesson steps">
       <button type="button" className="btn ghost ctrl-back" onClick={() => onGo(pos === 0 ? 'intro' : pos - 1)} aria-keyshortcuts="ArrowLeft">
         <UiIcon name="arrow-left" size={16} />
         <span className="ctrl-text">Back</span>
       </button>
-      <ol className="dots">
+      <ol className="timeline" ref={railRef} style={{ ['--done' as string]: ratio, ['--count' as string]: items.length }}>
         {items.map((it, i) => (
-          <li key={i}>
-            <button
-              type="button"
-              className={`dot k-${it.kind}${i === pos ? ' current' : ''}${i <= furthest ? ' seen' : ''}`}
-              onClick={() => onGo(i)}
-              aria-label={it.label}
-              aria-current={i === pos ? 'step' : undefined}
-              data-label={it.label}
-            >
-              {it.kind === 'quiz' && <UiIcon name="quiz" size={12} />}
-              {it.kind === 'recap' && <UiIcon name="flag" size={12} />}
+          <li key={i} className={`tl-item k-${it.kind}${i === pos ? ' current' : ''}${i < pos ? ' past' : ''}${i <= furthest ? ' seen' : ''}`}>
+            <button type="button" className="tl-btn" onClick={() => onGo(i)} aria-label={it.full} aria-current={i === pos ? 'step' : undefined} title={it.full}>
+              <span className="tl-dot" aria-hidden="true">
+                {it.kind === 'quiz' ? <UiIcon name="quiz" size={13} strokeWidth={2.2} /> : it.kind === 'recap' ? <UiIcon name="flag" size={13} strokeWidth={2.2} /> : it.num}
+              </span>
+              <span className="tl-label" aria-hidden="true">
+                {it.short}
+              </span>
             </button>
           </li>
         ))}

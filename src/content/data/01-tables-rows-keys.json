@@ -37,13 +37,13 @@
         "caption": "Every request reads and rewrites the whole file. It gets slow, and saves collide.",
         "nodes": [
           { "id": "api", "x": 1.6, "y": 4, "label": "Notely API", "sublabel": "Next.js on Vercel", "icon": "server", "kind": "server" },
-          { "id": "file", "x": 6.4, "y": 4, "label": "notes.json", "sublabel": "every note, one file", "icon": "file", "kind": "data", "status": "warn" }
+          { "id": "file", "x": 6.2, "y": 4, "label": "notes.json", "sublabel": "every note, one file", "icon": "file", "kind": "data", "status": "warn" }
         ],
         "edges": [
           { "from": "api", "to": "file", "label": "read everything", "packet": { "label": "all notes", "speed": "fast" } }
         ],
         "notes": [
-          { "id": "n-slow", "x": 6.4, "y": 2.4, "text": "To find one note, read them all", "status": "warn" },
+          { "id": "n-slow", "x": 7.2, "y": 2.4, "text": "To find one note, read them all", "status": "warn" },
           { "id": "n-lost", "x": 6.4, "y": 5.7, "text": "Two saves at once: one is lost", "status": "error" }
         ]
       }
@@ -127,7 +127,7 @@
         "remove": ["dup"],
         "nodes": [
           { "id": "n1", "status": "normal" },
-          { "id": "maya", "x": 5.6, "y": 4.2, "label": "Maya", "sublabel": "users row, id 7", "icon": "user", "kind": "data", "status": "active" },
+          { "id": "maya", "x": 5.6, "y": 3.8, "label": "Maya", "sublabel": "users row, id 7", "icon": "user", "kind": "data", "status": "active" },
           { "id": "leo", "x": 5.6, "y": 6.4, "label": "Leo", "sublabel": "users row, id 8", "icon": "user", "kind": "data" }
         ],
         "edges": [

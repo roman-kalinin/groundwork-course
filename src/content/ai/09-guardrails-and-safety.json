@@ -35,7 +35,7 @@
           { "id": "notes", "x": 2, "y": 4.4, "label": "Maya's notes", "sublabel": "incl. the clipping", "icon": "database", "kind": "data" },
           { "id": "route", "x": 6.2, "y": 4.4, "label": "Assistant", "sublabel": "agent loop", "icon": "robot", "kind": "server", "status": "warn" },
           { "id": "llm", "x": 10.2, "y": 2.2, "label": "Claude API", "sublabel": "reads everything", "icon": "sparkle", "kind": "ai" },
-          { "id": "email", "x": 10.2, "y": 6.6, "label": "send_email", "sublabel": "any address", "icon": "mail", "kind": "external", "status": "error" }
+          { "id": "email", "x": 10.2, "y": 7, "label": "send_email", "sublabel": "any address", "icon": "mail", "kind": "external", "status": "error" }
         ],
         "edges": [
           { "from": "evil", "to": "notes", "label": "saved", "status": "error", "style": "dashed" },
@@ -125,7 +125,7 @@
         "caption": "Checks on the way in: size, rate, and a quick screen.",
         "remove": ["approve"],
         "nodes": [
-          { "id": "inguard", "x": 6.2, "y": 2.2, "label": "Input checks", "sublabel": "length, rate, screen", "icon": "shield", "kind": "server", "status": "active" }
+          { "id": "inguard", "x": 5.8, "y": 1, "label": "Input checks", "sublabel": "length, rate, screen", "icon": "shield", "kind": "server", "status": "active" }
         ],
         "edges": [
           { "id": "route>llm", "status": "dim", "packet": false },

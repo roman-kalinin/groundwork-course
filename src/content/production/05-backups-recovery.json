@@ -46,7 +46,7 @@
           { "from": "db", "to": "users", "label": "nothing to show" }
         ],
         "notes": [
-          { "id": "when", "x": 6.4, "y": 2.2, "text": "Tuesday, 14:05", "status": "error" }
+          { "id": "when", "x": 6.8, "y": 2.2, "text": "Tuesday, 14:05", "status": "error" }
         ]
       }
     },
@@ -68,7 +68,7 @@
         ],
         "nodes": [
           { "id": "mon", "x": 1.9, "y": 4, "label": "Mon 03:00", "sublabel": "nightly backup", "icon": "calendar", "kind": "data" },
-          { "id": "tue", "x": 4.7, "y": 4, "label": "Tue 03:00", "sublabel": "nightly backup", "icon": "calendar", "kind": "data" },
+          { "id": "tue", "x": 5.9, "y": 4, "label": "Tue 03:00", "sublabel": "nightly backup", "icon": "calendar", "kind": "data" },
           { "id": "good", "x": 7.5, "y": 4, "label": "Tue 14:04", "sublabel": "last good second", "icon": "clock", "kind": "neutral", "status": "ok" },
           { "id": "bad", "x": 10.3, "y": 4, "label": "Tue 14:05", "sublabel": "the DELETE", "icon": "trash", "kind": "threat", "status": "error" }
         ],
@@ -117,7 +117,7 @@
         "nodes": [
           { "id": "good", "status": "ok", "tags": ["restore here"] },
           { "id": "bad", "status": "error" },
-          { "id": "wal", "x": 6.1, "y": 6.5, "label": "WAL", "sublabel": "every change, in order", "icon": "log", "kind": "data", "status": "active" }
+          { "id": "wal", "x": 5.7, "y": 6.5, "label": "WAL", "sublabel": "every change, in order", "icon": "log", "kind": "data", "status": "active" }
         ],
         "edges": [
           { "from": "tue", "to": "wal", "label": "start", "style": "dashed" },

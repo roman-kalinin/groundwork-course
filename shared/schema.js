@@ -3,9 +3,7 @@
 
 export { ICONS, ICON_NAMES } from './icons.js';
 
-export const GRID = { cols: 12, rows: 8, unit: 100 };
-export const NODE_DEFAULT_W = 1.8; // grid units (minimum; nodes grow to fit their text)
-export const NODE_H = 0.74; // grid units
+export const GRID = { cols: 12, rows: 8 };
 
 export const LEVELS = ['beginner', 'intermediate', 'advanced'];
 export const CHAPTERS = ['problem', 'idea', 'how', 'example', 'watch-out', 'recap'];
@@ -22,39 +20,33 @@ export const CODE_LANGUAGES = [
 ];
 
 // Glyph advance widths (tenths of a px) for printable ASCII 32..126, measured
-// in the browser with Inter Variable at the sizes the scene CSS uses:
-// node label 22px/600, node sublabel 16.5px/400, edge label 15.5px/550.
+// in Chromium by scripts/measure-glyphs.mjs with the scene fonts:
+//   label: Bricolage Grotesque 650, 20px, semi-condensed (node card title)
+//   sub:   Instrument Sans 500, 14.5px (node card second line)
+//   note:  Instrument Sans 550, 15.5px (speech-bubble notes)
+// Edge labels, tags and packets use IBM Plex Mono (see monoWidth).
 // Other characters fall back to a typical width.
 const GLYPHS = {
-  label: [56,68,112,139,140,218,143,69,79,79,116,145,68,100,68,81,142,90,134,137,144,132,138,128,138,138,68,70,145,145,145,117,217,160,142,159,156,131,127,162,161,58,125,152,122,200,164,166,139,167,141,140,143,159,160,226,156,154,141,79,71,79,103,101,75,124,135,126,135,127,75,135,132,55,55,123,55,195,132,131,135,135,87,118,74,132,126,182,123,127,122,97,76,97,145],
-  sub: [43,47,77,105,106,162,106,50,60,60,83,109,48,76,48,60,104,67,101,102,107,98,102,96,102,102,48,50,109,109,109,84,159,116,108,121,119,99,97,123,123,44,94,111,93,149,124,126,105,126,106,106,107,123,116,166,113,112,104,60,52,60,78,75,53,93,101,94,101,96,55,101,98,40,40,91,40,145,98,99,101,101,64,87,54,98,93,135,90,93,91,70,55,70,109],
-  edge: [40,49,79,99,100,155,102,50,58,58,82,104,48,72,48,58,101,65,96,98,102,94,98,92,98,98,48,50,104,104,104,83,154,113,102,114,112,94,91,116,116,43,90,108,88,142,117,119,100,119,101,100,102,114,113,160,110,109,100,58,51,58,74,72,53,88,96,90,96,91,54,97,94,40,40,88,40,139,94,94,96,96,62,84,53,94,90,129,87,90,87,69,55,69,104],
+  label: [42,51,64,114,110,177,138,31,59,60,80,89,33,58,37,63,113,62,103,103,108,106,112,87,111,111,40,35,89,89,89,75,175,117,117,116,120,101,97,121,123,53,68,117,88,164,132,123,113,124,117,112,98,124,115,170,118,113,97,61,64,60,100,97,57,102,110,99,110,101,69,104,109,50,52,102,50,162,109,106,110,110,77,96,69,108,100,151,100,106,89,63,49,61,89],
+  sub: [29,41,60,105,90,114,110,35,61,61,61,78,38,72,38,64,97,56,80,84,88,84,88,79,86,89,38,38,78,78,78,83,125,106,93,108,109,92,87,111,106,37,64,102,85,131,106,115,96,115,96,90,95,103,106,158,101,100,91,61,64,61,78,65,51,79,89,79,89,82,52,89,88,36,36,79,36,135,88,86,89,89,56,70,57,86,77,114,83,77,73,61,35,61,78],
+  note: [30,45,67,112,98,122,119,39,67,67,66,84,42,77,42,69,104,60,86,90,95,90,95,86,92,96,42,42,84,84,84,89,134,113,100,116,117,98,92,118,113,39,67,110,91,139,113,123,103,124,103,98,102,109,113,169,109,108,97,67,69,67,84,71,55,86,96,85,96,88,57,96,94,40,40,86,40,145,94,92,96,96,60,76,62,93,83,123,90,83,79,67,37,67,84],
 };
-const FALLBACK = { label: 150, sub: 110, edge: 105 };
+const FALLBACK = { label: 125, sub: 90, note: 95 };
 
-/** Approximate rendered width (px, scene units) of scene text. kind: 'label' | 'sub' | 'edge'. */
+/** Approximate rendered width (px, scene units) of scene text. kind: 'label' | 'sub' | 'note'. */
 export function textWidth(text, kind = 'label') {
   const table = GLYPHS[kind];
   let w = 0;
   for (const ch of String(text ?? '')) {
     const c = ch.codePointAt(0);
-    w += c >= 32 && c <= 126 ? table[c - 32] : FALLBACK[kind];
+    w += table && c >= 32 && c <= 126 ? table[c - 32] : FALLBACK[kind];
   }
   return w / 10;
 }
 
-/** Width (px) of the pill drawn behind an edge label. */
-export const edgeLabelWidth = (label) => (label ? Math.ceil(textWidth(label, 'edge')) + 24 : 0);
-
-/**
- * Rendered width of a node in grid units. Nodes grow automatically to fit
- * their label/sublabel; "w" sets a minimum width.
- */
-export function nodeWidth(n) {
-  const hasIcon = !!n.icon;
-  const textPx = Math.max(textWidth(n.label, 'label'), textWidth(n.sublabel, 'sub'));
-  const px = (hasIcon ? 58 : 18) + textPx + 20;
-  return Math.max(n.w ?? NODE_DEFAULT_W, Math.ceil(px / 10) / 10);
+/** Width (px) of monospaced scene text (IBM Plex Mono advance = 0.6 em). */
+export function monoWidth(text, size) {
+  return [...String(text ?? '')].length * size * 0.6;
 }
 
 export const LESSON_FILE_RE = /^(\d{2})-([a-z0-9]+(?:-[a-z0-9]+)*)\.json$/;

@@ -3,5 +3,6 @@
   "title": "Security for app builders",
   "order": 2,
   "summary": "Logins, sessions, permissions, secrets, common attacks and AI-specific risks: the minimum you need so a client app does not leak, get hijacked or run up a bill.",
-  "color": "rose"
+  "color": "rose",
+  "icon": "shield"
 }

@@ -41,7 +41,7 @@
           { "from": "route", "to": "notes", "label": "ILIKE '%logo%'", "status": "warn", "packet": true }
         ],
         "notes": [
-          { "id": "miss", "x": 10.2, "y": 6.2, "text": "The note says \"brand mark\"", "status": "warn" }
+          { "id": "miss", "x": 10, "y": 6.2, "text": "The note says \"brand mark\"", "status": "warn" }
         ]
       }
     },
@@ -64,7 +64,7 @@
         "nodes": [
           { "id": "q", "x": 2.6, "y": 3, "label": "\"Logo decision?\"", "sublabel": "the question", "icon": "chat", "kind": "person", "status": "active" },
           { "id": "n1", "x": 6.8, "y": 3, "label": "Blue brand mark", "sublabel": "brand call note", "icon": "file", "kind": "data", "status": "ok" },
-          { "id": "n2", "x": 5.2, "y": 5.4, "label": "Font shortlist", "sublabel": "design note", "icon": "file", "kind": "data" },
+          { "id": "n2", "x": 4, "y": 5.4, "label": "Font shortlist", "sublabel": "design note", "icon": "file", "kind": "data" },
           { "id": "n3", "x": 9.8, "y": 6.4, "label": "Grocery list", "icon": "file", "kind": "data", "status": "dim" },
           { "id": "n4", "x": 9.8, "y": 1.4, "label": "Gym plan", "icon": "file", "kind": "data", "status": "dim" }
         ],
@@ -93,7 +93,7 @@
         "nodes": [
           { "id": "notes", "x": 2, "y": 1.6, "label": "notes table", "sublabel": "2,000 notes", "icon": "database", "kind": "data" },
           { "id": "embedder", "x": 6.4, "y": 3.2, "label": "Embedding model", "sublabel": "text → vector", "icon": "vector", "kind": "ai", "status": "active" },
-          { "id": "chunks", "x": 10.2, "y": 3.2, "label": "note_chunks", "sublabel": "text + vector", "icon": "table", "kind": "data", "tags": ["vector(1024)"] }
+          { "id": "chunks", "x": 10.6, "y": 3.2, "label": "note_chunks", "sublabel": "text + vector", "icon": "table", "kind": "data", "tags": ["vector(1024)"] }
         ],
         "edges": [
           { "from": "notes", "to": "embedder", "label": "chunks", "packet": { "label": "text" } },
@@ -146,7 +146,7 @@
         "nodes": [
           { "id": "embedder", "status": "normal" },
           { "id": "route", "x": 6.4, "y": 6.4, "label": "Chat route", "sublabel": "builds the prompt", "icon": "function", "kind": "server", "status": "active" },
-          { "id": "llm", "x": 10.7, "y": 6.4, "label": "Claude API", "sublabel": "answers + cites", "icon": "sparkle", "kind": "ai", "status": "ok" }
+          { "id": "llm", "x": 10.7, "y": 6.8, "label": "Claude API", "sublabel": "answers + cites", "icon": "sparkle", "kind": "ai", "status": "ok" }
         ],
         "edges": [
           { "id": "embedder>chunks", "packet": false },

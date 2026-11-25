@@ -3,5 +3,6 @@
   "title": "Debugging without AI",
   "order": 3,
   "summary": "Read errors, logs and stack traces yourself, so you can find the real cause when Claude Code goes in circles.",
-  "color": "amber"
+  "color": "amber",
+  "icon": "bug"
 }

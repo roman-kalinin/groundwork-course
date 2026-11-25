@@ -37,7 +37,7 @@
         "nodes": [
           { "id": "you", "x": 2, "y": 4, "label": "You", "sublabel": "the only way in", "icon": "laptop", "kind": "person" },
           { "id": "github", "x": 6.4, "y": 1.3, "label": "GitHub repo", "sublabel": "your account", "icon": "git", "kind": "external", "status": "warn" },
-          { "id": "vercel", "x": 6.4, "y": 3.1, "label": "Vercel project", "sublabel": "your free plan", "icon": "cloud", "kind": "external", "status": "warn" },
+          { "id": "vercel", "x": 6.4, "y": 2.9, "label": "Vercel project", "sublabel": "your free plan", "icon": "cloud", "kind": "external", "status": "warn" },
           { "id": "domain", "x": 6.4, "y": 4.9, "label": "Domain", "sublabel": "in your name", "icon": "globe", "kind": "external", "status": "warn" },
           { "id": "aikey", "x": 6.4, "y": 6.7, "label": "AI API key", "sublabel": "your card", "icon": "key", "kind": "external", "status": "warn" },
           { "id": "sam", "x": 10.4, "y": 4, "label": "Sam", "sublabel": "paid, can't move it", "icon": "user", "kind": "person", "status": "error" }
@@ -161,7 +161,7 @@
           { "id": "sam", "x": 2, "y": 4, "label": "Sam", "sublabel": "creates accounts", "icon": "user", "kind": "person", "status": "active" },
           { "id": "you", "x": 10.4, "y": 4, "label": "You", "sublabel": "invited member", "icon": "key", "kind": "person" },
           { "id": "github", "x": 6.4, "y": 1.3, "label": "GitHub org", "sublabel": "Sam's org", "icon": "git", "kind": "external", "status": "ok" },
-          { "id": "vercel", "x": 6.4, "y": 3.1, "label": "Vercel team", "sublabel": "paid plan", "icon": "cloud", "kind": "external", "status": "ok" },
+          { "id": "vercel", "x": 6.4, "y": 2.9, "label": "Vercel team", "sublabel": "paid plan", "icon": "cloud", "kind": "external", "status": "ok" },
           { "id": "domain", "x": 6.4, "y": 4.9, "label": "Domain", "sublabel": "Sam's name", "icon": "globe", "kind": "external", "status": "ok" },
           { "id": "aikey", "x": 6.4, "y": 6.7, "label": "AI API key", "sublabel": "Sam's card", "icon": "key", "kind": "external", "status": "ok" }
         ],

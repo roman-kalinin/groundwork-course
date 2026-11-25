@@ -34,7 +34,7 @@
         "nodes": [
           { "id": "alert", "x": 2, "y": 4, "label": "Sentry alert", "sublabel": "summary errors", "icon": "bell", "kind": "external", "status": "error" },
           { "id": "maya", "x": 6.4, "y": 4, "label": "Maya", "sublabel": "3 hotfixes in 10 min", "icon": "user", "kind": "person", "status": "warn" },
-          { "id": "prod", "x": 10.4, "y": 4, "label": "Production", "sublabel": "summary + login down", "icon": "rocket", "kind": "server", "status": "error" }
+          { "id": "prod", "x": 9.6, "y": 4, "label": "Production", "sublabel": "summary + login down", "icon": "rocket", "kind": "server", "status": "error" }
         ],
         "edges": [
           { "from": "alert", "to": "maya", "label": "18:40" },
@@ -109,8 +109,8 @@
         "nodes": [
           { "id": "confirm", "status": "ok" },
           { "id": "stop", "status": "active" },
-          { "id": "dep-bad", "x": 4.3, "y": 4.4, "label": "Deploy 18:25", "sublabel": "broken", "icon": "rocket", "kind": "server", "status": "error" },
-          { "id": "dep-good", "x": 8.4, "y": 4.4, "label": "Deploy 17:10", "sublabel": "last good", "icon": "rocket", "kind": "server", "status": "ok" }
+          { "id": "dep-bad", "x": 3.1, "y": 4.4, "label": "Deploy 18:25", "sublabel": "broken", "icon": "rocket", "kind": "server", "status": "error" },
+          { "id": "dep-good", "x": 7.8, "y": 4.4, "label": "Deploy 17:10", "sublabel": "last good", "icon": "rocket", "kind": "server", "status": "ok" }
         ],
         "edges": [
           { "from": "stop", "to": "dep-good", "label": "promote", "status": "ok", "packet": { "label": "rollback", "status": "ok" } },

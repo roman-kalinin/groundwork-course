@@ -31,7 +31,7 @@
         "caption": "No errors anywhere. Every part of the system is a suspect.",
         "nodes": [
           { "id": "browser", "x": 2, "y": 4, "label": "Notely tab", "sublabel": "summary is blank", "icon": "browser", "kind": "client", "status": "warn" },
-          { "id": "api", "x": 6.4, "y": 4, "label": "Summary route", "sublabel": "/api/summary", "icon": "function", "kind": "server", "status": "warn" },
+          { "id": "api", "x": 6, "y": 4, "label": "Summary route", "sublabel": "/api/summary", "icon": "function", "kind": "server", "status": "warn" },
           { "id": "db", "x": 10.4, "y": 1.8, "label": "notes table", "sublabel": "Supabase", "icon": "database", "kind": "data", "status": "warn" },
           { "id": "claude", "x": 10.4, "y": 6.2, "label": "Claude API", "sublabel": "summaries", "icon": "sparkle", "kind": "ai", "status": "warn" }
         ],
@@ -174,7 +174,7 @@
           { "id": "c1", "x": 1.4, "y": 4, "label": "a1b2c3d", "sublabel": "Monday", "icon": "git", "status": "ok" },
           { "id": "c2", "x": 3.8, "y": 4, "label": "5d0e7b2", "icon": "git" },
           { "id": "c3", "x": 6.2, "y": 4, "label": "c48f019", "icon": "git", "status": "active", "tags": ["test me"] },
-          { "id": "c4", "x": 8.6, "y": 4, "label": "9f2e1aa", "icon": "git" },
+          { "id": "c4", "x": 8, "y": 4, "label": "9f2e1aa", "icon": "git" },
           { "id": "c5", "x": 11, "y": 4, "label": "e77a3d4", "sublabel": "today", "icon": "git", "status": "error" }
         ],
         "edges": [

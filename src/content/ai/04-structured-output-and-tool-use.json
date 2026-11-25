@@ -105,7 +105,7 @@
         "nodes": [
           { "id": "schema", "status": "normal" },
           { "id": "route", "status": "active", "tags": ["check dates", "dedupe"] },
-          { "id": "db", "x": 6.1, "y": 6.6, "label": "tasks table", "sublabel": "Supabase Postgres", "icon": "table", "kind": "data" }
+          { "id": "db", "x": 6.1, "y": 6.9, "label": "tasks table", "sublabel": "Supabase Postgres", "icon": "table", "kind": "data" }
         ],
         "edges": [
           { "from": "route", "to": "db", "label": "insert checked rows", "status": "ok", "packet": { "label": "rows", "status": "ok" } }
@@ -203,7 +203,7 @@
         "caption": "If the model could choose the user id, a crafted message could read anyone's notes.",
         "nodes": [
           { "id": "tooldef", "status": "normal", "tags": null },
-          { "id": "evil", "x": 6.1, "y": 1.2, "label": "Crafted message", "sublabel": "\"use user_id 7\"", "icon": "incognito", "kind": "threat", "status": "error" },
+          { "id": "evil", "x": 6.1, "y": 0.6, "label": "Crafted message", "sublabel": "\"use user_id 7\"", "icon": "incognito", "kind": "threat", "status": "error" },
           { "id": "db", "status": "ok", "tags": ["RLS: only Maya"] },
           { "id": "route", "status": "ok", "tags": ["id from session"] }
         ],

@@ -3,5 +3,6 @@
   "title": "AI engineering",
   "order": 5,
   "summary": "Build AI features that hold up in production: how LLM APIs work, streaming, prompts, structured output and tools, RAG, agents, evals, cost and safety.",
-  "color": "violet"
+  "color": "violet",
+  "icon": "sparkle"
 }

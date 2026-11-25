@@ -83,7 +83,7 @@
         "notes": [
           {
             "id": "n10",
-            "x": 6.4,
+            "x": 7.6,
             "y": 2.2,
             "text": "10 notes: instant. 100k: timeout.",
             "status": "error"
@@ -163,7 +163,7 @@
           {
             "id": "o1",
             "x": 8.4,
-            "y": 1.1,
+            "y": 0.9,
             "label": "O(1)",
             "sublabel": "constant: by key",
             "icon": "bolt",
@@ -216,7 +216,7 @@
           {
             "id": "on2",
             "x": 8.4,
-            "y": 6.9,
+            "y": 7.1,
             "label": "O(n²)",
             "sublabel": "quadratic: nested",
             "icon": "alert",
@@ -263,7 +263,7 @@
           },
           {
             "id": "ologn",
-            "x": 8.4,
+            "x": 9.2,
             "y": 2.55,
             "label": "O(log n)",
             "sublabel": "halve each step",
@@ -276,8 +276,8 @@
           },
           {
             "id": "onlogn",
-            "x": 8.4,
-            "y": 5.45,
+            "x": 9.2,
+            "y": 5.9,
             "label": "O(n log n)",
             "sublabel": "good sorting",
             "icon": "chart",
@@ -387,7 +387,7 @@
           {
             "id": "seen",
             "x": 6.4,
-            "y": 1.4,
+            "y": 1.2,
             "label": "seen",
             "sublabel": "a Set of titles",
             "icon": "bolt",

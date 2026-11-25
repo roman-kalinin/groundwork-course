@@ -47,7 +47,7 @@
           { "from": "browser", "to": "server", "label": "GET /my-notes", "packet": { "label": "request" } }
         ],
         "notes": [
-          { "id": "who", "x": 6.4, "y": 2.4, "text": "Who is this? No idea.", "status": "warn" }
+          { "id": "who", "x": 7, "y": 2.4, "text": "Who is this? No idea.", "status": "warn" }
         ]
       }
     },

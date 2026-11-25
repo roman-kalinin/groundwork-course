@@ -35,7 +35,7 @@
           { "id": "cf", "x": 4.3, "y": 4, "label": "Cloudflare", "sublabel": "in front", "icon": "shield", "kind": "external" },
           { "id": "vercel", "x": 7.4, "y": 4, "label": "Vercel function", "sublabel": "/api/summary", "icon": "function", "kind": "server", "status": "error" },
           { "id": "supabase", "x": 10.6, "y": 1.8, "label": "Supabase", "sublabel": "notes + auth", "icon": "database", "kind": "data" },
-          { "id": "claude", "x": 10.6, "y": 6.2, "label": "Claude API", "sublabel": "summaries", "icon": "sparkle", "kind": "ai" }
+          { "id": "claude", "x": 10.6, "y": 7.4, "label": "Claude API", "sublabel": "summaries", "icon": "sparkle", "kind": "ai" }
         ],
         "edges": [
           { "from": "browser", "to": "cf", "packet": { "label": "POST" } },
@@ -232,7 +232,7 @@
           { "id": "cf>vercel", "status": "dim" }
         ],
         "notes": [
-          { "id": "leak", "x": 7.4, "y": 6.6, "text": "Cookies and notes, now in the logs", "status": "error" }
+          { "id": "leak", "x": 6.8, "y": 6.6, "text": "Cookies and notes, now in the logs", "status": "error" }
         ]
       }
     },

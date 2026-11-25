@@ -261,7 +261,7 @@
           { "from": "loop", "to": "llm", "label": "x 10,000", "status": "error", "packet": { "label": "retry", "status": "error", "speed": "fast" } }
         ],
         "notes": [
-          { "id": "cap", "x": 10.4, "y": 2.2, "text": "Spend limit stops it", "status": "ok" }
+          { "id": "cap", "x": 10.4, "y": 1.8, "text": "Spend limit stops it", "status": "ok" }
         ]
       }
     },

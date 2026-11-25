@@ -46,7 +46,7 @@
           { "from": "github", "to": "prod", "label": "auto deploy", "status": "error", "packet": { "status": "error" } }
         ],
         "notes": [
-          { "id": "which", "x": 10.4, "y": 2.3, "text": "Which change broke it?", "status": "error" }
+          { "id": "which", "x": 11, "y": 2.3, "text": "Which change broke it?", "status": "error" }
         ]
       }
     },

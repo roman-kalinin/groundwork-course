@@ -193,7 +193,7 @@
           { "id": "analytics", "status": "normal", "tags": null },
           { "id": "errors", "status": "error", "tags": ["new issue", "61 users"] },
           { "id": "uptime", "status": "ok" },
-          { "id": "maya", "x": 2, "y": 4, "label": "Maya", "sublabel": "alert on phone", "icon": "bell", "kind": "person", "status": "active" }
+          { "id": "maya", "x": 1.6, "y": 4, "label": "Maya", "sublabel": "alert on phone", "icon": "bell", "kind": "person", "status": "active" }
         ],
         "edges": [
           { "id": "app>analytics", "packet": false, "style": "dashed", "label": null },

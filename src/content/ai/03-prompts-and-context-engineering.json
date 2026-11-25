@@ -61,9 +61,9 @@
           { "id": "window", "x": 0.4, "y": 0.5, "w": 6.2, "h": 7, "label": "Context window" }
         ],
         "nodes": [
-          { "id": "sys", "x": 3.5, "y": 1.6, "label": "System prompt", "sublabel": "role and rules", "icon": "gear", "kind": "neutral", "status": "dim" },
-          { "id": "ex", "x": 3.5, "y": 3.2, "label": "Examples", "sublabel": "what good looks like", "icon": "check", "kind": "neutral", "status": "dim" },
-          { "id": "ctx", "x": 3.5, "y": 4.8, "label": "Note + facts", "sublabel": "the data", "icon": "file", "kind": "data" },
+          { "id": "sys", "x": 3.5, "y": 0.9, "label": "System prompt", "sublabel": "role and rules", "icon": "gear", "kind": "neutral", "status": "dim" },
+          { "id": "ex", "x": 3.5, "y": 2.9, "label": "Examples", "sublabel": "what good looks like", "icon": "check", "kind": "neutral", "status": "dim" },
+          { "id": "ctx", "x": 3.5, "y": 5, "label": "Note + facts", "sublabel": "the data", "icon": "file", "kind": "data" },
           { "id": "ask", "x": 3.5, "y": 6.4, "label": "The request", "sublabel": "\"Summarize this note\"", "icon": "pencil", "kind": "neutral", "status": "normal" },
           { "id": "llm", "x": 9.8, "y": 4, "label": "Claude API", "sublabel": "sees only this", "icon": "sparkle", "kind": "ai", "status": "active" }
         ],

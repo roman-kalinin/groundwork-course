@@ -1,11 +1,35 @@
+import { useMemo } from 'react';
+import type { ResolvedScene } from '../../shared/schema.js';
 import { allLessons, findModule, modules, moduleNumber } from '../content';
 import { lessonRatio, useProgress } from '../progress';
 import { href } from '../router';
-import { LEVEL_LABEL, ProgressRing } from './bits';
+import { IsoBadge, LEVEL_LABEL, ProgressRing, useReducedMotion } from './bits';
+import { SceneView, sceneBounds } from './SceneView';
 import { UiIcon } from './UiIcon';
+
+// The home page hero diagram: the stack every lesson builds on.
+const HERO: ResolvedScene = {
+  nodes: [
+    { id: 'you', x: 1.4, y: 3.4, label: 'You', sublabel: 'designer who ships', kind: 'person', icon: 'user' },
+    { id: 'app', x: 4.6, y: 3.4, label: 'Your app', icon: 'browser', kind: 'client' },
+    { id: 'api', x: 7.8, y: 3.4, label: 'API', icon: 'function', kind: 'server', status: 'active' },
+    { id: 'db', x: 7.8, y: 6.2, label: 'Postgres', icon: 'database', kind: 'data' },
+    { id: 'llm', x: 10.6, y: 3.4, label: 'Claude', icon: 'sparkle', kind: 'ai' },
+  ],
+  edges: [
+    { id: 'you>app', from: 'you', to: 'app', packet: { speed: 'slow' } },
+    { id: 'app>api', from: 'app', to: 'api', packet: { label: 'POST', status: 'active' } },
+    { id: 'api>db', from: 'api', to: 'db', packet: { status: 'ok', direction: 'both', speed: 'slow' } },
+    { id: 'api>llm', from: 'api', to: 'llm', style: 'dashed', packet: { status: 'normal' } },
+  ],
+  zones: [{ id: 'server', x: 6.6, y: 2.2, w: 5.2, h: 5.2, label: 'Server side' }],
+  notes: [],
+};
 
 export function Home() {
   const progress = useProgress();
+  const reduced = useReducedMotion();
+  const heroBounds = useMemo(() => sceneBounds([HERO]), []);
   const done = allLessons.filter((l) => progress.lessons[l.key]?.completed).length;
   const minutes = allLessons.reduce((a, l) => a + (l.minutes || 0), 0);
   const lastKey = progress.last;
@@ -14,57 +38,70 @@ export function Home() {
   const firstOpen = allLessons.find((l) => !progress.lessons[l.key]?.completed);
   const resume = last && !lastP?.completed ? last : firstOpen;
   const resumeModule = resume ? findModule(resume.moduleId) : undefined;
+  const hours = Math.round(minutes / 6) / 10;
 
   return (
     <div className="page home">
       <header className="hero">
-        <p className="eyebrow">For designers who build with Claude Code</p>
-        <h1>
-          The groundwork beyond system design.
-        </h1>
-        <p className="lead">
-          Data, security, debugging, production, AI engineering and client delivery, explained plainly and one idea at a time. Each lesson is a short
-          whiteboard story you click through, with a quiz at the end.
-        </p>
-        <dl className="stats">
-          <div>
-            <dt>Modules</dt>
-            <dd>{modules.length}</dd>
+        <div className="hero-text">
+          <p className="eyebrow">
+            <span className="eyebrow-dot" aria-hidden="true" />
+            For designers who build with Claude Code
+          </p>
+          <h1>
+            Lay the <em>groundwork</em> under everything you ship.
+          </h1>
+          <p className="lead">
+            Data, security, debugging, production, AI engineering and client delivery, explained plainly and one idea at a time. Every lesson is a short,
+            animated whiteboard story you click through, with a quiz at the end.
+          </p>
+          <ul className="hero-stats" aria-label="Course at a glance">
+            <li>
+              <b>{modules.length}</b> modules
+            </li>
+            <li>
+              <b>{allLessons.length}</b> lessons
+            </li>
+            <li>
+              <b>{hours >= 1 ? `${hours} h` : `${minutes} min`}</b> in total
+            </li>
+            <li>
+              <b>
+                {done}/{allLessons.length}
+              </b>{' '}
+              done
+            </li>
+          </ul>
+          {resume && resumeModule && (
+            <a className="resume" href={href.lesson(resume.moduleId, resume.id)} data-color={resumeModule.color}>
+              <IsoBadge icon={resumeModule.icon} size={44} className="resume-badge" />
+              <span className="resume-main">
+                <span className="resume-label">{lastP && last === resume ? 'Continue where you left off' : done ? 'Up next' : 'Start here'}</span>
+                <span className="resume-title">{resume.title}</span>
+                <span className="resume-meta">
+                  {resumeModule.title} · {resume.minutes} min
+                </span>
+              </span>
+              <span className="resume-go" aria-hidden="true">
+                <UiIcon name="arrow-right" size={20} />
+              </span>
+            </a>
+          )}
+        </div>
+        {heroBounds && (
+          <div className="hero-art" aria-hidden="true">
+            <SceneView scene={HERO} bounds={heroBounds} reduced={reduced} stepKey={0} legend={false} />
           </div>
-          <div>
-            <dt>Lessons</dt>
-            <dd>{allLessons.length}</dd>
-          </div>
-          <div>
-            <dt>Completed</dt>
-            <dd>
-              {done}
-              <span className="muted">/{allLessons.length}</span>
-            </dd>
-          </div>
-          <div>
-            <dt>Total time</dt>
-            <dd>
-              {Math.round(minutes / 6) / 10 >= 1 ? `${Math.round(minutes / 6) / 10} h` : `${minutes} min`}
-            </dd>
-          </div>
-        </dl>
-        {resume && resumeModule && (
-          <a className="resume" href={href.lesson(resume.moduleId, resume.id)}>
-            <span className="resume-label">{lastP && last === resume ? 'Continue where you left off' : done ? 'Up next' : 'Start here'}</span>
-            <span className="resume-title">{resume.title}</span>
-            <span className="resume-meta">
-              {resumeModule.title} · {resume.minutes} min
-            </span>
-            <UiIcon name="arrow-right" className="resume-arrow" />
-          </a>
         )}
       </header>
 
       <section aria-labelledby="modules-h">
-        <h2 id="modules-h" className="section-title">
-          Modules
-        </h2>
+        <div className="section-head">
+          <h2 id="modules-h" className="section-title">
+            The course
+          </h2>
+          <p className="muted">Seven modules. Take them in order, or jump to what your current project needs.</p>
+        </div>
         <ol className="module-grid">
           {modules.map((m) => {
             const total = m.lessons.length;
@@ -73,17 +110,25 @@ export function Home() {
             return (
               <li key={m.id}>
                 <a className={`module-card${total ? '' : ' empty'}`} href={href.module(m.id)} data-color={m.color}>
-                  <span className="module-num">{moduleNumber(m)}</span>
+                  <span className="module-card-top">
+                    <IsoBadge icon={m.icon} size={58} className="module-badge" />
+                    <span className="module-num">{moduleNumber(m)}</span>
+                  </span>
                   <span className="module-title">{m.title}</span>
                   <span className="module-summary">{m.summary}</span>
                   <span className="module-foot">
                     {total ? (
                       <>
-                        <span>
-                          {total} {total === 1 ? 'lesson' : 'lessons'} · {mins} min
+                        <span className="module-meta">
+                          {total} lessons · {mins} min
                         </span>
-                        <span className="bar small" aria-label={`${doneHere} of ${total} done`}>
-                          <span style={{ width: `${(doneHere / total) * 100}%` }} />
+                        <span className="module-progress">
+                          <span className="bar small" aria-label={`${doneHere} of ${total} done`}>
+                            <span style={{ width: `${(doneHere / total) * 100}%` }} />
+                          </span>
+                          <span className="num">
+                            {doneHere}/{total}
+                          </span>
                         </span>
                       </>
                     ) : (
@@ -104,15 +149,33 @@ export function ModulePage({ moduleId }: { moduleId: string }) {
   const progress = useProgress();
   const m = findModule(moduleId);
   if (!m) return <NotFound what="module" />;
+  const doneHere = m.lessons.filter((l) => progress.lessons[l.key]?.completed).length;
+  const mins = m.lessons.reduce((a, l) => a + (l.minutes || 0), 0);
   return (
     <div className="page module-page" data-color={m.color}>
       <a className="back-link" href={href.home()}>
         <UiIcon name="arrow-left" size={16} /> All modules
       </a>
       <header className="module-head">
-        <span className="module-num big">Module {moduleNumber(m)}</span>
-        <h1>{m.title}</h1>
-        <p className="lead">{m.summary}</p>
+        <IsoBadge icon={m.icon} size={76} className="module-head-badge" />
+        <div>
+          <span className="module-kicker">Module {moduleNumber(m)}</span>
+          <h1>{m.title}</h1>
+          <p className="lead">{m.summary}</p>
+          {m.lessons.length > 0 && (
+            <ul className="chips">
+              <li className="chip">
+                <UiIcon name="layers" size={14} /> {m.lessons.length} lessons
+              </li>
+              <li className="chip">
+                <UiIcon name="timer" size={14} /> {mins} min
+              </li>
+              <li className="chip">
+                <UiIcon name="circle-check" size={14} /> {doneHere} done
+              </li>
+            </ul>
+          )}
+        </div>
       </header>
       {m.lessons.length === 0 ? (
         <div className="empty-state">
@@ -134,10 +197,12 @@ export function ModulePage({ moduleId }: { moduleId: string }) {
                     <span className="lesson-row-title">{l.title}</span>
                     <span className="lesson-row-summary">{l.summary}</span>
                     <span className="lesson-row-meta">
-                      {l.minutes} min · {LEVEL_LABEL[l.level] ?? l.level} · {l.stepCount} steps
+                      <span>{l.minutes} min</span>
+                      <span>{LEVEL_LABEL[l.level] ?? l.level}</span>
+                      <span>{l.stepCount} steps</span>
                     </span>
                   </span>
-                  <ProgressRing ratio={lessonRatio(p, l.stepCount)} done={p?.completed} size={22} />
+                  <ProgressRing ratio={lessonRatio(p, l.stepCount)} done={p?.completed} size={26} />
                 </a>
               </li>
             );
@@ -163,4 +228,3 @@ export function NotFound({ what }: { what: string }) {
     </div>
   );
 }
-

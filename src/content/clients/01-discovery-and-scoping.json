@@ -37,7 +37,7 @@
         "caption": "Sam's idea arrives as one vague sentence. Its real size is unknown.",
         "nodes": [
           { "id": "sam", "x": 2, "y": 4, "label": "Sam", "sublabel": "salon owner", "icon": "user", "kind": "person" },
-          { "id": "idea", "x": 6.4, "y": 4, "label": "\"An app\"", "sublabel": "book, pay, remind, AI?", "icon": "chat", "kind": "neutral", "status": "warn" },
+          { "id": "idea", "x": 5.6, "y": 4, "label": "\"An app\"", "sublabel": "book, pay, remind, AI?", "icon": "chat", "kind": "neutral", "status": "warn" },
           { "id": "you", "x": 10.4, "y": 4, "label": "You", "sublabel": "builder", "icon": "laptop", "kind": "person" }
         ],
         "edges": [
@@ -175,7 +175,7 @@
           { "id": "api", "x": 6.4, "y": 4, "label": "Next.js API", "sublabel": "on Vercel", "icon": "server", "kind": "server" },
           { "id": "db", "x": 10.4, "y": 4, "label": "Supabase", "sublabel": "bookings, clients", "icon": "database", "kind": "data" },
           { "id": "cron", "x": 6.4, "y": 1.6, "label": "Scheduled job", "sublabel": "every hour", "icon": "clock", "kind": "server", "status": "active" },
-          { "id": "sms", "x": 10.4, "y": 1.6, "label": "SMS / email", "sublabel": "provider account", "icon": "mail", "kind": "external", "status": "warn" },
+          { "id": "sms", "x": 10.4, "y": 1.4, "label": "SMS / email", "sublabel": "provider account", "icon": "mail", "kind": "external", "status": "warn" },
           { "id": "pay", "x": 10.4, "y": 6.4, "label": "Payments", "sublabel": "later, not MVP", "icon": "money", "kind": "external", "status": "dim" }
         ],
         "edges": [
@@ -206,7 +206,7 @@
         "caption": "Discovery ends with one signed page that both sides can point to.",
         "nodes": [
           { "id": "sam", "x": 2, "y": 4, "label": "Sam", "sublabel": "salon owner", "icon": "user", "kind": "person", "status": "ok" },
-          { "id": "doc", "x": 6.4, "y": 4, "label": "Scope doc", "sublabel": "one page", "icon": "file", "kind": "neutral", "status": "active", "tags": ["Must", "Won't", "Assumptions"] },
+          { "id": "doc", "x": 7.2, "y": 4, "label": "Scope doc", "sublabel": "one page", "icon": "file", "kind": "neutral", "status": "active", "tags": ["Must", "Won't", "Assumptions"] },
           { "id": "you", "x": 10.4, "y": 4, "label": "You", "sublabel": "builder", "icon": "laptop", "kind": "person" }
         ],
         "edges": [

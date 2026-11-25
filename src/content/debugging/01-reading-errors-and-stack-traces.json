@@ -36,7 +36,7 @@
         "caption": "Maya's request reaches the Notely API, which crashes and answers 500.",
         "nodes": [
           { "id": "browser", "x": 2, "y": 4, "label": "Browser", "sublabel": "Maya clicks Summary", "icon": "browser", "kind": "client" },
-          { "id": "api", "x": 6.4, "y": 4, "label": "Notely API", "sublabel": "/api/summary", "icon": "function", "kind": "server", "status": "error" },
+          { "id": "api", "x": 7.2, "y": 4, "label": "Notely API", "sublabel": "/api/summary", "icon": "function", "kind": "server", "status": "error" },
           { "id": "claude", "x": 10.4, "y": 4, "label": "Claude API", "sublabel": "writes the summary", "icon": "sparkle", "kind": "ai" }
         ],
         "edges": [
@@ -129,7 +129,7 @@
           { "id": "err>msg", "status": "active", "packet": true }
         ],
         "notes": [
-          { "id": "why", "x": 6.4, "y": 6.8, "text": "Why was it undefined?", "status": "active" }
+          { "id": "why", "x": 6, "y": 6.8, "text": "Why was it undefined?", "status": "active" }
         ]
       }
     },
@@ -215,7 +215,7 @@
         "caption": "The real cause sat one step earlier: an error reply from the Claude API.",
         "nodes": [
           { "id": "browser", "x": 2, "y": 4, "label": "Browser", "sublabel": "Maya clicks Summary", "icon": "browser", "kind": "client" },
-          { "id": "api", "x": 6.4, "y": 4, "label": "Notely API", "sublabel": "/api/summary", "icon": "function", "kind": "server", "status": "ok", "tags": ["checks res.ok"] },
+          { "id": "api", "x": 7.2, "y": 4, "label": "Notely API", "sublabel": "/api/summary", "icon": "function", "kind": "server", "status": "ok", "tags": ["checks res.ok"] },
           { "id": "claude", "x": 10.4, "y": 4, "label": "Claude API", "sublabel": "writes the summary", "icon": "sparkle", "kind": "ai", "status": "warn" }
         ],
         "edges": [

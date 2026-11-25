@@ -17,6 +17,7 @@ const KEYWORDS = new Set(
 );
 
 type Tok = { t: string; c?: string };
+const NL = String.fromCharCode(10);
 
 function tokenize(code: string, lang: string): Tok[] {
   const out: Tok[] = [];
@@ -68,27 +69,39 @@ export function CodeBlock({ snippet }: { snippet: CodeSnippet }) {
       /* clipboard blocked */
     }
   };
+  const lines = snippet.code.split(NL).length;
   return (
     <figure className="code">
       <div className="code-head">
-        <span className="code-name">{snippet.filename ?? snippet.language.toUpperCase()}</span>
-        <button type="button" className="code-copy" onClick={copy} aria-label="Copy code">
+        <span className="code-dots" aria-hidden="true">
+          <i />
+          <i />
+          <i />
+        </span>
+        <span className="code-name">{snippet.filename ?? 'snippet'}</span>
+        <span className="code-lang">{snippet.language}</span>
+        <button type="button" className={`code-copy${copied ? ' done' : ''}`} onClick={copy} aria-label="Copy code">
           {copied ? 'Copied' : 'Copy'}
         </button>
       </div>
-      <pre tabIndex={0}>
-        <code>
-          {toks.map((t, i) =>
-            t.c ? (
-              <span key={i} className={`tk-${t.c}`}>
-                {t.t}
-              </span>
-            ) : (
-              t.t
-            ),
-          )}
-        </code>
-      </pre>
+      <div className="code-body">
+        <div className="code-gutter" aria-hidden="true">
+          {Array.from({ length: lines }, (_, i) => i + 1).join(NL)}
+        </div>
+        <pre tabIndex={0}>
+          <code>
+            {toks.map((t, i) =>
+              t.c ? (
+                <span key={i} className={`tk-${t.c}`}>
+                  {t.t}
+                </span>
+              ) : (
+                t.t
+              ),
+            )}
+          </code>
+        </pre>
+      </div>
       {snippet.caption && <figcaption>{snippet.caption}</figcaption>}
     </figure>
   );

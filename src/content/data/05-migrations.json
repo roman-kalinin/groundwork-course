@@ -31,7 +31,7 @@
         "caption": "The code reached production. The column did not.",
         "nodes": [
           { "id": "local", "x": 2, "y": 4, "label": "Local database", "sublabel": "your laptop", "icon": "database", "kind": "data", "status": "ok", "tags": ["pinned ✓"] },
-          { "id": "git", "x": 6.2, "y": 1.6, "label": "GitHub", "sublabel": "code only", "icon": "git", "kind": "external" },
+          { "id": "git", "x": 6.2, "y": 1.4, "label": "GitHub", "sublabel": "code only", "icon": "git", "kind": "external" },
           { "id": "vercel", "x": 6.2, "y": 6.4, "label": "Vercel deploy", "sublabel": "new code", "icon": "rocket", "kind": "server", "status": "active" },
           { "id": "prod", "x": 10.2, "y": 4, "label": "Production DB", "sublabel": "Supabase project", "icon": "database", "kind": "data", "status": "error", "tags": ["no pinned"] }
         ],

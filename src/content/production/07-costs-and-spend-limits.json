@@ -61,7 +61,7 @@
           { "id": "users", "status": "normal" },
           { "id": "fn", "tags": ["requests", "compute time"] },
           { "id": "claude", "status": "normal", "tags": ["input tokens", "output tokens"] },
-          { "id": "db", "x": 6.4, "y": 6.8, "label": "Supabase", "sublabel": "monthly plan", "icon": "database", "kind": "data", "tags": ["plan + extras"] }
+          { "id": "db", "x": 6.4, "y": 6.2, "label": "Supabase", "sublabel": "monthly plan", "icon": "database", "kind": "data", "tags": ["plan + extras"] }
         ],
         "edges": [
           { "id": "users>fn", "packet": true },

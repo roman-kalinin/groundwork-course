@@ -34,14 +34,14 @@
         "nodes": [
           { "id": "browser", "x": 2, "y": 4, "label": "Browser", "sublabel": "Maya's laptop", "icon": "browser", "kind": "client" },
           { "id": "route", "x": 6.4, "y": 4, "label": "Summary route", "sublabel": "Next.js on Vercel", "icon": "function", "kind": "server" },
-          { "id": "llm", "x": 10.4, "y": 4, "label": "Claude API", "sublabel": "Anthropic", "icon": "sparkle", "kind": "ai", "status": "warn" }
+          { "id": "llm", "x": 10.6, "y": 4, "label": "Claude API", "sublabel": "Anthropic", "icon": "sparkle", "kind": "ai", "status": "warn" }
         ],
         "edges": [
           { "from": "browser", "to": "route", "label": "POST /summary", "packet": { "label": "note" } },
           { "from": "route", "to": "llm", "label": "?", "packet": true }
         ],
         "notes": [
-          { "id": "what", "x": 10.4, "y": 2.4, "text": "What happens in here?", "status": "warn" }
+          { "id": "what", "x": 11.6, "y": 2.4, "text": "What happens in here?", "status": "warn" }
         ]
       }
     },
@@ -241,7 +241,7 @@
         "nodes": [
           { "id": "browser", "x": 2, "y": 2, "label": "Browser", "sublabel": "Maya's laptop", "icon": "browser", "kind": "client" },
           { "id": "route", "x": 6.4, "y": 2, "label": "Summary route", "sublabel": "Next.js on Vercel", "icon": "function", "kind": "server", "status": "ok", "tags": ["ANTHROPIC_API_KEY"] },
-          { "id": "llm", "x": 10.4, "y": 4, "label": "Claude API", "sublabel": "Anthropic", "icon": "sparkle", "kind": "ai" },
+          { "id": "llm", "x": 10.6, "y": 4, "label": "Claude API", "sublabel": "Anthropic", "icon": "sparkle", "kind": "ai" },
           { "id": "thief", "x": 2, "y": 6, "label": "Someone else", "sublabel": "found a leaked key", "icon": "incognito", "kind": "threat", "status": "error" }
         ],
         "edges": [

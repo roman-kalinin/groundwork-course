@@ -36,9 +36,9 @@
           {
             "id": "z-stack",
             "x": 1.4,
-            "y": 2.2,
+            "y": 1.4,
             "w": 4.4,
-            "h": 5.3,
+            "h": 6.4,
             "label": "Edit history"
           }
         ],
@@ -46,7 +46,7 @@
           {
             "id": "s1",
             "x": 3.6,
-            "y": 6.6,
+            "y": 7.1,
             "label": "Typed title",
             "sublabel": "1st edit",
             "icon": "pencil",
@@ -55,7 +55,7 @@
           {
             "id": "s2",
             "x": 3.6,
-            "y": 5.4,
+            "y": 5.5,
             "label": "Bold a word",
             "sublabel": "2nd edit",
             "icon": "pencil",
@@ -64,7 +64,7 @@
           {
             "id": "s3",
             "x": 3.6,
-            "y": 4.2,
+            "y": 3.9,
             "label": "Deleted line",
             "sublabel": "3rd edit, newest",
             "icon": "pencil",
@@ -74,7 +74,7 @@
           {
             "id": "undo",
             "x": 9,
-            "y": 4.2,
+            "y": 3.9,
             "label": "Cmd+Z",
             "sublabel": "Maya hits undo",
             "icon": "refresh",
@@ -116,7 +116,7 @@
           {
             "id": "s4",
             "x": 3.6,
-            "y": 3,
+            "y": 2.3,
             "label": "Added link",
             "sublabel": "4th edit, top",
             "icon": "pencil",
@@ -190,7 +190,7 @@
             "label": "(",
             "sublabel": "pushed 3rd",
             "icon": "code",
-            "y": 4.2
+            "y": 3.9
           },
           {
             "id": "s2",
@@ -203,7 +203,7 @@
             "label": "{",
             "sublabel": "pushed 1st",
             "icon": "code",
-            "y": 6.6
+            "y": 7.1
           },
           {
             "id": "undo",

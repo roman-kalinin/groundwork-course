@@ -68,7 +68,7 @@
           { "from": "app", "to": "grader", "label": "each output", "packet": { "label": "summary" } }
         ],
         "notes": [
-          { "id": "score", "x": 10.2, "y": 6, "text": "Score: 54 / 60", "status": "active" }
+          { "id": "score", "x": 9.4, "y": 6, "text": "Score: 54 / 60", "status": "active" }
         ]
       }
     },
@@ -132,13 +132,13 @@
         "caption": "Code checks the format. A judge model checks faithfulness against the rubric.",
         "nodes": [
           { "id": "grader", "y": 2.6 },
-          { "id": "judge", "x": 10.2, "y": 5.4, "label": "LLM judge", "sublabel": "rubric: pass / fail", "icon": "brain", "kind": "ai", "status": "active" }
+          { "id": "judge", "x": 10.2, "y": 6.6, "label": "LLM judge", "sublabel": "rubric: pass / fail", "icon": "brain", "kind": "ai", "status": "active" }
         ],
         "edges": [
           { "from": "app", "to": "judge", "label": "note + summary", "packet": { "label": "grade" } }
         ],
         "notes": [
-          { "id": "score", "x": 10.2, "y": 7.3, "text": "Score: 54 / 60" }
+          { "id": "score", "x": 9.4, "y": 7.3, "text": "Score: 54 / 60" }
         ]
       }
     },

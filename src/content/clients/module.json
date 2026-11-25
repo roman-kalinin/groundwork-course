@@ -3,5 +3,6 @@
   "title": "Delivering client projects",
   "order": 6,
   "summary": "Scope, estimate, hand over and support end-to-end apps you build and sell to clients.",
-  "color": "green"
+  "color": "green",
+  "icon": "handshake"
 }

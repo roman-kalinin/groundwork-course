@@ -40,7 +40,7 @@
           { "from": "route", "to": "llm", "label": "full answer, please", "packet": true }
         ],
         "notes": [
-          { "id": "frozen", "x": 2, "y": 2.4, "text": "Is it broken?", "status": "warn" }
+          { "id": "frozen", "x": 2, "y": 2.2, "text": "Is it broken?", "status": "warn" }
         ]
       }
     },

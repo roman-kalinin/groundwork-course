@@ -3,5 +3,6 @@
   "title": "Running in production",
   "order": 4,
   "summary": "Life after the first deploy: Git and pull requests, environments and CI, tests worth writing, monitoring, backups, calm incident handling and keeping costs in check.",
-  "color": "teal"
+  "color": "teal",
+  "icon": "rocket"
 }

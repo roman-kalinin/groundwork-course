@@ -3,5 +3,6 @@
   "title": "Data & SQL",
   "order": 1,
   "summary": "How apps store, shape and query their data: tables and keys, joins, SQL, schema design, safe migrations, and the Postgres features behind Supabase.",
-  "color": "blue"
+  "color": "blue",
+  "icon": "database"
 }

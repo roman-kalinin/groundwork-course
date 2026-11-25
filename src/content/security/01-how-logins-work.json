@@ -41,7 +41,7 @@
           { "id": "browser", "x": 2, "y": 4, "label": "Browser", "sublabel": "Maya signs up", "icon": "browser", "kind": "client" },
           { "id": "server", "x": 6.4, "y": 4, "label": "Notely API", "sublabel": "on Vercel", "icon": "server", "kind": "server" },
           { "id": "db", "x": 10.4, "y": 4, "label": "users table", "icon": "database", "kind": "data", "status": "error", "tags": ["maya: hunter2"] },
-          { "id": "thief", "x": 10.4, "y": 6.8, "label": "Leaked backup", "sublabel": "in the wrong hands", "icon": "incognito", "kind": "threat", "status": "error" }
+          { "id": "thief", "x": 10.4, "y": 6, "label": "Leaked backup", "sublabel": "in the wrong hands", "icon": "incognito", "kind": "threat", "status": "error" }
         ],
         "edges": [
           { "from": "browser", "to": "server", "label": "sign up", "packet": { "label": "password" } },

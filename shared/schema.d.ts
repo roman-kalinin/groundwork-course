@@ -106,13 +106,12 @@ export interface ModuleMeta {
   order: number;
   summary: string;
   color?: string;
+  icon?: string;
 }
 
 export const ICONS: Record<string, string>;
 export const ICON_NAMES: string[];
-export const GRID: { cols: number; rows: number; unit: number };
-export const NODE_DEFAULT_W: number;
-export const NODE_H: number;
+export const GRID: { cols: number; rows: number };
 export const LEVELS: Level[];
 export const CHAPTERS: Chapter[];
 export const CALLOUT_TYPES: CalloutType[];
@@ -142,6 +141,5 @@ export function sanitizeInline(
   report?: (msg: string) => void,
   onTerm?: (key: string) => void,
 ): string;
-export function nodeWidth(n: { w?: number; label?: string; sublabel?: string; icon?: string }): number;
-export function textWidth(text: string | undefined, kind?: "label" | "sub" | "edge"): number;
-export function edgeLabelWidth(label: string | undefined): number;
+export function textWidth(text: string | undefined, kind?: 'label' | 'sub' | 'note'): number;
+export function monoWidth(text: string | undefined, size: number): number;

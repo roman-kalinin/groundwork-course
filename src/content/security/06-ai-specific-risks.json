@@ -36,8 +36,8 @@
           { "id": "browser", "x": 2, "y": 4, "label": "Maya", "sublabel": "\"summarize my week\"", "icon": "browser", "kind": "client" },
           { "id": "shared", "x": 2, "y": 1.4, "label": "Shared note", "sublabel": "hidden instructions", "icon": "file", "kind": "threat", "status": "warn" },
           { "id": "server", "x": 6.4, "y": 4, "label": "Ask route", "sublabel": "Notely API", "icon": "function", "kind": "server" },
-          { "id": "notes", "x": 6.4, "y": 1.4, "label": "notes table", "icon": "table", "kind": "data" },
-          { "id": "claude", "x": 10.4, "y": 4, "label": "Claude API", "icon": "sparkle", "kind": "ai", "status": "active" },
+          { "id": "notes", "x": 6.4, "y": 1.8, "label": "notes table", "icon": "table", "kind": "data" },
+          { "id": "claude", "x": 10.8, "y": 4, "label": "Claude API", "icon": "sparkle", "kind": "ai", "status": "active" },
           { "id": "email", "x": 10.4, "y": 6.6, "label": "send_email", "sublabel": "tool", "icon": "mail", "kind": "external", "status": "error" }
         ],
         "edges": [

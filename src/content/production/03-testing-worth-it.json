@@ -220,7 +220,7 @@
         "nodes": [
           { "id": "p-access", "x": 3.6, "y": 1.9, "label": "Who sees what", "sublabel": "auth, RLS", "icon": "shield", "kind": "server", "status": "ok" },
           { "id": "p-money", "x": 3.6, "y": 3.5, "label": "Money", "sublabel": "plans, AI limits", "icon": "money", "kind": "server", "status": "ok" },
-          { "id": "p-core", "x": 3.6, "y": 5.1, "label": "Core flow", "sublabel": "note → summary", "icon": "sparkle", "kind": "client", "status": "ok" },
+          { "id": "p-core", "x": 3.6, "y": 5.3, "label": "Core flow", "sublabel": "note → summary", "icon": "sparkle", "kind": "client", "status": "ok" },
           { "id": "p-bugs", "x": 3.6, "y": 6.6, "label": "Fixed bugs", "sublabel": "never again", "icon": "bug", "kind": "neutral", "status": "ok" },
           { "id": "s-pixels", "x": 9.4, "y": 2.8, "label": "Pixel details", "icon": "pencil", "kind": "neutral", "status": "dim" },
           { "id": "s-libs", "x": 9.4, "y": 5.2, "label": "Library code", "sublabel": "not yours", "icon": "box", "kind": "neutral", "status": "dim" }

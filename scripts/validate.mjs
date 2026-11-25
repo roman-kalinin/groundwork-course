@@ -8,9 +8,10 @@ import { join, relative, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   ICON_NAMES, GRID, LEVELS, CHAPTERS, CALLOUT_TYPES, NODE_KINDS, STATUSES, EDGE_STYLES, ARROWS,
-  PACKET_DIRECTIONS, PACKET_SPEEDS, MODULE_COLORS, CODE_LANGUAGES, LESSON_FILE_RE, NODE_H,
-  resolveLessonScenes, sanitizeInline, wordCount, plainText, nodeWidth, edgeLabelWidth,
+  PACKET_DIRECTIONS, PACKET_SPEEDS, MODULE_COLORS, CODE_LANGUAGES, LESSON_FILE_RE,
+  resolveLessonScenes, sanitizeInline, wordCount, plainText,
 } from '../shared/schema.js';
+import { layoutProblems } from '../shared/iso.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CONTENT = join(ROOT, 'src', 'content');
@@ -124,13 +125,14 @@ function validateModule(dir, folder) {
   const m = readJson(file);
   if (!m) { flush(); return null; }
   if (!isObj(m)) { err('', 'must be a JSON object'); flush(); return null; }
-  checkKeys('module', m, ['id', 'title', 'order', 'summary', 'color']);
+  checkKeys('module', m, ['id', 'title', 'order', 'summary', 'color', 'icon']);
   if (req('module', m, 'id', isStr, 'a string') && m.id !== folder) err('module.id', `"${m.id}" must equal the folder name "${folder}"`);
   req('module', m, 'title', isStr, 'a non-empty string');
   req('module', m, 'order', (v) => Number.isInteger(v) && v > 0, 'a positive integer');
   req('module', m, 'summary', isStr, 'a non-empty string');
   maxLen('module.summary', m.summary, 200);
   enumField('module', m, 'color', MODULE_COLORS);
+  if (m.icon !== undefined && !ICON_NAMES.includes(m.icon)) err('module.icon', `unknown icon "${m.icon}". Use one of the scene icon names (see LESSON_SCHEMA.md).`);
   if (KNOWN_MODULES[folder] && m.order !== KNOWN_MODULES[folder]) warn('module.order', `expected ${KNOWN_MODULES[folder]} for "${folder}"`);
   flush();
   return m;
@@ -193,19 +195,13 @@ function checkResolvedScene(path, scene, stepSpec) {
       n.tags.forEach((t, i) => maxLen(`${p}.tags[${i}]`, t, LIMITS.tag));
     }
     if (opt(p, n, 'w', (v) => isNum(v) && v >= 1.2 && v <= 5, 'a number from 1.2 to 5 (grid units)')) { /* ok */ }
-    const w = nodeWidth(n);
-    if (isNum(n.x) && (n.x - w / 2 < -0.01 || n.x + w / 2 > GRID.cols + 0.01)) warn(p, `node "${n.id}" sticks out of the 12-column grid (x=${n.x}, width=${w}); keep x between ${w / 2} and ${GRID.cols - w / 2}`);
   }
-  // overlap check
+  // Isometric layout: blocks standing on each other, and text (cards, tags,
+  // edge labels, notes, zone names) covering other text, measured in screen
+  // space with the same geometry the renderer uses (shared/iso.js).
   curId = 'scene';
-  for (let i = 0; i < scene.nodes.length; i++) for (let j = i + 1; j < scene.nodes.length; j++) {
-    const a = scene.nodes[i]; const b = scene.nodes[j];
-    if (![a.x, a.y, b.x, b.y].every(isNum)) continue;
-    const minDx = (nodeWidth(a) + nodeWidth(b)) / 2 + 0.2;
-    const minDy = (a.tags?.length || b.tags?.length) && b.y !== a.y ? 1.4 : 1.0;
-    if (Math.abs(a.x - b.x) < minDx && Math.abs(a.y - b.y) < minDy) {
-      err(path, `nodes "${a.id}" (${a.x},${a.y}) and "${b.id}" (${b.x},${b.y}) overlap. Move them at least ${minDx.toFixed(1)} apart in x or ${minDy} apart in y.`);
-    }
+  if (scene.nodes.every((n) => isNum(n.x) && isNum(n.y))) {
+    for (const pr of layoutProblems(scene)) (pr.level === 'error' ? err : warn)(path, `${pr.msg}`);
   }
   const visible = scene.nodes.filter((n) => n.status !== 'dim').length;
   curId = 'scene';
@@ -229,24 +225,6 @@ function checkResolvedScene(path, scene, stepSpec) {
     enumField(p, e, 'style', EDGE_STYLES);
     enumField(p, e, 'status', STATUSES);
     enumField(p, e, 'arrow', ARROWS);
-    {
-      const a = scene.nodes.find((n) => n.id === e.from);
-      const b = scene.nodes.find((n) => n.id === e.to);
-      const pair = scene.edges.some((o) => o.from === e.to && o.to === e.from);
-      if (e.label && a && b && !e.bend && !pair && [a.x, a.y, b.x, b.y].every(isNum)) {
-        const U = GRID.unit;
-        const dx = Math.abs(a.x - b.x) * U, dy = Math.abs(a.y - b.y) * U;
-        const lw = edgeLabelWidth(e.label);
-        if (dy <= 50) {
-          const gap = dx - ((nodeWidth(a) + nodeWidth(b)) / 2) * U - 20;
-          if (lw > gap + 12) warn(`${p}.label`, `label "${e.label}" (${lw}px) is wider than the ${Math.max(0, Math.round(gap))}px gap between "${a.id}" and "${b.id}" and will cover them. Shorten it or move the nodes apart.`);
-        } else if (dx <= 50) {
-          const tags = a.y < b.y ? (a.tags?.length ? 36 : 0) : (b.tags?.length ? 36 : 0);
-          const gap = dy - NODE_H * U - 20 - tags;
-          if (gap < 36) warn(`${p}.label`, `label "${e.label}" has only ${Math.max(0, Math.round(gap))}px between "${a.id}" and "${b.id}" vertically and will cover them. Move the nodes further apart.`);
-        }
-      }
-    }
     opt(p, e, 'bend', (v) => isNum(v) && v >= -3 && v <= 3, 'a number from -3 to 3 (curve amount in grid units; 0 = straight)');
     if ('packet' in e) {
       const pk = e.packet;

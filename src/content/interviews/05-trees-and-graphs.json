@@ -37,7 +37,7 @@
           { "id": "work", "x": 3.2, "y": 3.4, "label": "Work", "icon": "folder", "kind": "data" },
           { "id": "personal", "x": 9.6, "y": 3.4, "label": "Personal", "icon": "folder", "kind": "data" },
           { "id": "clients", "x": 1.8, "y": 5.8, "label": "Clients", "icon": "folder", "kind": "data" },
-          { "id": "pitch", "x": 4.6, "y": 5.8, "label": "Pitch deck", "icon": "file", "kind": "client", "status": "warn" },
+          { "id": "pitch", "x": 4.4, "y": 5.8, "label": "Pitch deck", "icon": "file", "kind": "client", "status": "warn" },
           { "id": "trip", "x": 8.2, "y": 5.8, "label": "Trip plan", "icon": "file", "kind": "client" },
           { "id": "recipes", "x": 10.8, "y": 5.8, "label": "Recipes", "icon": "file", "kind": "client" }
         ],
@@ -125,7 +125,7 @@
           { "id": "work", "x": 3.2, "y": 3.4, "label": "Work", "icon": "folder", "kind": "data", "status": "ok", "tags": ["DFS #2"] },
           { "id": "personal", "x": 9.6, "y": 3.4, "label": "Personal", "icon": "folder", "kind": "data", "tags": ["DFS #5"] },
           { "id": "clients", "x": 1.8, "y": 5.8, "label": "Clients", "icon": "folder", "kind": "data", "status": "ok", "tags": ["DFS #3"] },
-          { "id": "pitch", "x": 4.6, "y": 5.8, "label": "Pitch deck", "icon": "file", "kind": "client", "status": "active", "tags": ["DFS #4"] },
+          { "id": "pitch", "x": 4.4, "y": 5.8, "label": "Pitch deck", "icon": "file", "kind": "client", "status": "active", "tags": ["DFS #4"] },
           { "id": "trip", "x": 8.2, "y": 5.8, "label": "Trip plan", "icon": "file", "kind": "client", "tags": ["DFS #6"] },
           { "id": "recipes", "x": 10.8, "y": 5.8, "label": "Recipes", "icon": "file", "kind": "client", "tags": ["DFS #7"] }
         ],

@@ -146,8 +146,8 @@
         "nodes": [
           { "id": "push", "x": 1.8, "y": 4, "label": "git push", "sublabel": "feature/tags", "icon": "git", "kind": "client" },
           { "id": "ci", "x": 5.2, "y": 4, "label": "GitHub Actions", "sublabel": "lint, types, tests", "icon": "gear", "kind": "server", "status": "active" },
-          { "id": "preview", "x": 9.6, "y": 1.6, "label": "Preview", "sublabel": "branch URL", "icon": "globe", "kind": "client" },
-          { "id": "prod", "x": 9.6, "y": 6.4, "label": "Production", "sublabel": "notely.app", "icon": "rocket", "kind": "server", "status": "dim" }
+          { "id": "preview", "x": 9.6, "y": 1, "label": "Preview", "sublabel": "branch URL", "icon": "globe", "kind": "client" },
+          { "id": "prod", "x": 9.6, "y": 7, "label": "Production", "sublabel": "notely.app", "icon": "rocket", "kind": "server", "status": "dim" }
         ],
         "edges": [
           { "from": "push", "to": "ci", "packet": { "label": "commit" } },

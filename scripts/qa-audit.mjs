@@ -1,6 +1,7 @@
 // Crawls every step of every lesson in a running preview server and reports
-// layout problems: overlapping scene elements, text overflow, horizontal scroll
-// and console errors.  Usage: node scripts/qa-audit.mjs [baseUrl]
+// layout problems: overlapping diagram text (cards, tags, edge labels, notes,
+// zone names, resting packets), text overflowing its pill or card, horizontal
+// page scroll and console errors.  Usage: node scripts/qa-audit.mjs [baseUrl]
 import { chromium } from 'playwright';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -39,31 +40,43 @@ for (const vp of viewports) {
           const y = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
           return x > pad && y > pad ? Math.min(x, y) : 0;
         };
-        const svg = document.querySelector('.scene-svg');
+        const svg = document.querySelector('.stage .scene-svg');
         if (svg) {
           const items = [];
-          svg.querySelectorAll('.layer-nodes .node:not(.leaving)').forEach((n) => {
-            const box = n.querySelector('.node-box');
-            const label = n.querySelector('.node-label')?.textContent ?? '?';
-            items.push({ kind: 'node', name: label, rect: r(box) });
-            n.querySelectorAll('.node-tags > g').forEach((t) => items.push({ kind: 'tag', name: `${label}:${t.textContent}`, rect: r(t), owner: label }));
-            // label overflow inside node box
+          svg.querySelectorAll('.layer-cards .iso-card:not(.leaving)').forEach((n) => {
+            const box = n.querySelector('.card-bg');
+            const label = n.querySelector('.card-label')?.textContent ?? '?';
+            items.push({ kind: 'card', name: label, rect: r(box), owner: label });
+            n.querySelectorAll('.iso-tag').forEach((t) => items.push({ kind: 'tag', name: `${label}:${t.textContent}`, rect: r(t.querySelector('rect')), owner: label }));
+            // label overflow inside the card
             const bb = r(box);
-            n.querySelectorAll('.node-label, .node-sub').forEach((t) => {
+            n.querySelectorAll('.card-label, .card-sub').forEach((t) => {
               const tr = r(t);
-              if (tr.right > bb.right - 2 || tr.left < bb.left + 2) out.push(`text overflows node "${label}": "${t.textContent}"`);
+              if (tr.right > bb.right - 2 || tr.left < bb.left + 2) out.push(`text overflows card "${label}": "${t.textContent}"`);
             });
           });
-          svg.querySelectorAll('.edge:not(.leaving) .edge-label').forEach((e) => items.push({ kind: 'elabel', name: e.textContent, rect: r(e.querySelector('rect')) }));
-          svg.querySelectorAll('.edge:not(.leaving) .packet').forEach((e) => items.push({ kind: 'packet', name: e.textContent || 'dot', rect: r(e) }));
-          svg.querySelectorAll('.layer-notes .note:not(.leaving)').forEach((e) => items.push({ kind: 'note', name: e.textContent, rect: r(e) }));
+          svg.querySelectorAll('.iso-elabel:not(.leaving)').forEach((e) => {
+            items.push({ kind: 'elabel', name: e.textContent, rect: r(e.querySelector('rect')) });
+            const tr = r(e.querySelector('text')), bb = r(e.querySelector('rect'));
+            if (tr.right > bb.right - 1 || tr.left < bb.left + 1) out.push(`text overflows edge label "${e.textContent}"`);
+          });
+          svg.querySelectorAll('.layer-packets .packet').forEach((e) => items.push({ kind: 'packet', name: e.textContent || 'dot', rect: r(e.querySelector('.pk-body')) }));
+          svg.querySelectorAll('.iso-note:not(.leaving)').forEach((e) => {
+            items.push({ kind: 'note', name: e.textContent, rect: r(e.querySelector('.note-bg')) });
+            const tr = r(e.querySelector('text')), bb = r(e.querySelector('.note-bg'));
+            if (tr.right > bb.right - 1 || tr.left < bb.left + 1) out.push(`text overflows note "${e.textContent}"`);
+          });
+          svg.querySelectorAll('.iso-zlabel:not(.leaving)').forEach((e) => {
+            items.push({ kind: 'zone', name: e.textContent, rect: r(e.querySelector('rect')) });
+            const tr = r(e.querySelector('text')), bb = r(e.querySelector('rect'));
+            if (tr.right > bb.right - 1) out.push(`text overflows zone name "${e.textContent}"`);
+          });
           for (let i = 0; i < items.length; i++)
             for (let j = i + 1; j < items.length; j++) {
               const a = items[i], b = items[j];
-              if (a.owner && (a.owner === b.owner || a.owner === b.name)) continue;
-              if (b.owner && b.owner === a.name) continue;
+              if (a.owner && a.owner === b.owner) continue;
               const o = inter(a.rect, b.rect, 1);
-              if (o) out.push(`overlap ${a.kind} "${a.name}" x ${b.kind} "${b.name}" (${o.toFixed(0)}px)`);
+              if (o > 2) out.push(`overlap ${a.kind} "${a.name}" x ${b.kind} "${b.name}" (${o.toFixed(0)}px)`);
             }
         }
         // horizontal overflow of page

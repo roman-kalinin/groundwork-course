@@ -3,7 +3,7 @@ import { allLessons, modules, moduleNumber, type LessonMeta } from '../content';
 import { lessonRatio, useProgress } from '../progress';
 import { href, type Route } from '../router';
 import { UiIcon } from './UiIcon';
-import { ProgressRing, ThemeToggle } from './bits';
+import { BrandMark, IsoBadge, ProgressRing, ThemeToggle } from './bits';
 
 export function Sidebar({ route, open, onClose, onCollapse }: { route: Route; open: boolean; onClose: () => void; onCollapse?: () => void }) {
   const progress = useProgress();
@@ -46,12 +46,11 @@ export function Sidebar({ route, open, onClose, onCollapse }: { route: Route; op
       <aside className={`sidebar${open ? ' open' : ''}`} aria-label="Course navigation">
         <div className="side-head">
           <a className="brand" href={href.home()} onClick={onClose}>
-            <span className="brand-mark" aria-hidden="true">
-              <span />
-              <span />
-              <span />
+            <BrandMark />
+            <span className="brand-text">
+              <span className="brand-name">Groundwork</span>
+              <span className="brand-sub">designer → AI engineer</span>
             </span>
-            <span className="brand-name">Groundwork</span>
           </a>
           <span className="theme-in-side">
             <ThemeToggle />
@@ -102,8 +101,11 @@ export function Sidebar({ route, open, onClose, onCollapse }: { route: Route; op
               <div key={m.id} className={`side-module${currentModule === m.id ? ' current' : ''}`} data-color={m.color}>
                 <div className="side-module-row">
                   <a className="side-module-link" href={href.module(m.id)} onClick={onClose}>
-                    <span className="side-num">{moduleNumber(m)}</span>
-                    <span className="side-module-title">{m.title}</span>
+                    <IsoBadge icon={m.icon} size={30} className="side-badge" />
+                    <span className="side-module-text">
+                      <span className="side-num">Module {moduleNumber(m)}</span>
+                      <span className="side-module-title">{m.title}</span>
+                    </span>
                   </a>
                   {empty ? (
                     <span className="soon">Soon</span>
