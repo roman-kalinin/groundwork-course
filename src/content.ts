@@ -74,3 +74,13 @@ export function nextLesson(key: string): LessonMeta | undefined {
 export function moduleNumber(m: ModuleMeta) {
   return String(m.order).padStart(2, '0');
 }
+
+/** The course's story intro ("Meet Notely"): shown before module 1 and linked from every module's first lesson. */
+export const STORY_INTRO_KEY = 'data/meet-notely';
+export const storyIntro = (): LessonMeta | undefined => allLessons.find((l) => l.key === STORY_INTRO_KEY);
+/** Is this lesson the first real lesson of its module (the story intro itself does not count)? */
+export const isModuleOpener = (meta: LessonMeta) => {
+  const mod = findModule(meta.moduleId);
+  const first = mod?.lessons.find((l) => l.key !== STORY_INTRO_KEY);
+  return !!first && first.key === meta.key;
+};

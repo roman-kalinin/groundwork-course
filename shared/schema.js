@@ -6,7 +6,42 @@ export { ICONS, ICON_NAMES } from './icons.js';
 export const GRID = { cols: 12, rows: 8 };
 
 export const LEVELS = ['beginner', 'intermediate', 'advanced'];
-export const CHAPTERS = ['problem', 'idea', 'how', 'example', 'watch-out', 'recap'];
+export const CHAPTERS = ['setup', 'problem', 'idea', 'how', 'example', 'watch-out', 'recap'];
+/** Tones of a metric tile or a pill. */
+export const TONES = ['neutral', 'good', 'warn', 'bad'];
+
+/**
+ * One line of a step's "What changed" list: "+ added", "~ changed", "− removed"
+ * (a plain "-" works too). Returns null when the prefix is missing.
+ */
+export function parseChange(line) {
+  const m = /^\s*([+~−-])\s+(\S.*)$/.exec(String(line ?? ''));
+  if (!m) return null;
+  return { op: m[1] === '+' ? '+' : m[1] === '~' ? '~' : '-', text: m[2] };
+}
+
+/**
+ * Metric values per step. Each step's `metrics` patches the values of the step
+ * before (a value carries forward until a step changes it). Returns, per step,
+ * one entry per lesson metric: { def, value (null before the first value), tone, changed }.
+ */
+export function resolveMetrics(lesson) {
+  const defs = Array.isArray(lesson?.metrics) ? lesson.metrics : [];
+  const cur = new Map(defs.map((d) => [d.id, { value: null, tone: 'neutral' }]));
+  return (lesson?.steps ?? []).map((step) => {
+    const patch = step && typeof step.metrics === 'object' && step.metrics ? step.metrics : {};
+    const changed = new Set();
+    for (const [id, raw] of Object.entries(patch)) {
+      if (!cur.has(id)) continue;
+      const v = raw !== null && typeof raw === 'object' ? raw : { value: raw };
+      const before = cur.get(id);
+      const next = { value: v.value ?? before.value, tone: v.tone ?? 'neutral' };
+      if (next.value !== before.value || next.tone !== before.tone) changed.add(id);
+      cur.set(id, next);
+    }
+    return defs.map((def) => ({ def, ...cur.get(def.id), changed: changed.has(def.id) }));
+  });
+}
 export const CALLOUT_TYPES = ['tip', 'warn', 'analogy', 'claude-code'];
 export const NODE_KINDS = ['neutral', 'person', 'client', 'server', 'data', 'ai', 'external', 'threat'];
 export const STATUSES = ['normal', 'active', 'ok', 'warn', 'error', 'dim'];

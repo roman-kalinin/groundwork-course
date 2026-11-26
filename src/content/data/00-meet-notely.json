@@ -1,0 +1,209 @@
+{
+  "id": "meet-notely",
+  "title": "Meet Notely, the app we build",
+  "summary": "Start here: the small notes app every lesson builds on, and its four parts, introduced one at a time.",
+  "minutes": 4,
+  "level": "beginner",
+  "youWillLearn": [
+    "What <b>Notely</b> is, and who <b>Maya</b> is",
+    "The four parts behind almost every app you will build: <b>browser</b>, <b>app server</b>, <b>database</b> and an <b>AI API</b>",
+    "Which part does what when Maya clicks a button"
+  ],
+  "glossary": {
+    "browser": "The program Maya uses to open websites, like Chrome or Safari. It shows the screens and sends her clicks on.",
+    "app server": "A computer, somewhere else, that runs the app's own code and answers the browser.",
+    "Next.js": "A popular toolkit for writing web apps. Notely's code is written with it.",
+    "Vercel": "A company that runs your code on its servers, so you do not need your own.",
+    "request": "A message from one part to another asking for something: save this note, give me my notes.",
+    "database": "A program built to store data safely and find it again fast.",
+    "Supabase": "A service that runs a database for you (and adds logins and file storage). Notely keeps its notes there.",
+    "Claude API": "Anthropic's AI, reached over the internet: you send it text, it sends text back. Each call costs a little money."
+  },
+  "steps": [
+    {
+      "title": "This is Notely, and this is Maya",
+      "chapter": "setup",
+      "body": [
+        "In this course we build and improve one small app: <b>Notely</b>. You write notes in it, and a <b>Summarize</b> button turns a long note into three short lines.",
+        "<b>Maya</b> is one of its users. We will follow her clicks to meet the parts of the app, one at a time."
+      ],
+      "callout": {
+        "type": "tip",
+        "text": "Every lesson starts from this picture and changes one thing. If a lesson ever loses you, come back here."
+      },
+      "scene": {
+        "caption": "Maya, a Notely user. The rest of the app appears one piece at a time.",
+        "nodes": [
+          { "id": "maya", "x": 0.8, "y": 3.2, "label": "Maya", "icon": "user", "kind": "person", "status": "active" }
+        ]
+      }
+    },
+    {
+      "title": "What Maya sees: the browser",
+      "chapter": "how",
+      "body": [
+        "Maya opens Notely in her <span class=\"term\">browser</span>, the program she uses for every website. It draws Notely's screens and picks up her typing and clicks.",
+        "The browser lives on Maya's laptop. It only knows her screen, so it cannot keep notes safe for everyone. It passes her clicks on."
+      ],
+      "changes": [
+        "+ Browser: the screen Maya types into, on her laptop"
+      ],
+      "scene": {
+        "extends": "previous",
+        "caption": "Maya uses Notely through her browser.",
+        "nodes": [
+          { "id": "maya", "status": "normal" },
+          { "id": "browser", "x": 4.1, "y": 3.2, "label": "Browser", "icon": "browser", "kind": "client", "status": "active" }
+        ],
+        "edges": [
+          { "from": "maya", "to": "browser" }
+        ]
+      }
+    },
+    {
+      "title": "The app server does the work",
+      "chapter": "how",
+      "body": [
+        "When Maya presses Save, her browser sends a <span class=\"term\">request</span> to the <span class=\"term\">app server</span>: a computer elsewhere that runs Notely's code. It does the work and answers.",
+        "Its code is written with <span class=\"term\">Next.js</span>, a toolkit for web apps, and runs on <span class=\"term\">Vercel</span>, a company that runs code for you. Both just mean: our app server."
+      ],
+      "changes": [
+        "+ App Server: runs Notely's code, on Vercel",
+        "+ Blue dot out: Maya's request. Green dot back: the answer"
+      ],
+      "scene": {
+        "extends": "previous",
+        "caption": "The browser asks, the app server answers.",
+        "nodes": [
+          { "id": "browser", "status": "normal" },
+          { "id": "app", "x": 7.5, "y": 3.2, "label": "App Server", "icon": "server", "kind": "server", "status": "active" }
+        ],
+        "edges": [
+          { "from": "browser", "to": "app", "packet": { "kind": "request", "direction": "both" } }
+        ]
+      }
+    },
+    {
+      "title": "The database remembers",
+      "chapter": "how",
+      "body": [
+        "The app server forgets everything once it has answered. Notes need a home that remembers: a <span class=\"term\">database</span>, a program built to store data safely and find it again fast.",
+        "Notely's database runs on <span class=\"term\">Supabase</span>, a service that runs it for us. Postgres, the name you will see often, is the kind of database inside."
+      ],
+      "changes": [
+        "+ Database: keeps every note, run by Supabase",
+        "~ Maya steps back for a moment"
+      ],
+      "scene": {
+        "extends": "previous",
+        "caption": "The app server stores and reads notes in the database.",
+        "nodes": [
+          { "id": "maya", "status": "dim" },
+          { "id": "app", "status": "normal" },
+          { "id": "db", "x": 7.5, "y": 7.1, "label": "Database", "icon": "database", "kind": "data", "status": "active" }
+        ],
+        "edges": [
+          { "id": "maya>browser", "status": "dim" },
+          { "from": "app", "to": "db", "packet": { "kind": "data", "direction": "both", "returns": "data" } }
+        ]
+      }
+    },
+    {
+      "title": "The Claude API writes the summary",
+      "chapter": "how",
+      "body": [
+        "The Summarize button needs an AI. The app server sends the note's text to the <span class=\"term\">Claude API</span>: Anthropic's AI model, reached over the internet. A few seconds later, the summary comes back.",
+        "Every call costs a little money, so the app server decides when to call it. The browser never talks to Claude directly."
+      ],
+      "changes": [
+        "+ Claude API: the AI that writes summaries",
+        "~ Database steps back: this step is about the AI"
+      ],
+      "scene": {
+        "extends": "previous",
+        "caption": "The app server asks the Claude API for a summary.",
+        "nodes": [
+          { "id": "db", "status": "dim" },
+          { "id": "llm", "x": 11.2, "y": 3.2, "label": "Claude API", "icon": "sparkle", "kind": "ai", "status": "active" }
+        ],
+        "edges": [
+          { "id": "app>db", "status": "dim", "packet": false },
+          { "from": "app", "to": "llm", "packet": { "kind": "request", "direction": "both", "speed": "slow" } }
+        ]
+      }
+    },
+    {
+      "title": "One click, start to finish",
+      "chapter": "example",
+      "body": [
+        "Maya clicks Summarize. Her browser sends a request to the app server. The server reads the note from the database, sends its text to the Claude API, saves the summary, and answers the browser.",
+        "Four parts, one click, about two seconds. Almost every app you will build has this same shape."
+      ],
+      "changes": [
+        "~ Everything is back in view, working together",
+        "~ Database: reads the note, then saves the summary"
+      ],
+      "scene": {
+        "extends": "previous",
+        "caption": "One click touches all four parts.",
+        "nodes": [
+          { "id": "maya", "status": "normal" },
+          { "id": "db", "status": "normal" },
+          { "id": "llm", "status": "normal" },
+          { "id": "app", "status": "active" }
+        ],
+        "edges": [
+          { "id": "maya>browser", "status": "normal" },
+          { "id": "app>db", "status": "normal", "packet": { "kind": "data", "direction": "both", "returns": "data" } }
+        ]
+      }
+    },
+    {
+      "title": "Where the course goes from here",
+      "chapter": "recap",
+      "body": [
+        "Today Notely has one user. In the lessons ahead it grows to thousands, and every part gets a chance to break: data gets messy, keys leak, the AI gets slow or expensive.",
+        "Each lesson zooms into one part of this picture, says what goes wrong, and shows the fix."
+      ],
+      "callout": {
+        "type": "claude-code",
+        "text": "When Claude Code builds an app for you, ask it to name these four parts in your project: which file is the server code, where the database is, and where the Claude API is called."
+      },
+      "changes": [
+        "~ Maya → 1,000 users like her"
+      ],
+      "scene": {
+        "extends": "previous",
+        "caption": "The same four parts, now serving a crowd.",
+        "nodes": [
+          { "id": "maya", "label": "1,000 users", "shape": "crowd", "icon": "users" },
+          { "id": "app", "status": "normal" }
+        ]
+      }
+    }
+  ],
+  "quiz": [
+    {
+      "question": "Maya saves a note today. Where is it kept, so it is still there next month?",
+      "options": [
+        { "text": "In her browser", "why": "The browser only shows the screens. Clear it, or switch laptops, and anything kept there is gone." },
+        { "text": "In the app server", "why": "The app server forgets everything once it has answered a request. It hands the note to the database." },
+        { "text": "In the database", "correct": true, "why": "That is its job: keep data safely and find it again fast." }
+      ]
+    },
+    {
+      "question": "Which part talks to the database and to the Claude API?",
+      "options": [
+        { "text": "The app server", "correct": true, "why": "It runs Notely's code and holds the keys to both, so they never reach Maya's laptop." },
+        { "text": "The browser", "why": "The browser only talks to the app server. Giving it the keys would hand them to every visitor." },
+        { "text": "The Claude API", "why": "Claude only answers what the app server sends it. It does not reach into Notely's database." }
+      ]
+    }
+  ],
+  "takeaways": [
+    "<b>Notely</b> is the notes app we build all course. <b>Maya</b> is one of its users.",
+    "The <b>browser</b> shows the screens. The <b>app server</b> runs the code. The <b>database</b> remembers. The <b>Claude API</b> writes the summaries.",
+    "Next.js on Vercel means: our app server. Supabase means: our database.",
+    "Only the app server talks to the database and the AI. The browser talks to the app server."
+  ]
+}

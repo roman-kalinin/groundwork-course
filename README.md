@@ -2,7 +2,7 @@
 
 An interactive, plain-language course for designers who build with Claude Code and want to become AI engineers. It has 7 modules and 46 lessons: data and SQL, security, debugging, running in production, AI engineering, client delivery, and coding-interview basics.
 
-Each lesson is a short whiteboard story. You click through steps with an animated isometric diagram (blocks on a warm paper floor, packets travelling between them, a camera that frames each step), then take a quiz and read a recap. Progress is saved in the browser (`localStorage`). There are no accounts and no server.
+The course starts with **Meet Notely** (`#/l/data/meet-notely`), which introduces the running example from zero. Each lesson is a short whiteboard story. You click through steps with an animated isometric diagram (a few big blocks with their names printed on them, plain coloured packets travelling between them, a camera that frames each step), number tiles above it, and a side panel with the step's text and a "What changed" list; then you take a quiz and read a recap. Progress is saved in the browser (`localStorage`). There are no accounts and no server.
 
 **Live site:** https://ai-engineer-path-sigma.vercel.app
 
@@ -15,21 +15,21 @@ Requires Node 20 or newer.
 ```bash
 npm install
 npm run dev        # dev server with hot reload (http://localhost:5173)
-npm run validate   # check every module and lesson JSON file
+npm run validate   # check every module and lesson JSON file (npm run validate -- data: one module)
 npm run build      # validate + typecheck + production build to dist/
 npm run preview    # serve dist/ at http://localhost:4173
 ```
 
 ### Visual QA (optional)
 
-`npm run qa` opens every step of every lesson in headless Chromium in two passes. The still pass (reduced motion, 1440x900 and 390x844) reports overlapping diagram text (cards, tags, edge labels, notes, zone names, resting packets), text that overflows its card or pill, horizontal page scroll and console errors. The motion pass (1440x900, animation on) samples the moving packets at four moments of their loop and reports a packet covering other text or two packets colliding. Start `npm run preview` first, then `npm run qa -- http://localhost:4173/` (add `--still-only` to skip the motion pass). The first time, run `npx playwright install chromium`.
+`npm run qa` opens every step of every lesson in headless Chromium in two passes. The still pass (reduced motion, 1440x900 and 390x844) reports overlapping diagram text (name plates, pills, edge labels, zone names, resting packets), text that overflows its plate or pill, horizontal page scroll and console errors. The motion pass (1440x900, animation on) samples the moving packets at four moments of their loop and reports a packet covering other text or two packets colliding. Start `npm run preview` first, then `npm run qa -- http://localhost:4173/` (add `--still-only` to skip the motion pass). The first time, run `npx playwright install chromium`.
 
 ## Add a lesson
 
 1. Pick the module folder in `src/content/<module>/`. The seven modules are `data`, `security`, `debugging`, `production`, `ai`, `clients` and `interviews`.
 2. Create `NN-slug.json`. `NN` is the two-digit position (`07`) and `slug` is the lesson id in kebab-case. The `id` inside the file must equal the slug.
-3. Write it by following `LESSON_SCHEMA.md` (the format, annotated) and `WRITING_GUIDE.md` (voice, word budgets, diagram rules). `src/content/security/02-sessions-vs-tokens.json` is the reference lesson to copy from.
-4. Run `npm run validate`. It names the exact field for each problem. It also measures the isometric diagram of every step, at rest and in motion, and fails when text covers other text, two blocks stand on each other, zones partly overlap, an arrowhead hides under text or a packet has no clear path; move coordinates to fix it.
+3. Write it by following `LESSON_SCHEMA.md` (the format, annotated) and `WRITING_GUIDE.md` (narration and scene rules). `src/content/data/01-tables-rows-keys.json` is the reference lesson to copy from; `src/content/data/00-meet-notely.json` is the course intro.
+4. Run `npm run validate -- <module>`. It names the exact field for each problem: the narration rules (setup step first, "What changed" on every later step and matching the diagram), the declutter rules (at most 6 blocks, short names, one pill, at most 2 short edge labels, no packet text) and the measured isometric layout (text covering text, blocks on each other, hidden arrowheads, packets without a clear path).
 5. Check it in the browser with `npm run dev`. The lesson is at `#/l/<module>/<slug>`.
 
 No index file needs editing: the app finds lessons and modules automatically. To add a whole module, create a folder with a `module.json` (see `LESSON_SCHEMA.md`).
@@ -59,5 +59,6 @@ A preview deploy without `--prod` gives a separate URL and leaves production alo
 | `src/components/SceneView.tsx` | Isometric SVG diagram renderer: per-step camera, step-to-step animation, Replay / Pause, phone full-screen view |
 | `scripts/measure-glyphs.mjs` | Re-measures the diagram fonts after a typography change (updates the width table in `shared/schema.js`) |
 | `src/components/LessonPage.tsx` | Lesson player: intro, steps, quiz, recap |
+| `src/components/Metrics.tsx` | Metric tiles above the diagram and the "What changed" list |
 | `LESSON_SCHEMA.md` | The lesson format, annotated |
 | `WRITING_GUIDE.md` | Rules for content writers |

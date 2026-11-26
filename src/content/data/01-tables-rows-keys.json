@@ -1,77 +1,119 @@
 {
   "id": "tables-rows-keys",
   "title": "Tables, rows and keys",
-  "summary": "What a relational database really is: tables of typed facts, a key that names every row, and keys that link rows together.",
+  "summary": "Why Notely outgrows one big file, and how a database keeps notes in tables, gives every row a key, and links rows together.",
   "minutes": 10,
   "level": "beginner",
   "youWillLearn": [
-    "Why apps outgrow \"one big file\" and what a database does instead",
+    "Why an app outgrows \"one big file\", and what a database does instead",
     "How <b>tables</b>, <b>rows</b> and <b>columns</b> map to the things in your app",
     "What a <b>primary key</b> is, and why it should never mean anything",
     "How a <b>foreign key</b> links a note to its owner, and guards that link"
   ],
   "glossary": {
-    "relational database": "A database that stores data in tables and links rows across tables by their keys. Postgres is one.",
-    "Postgres": "PostgreSQL, a free and very widely used relational database. Every Supabase project is a Postgres database.",
+    "app server": "A computer, somewhere else, that runs the app's own code. Notely's runs on Vercel.",
+    "database": "A program built to store data safely and find it again fast.",
+    "relational database": "A database that keeps data in tables and links rows across tables by their keys. Postgres is one.",
+    "Postgres": "PostgreSQL, a free and very widely used relational database. Supabase runs one for Notely.",
     "table": "A named collection of rows that all describe the same kind of thing, like users or notes.",
-    "row": "One entry in a table: one user, one note. Also called a record.",
+    "row": "One entry in a table: one user, one note.",
     "column": "One named, typed fact that every row in a table has, like title or created_at.",
-    "primary key": "The column whose value is unique for every row and never changes, so the row can always be found again.",
-    "uuid": "A long random id like 3f9c2a1e-…, practically impossible to guess or to repeat by accident.",
+    "primary key": "The column whose value is different for every row and never changes, so the row can always be found again.",
     "foreign key": "A column that stores the primary key of a row in another table, and that the database checks really exists.",
-    "constraint": "A rule declared on a column or table, like not null or unique, that the database enforces on every write."
+    "constraint": "A rule on a column, like not null or unique, that the database checks on every save."
   },
+  "metrics": [
+    { "id": "checked", "label": "Notes checked", "icon": "search" },
+    { "id": "lost", "label": "Lost saves", "icon": "alert", "unit": "a day" }
+  ],
   "steps": [
     {
-      "title": "One big file stops working fast",
-      "chapter": "problem",
+      "title": "Notely keeps every note in one file",
+      "chapter": "setup",
       "body": [
-        "Say Notely's first version saves every note into one big <code>notes.json</code> file. For Maya alone, it works.",
-        "Then real users arrive. To show Maya her notes, the server reads every note anyone ever wrote. Two saves land at the same moment and one is lost. Two notes are both called \"Groceries\", and nothing says whose is whose."
+        "Notely is the notes app we build in this course. Today it has one user, Maya, with three notes.",
+        "When Maya saves a note, the <span class=\"term\">app server</span> (the computer running Notely's code) writes it into one file: a single list of every note. To show her a note, it reads the list until it finds it."
       ],
       "callout": {
-        "type": "analogy",
-        "text": "A shoebox of receipts. Fine for ten. With ten thousand, finding \"March, Maya, groceries\" means tipping the whole box on the floor."
+        "type": "tip",
+        "text": "New to Notely? The 4-minute <b>Meet Notely</b> lesson at the start of this module shows the whole app, part by part."
+      },
+      "metrics": {
+        "checked": { "value": 3, "tone": "good" },
+        "lost": { "value": 0, "tone": "good" }
       },
       "scene": {
-        "caption": "Every request reads and rewrites the whole file. It gets slow, and saves collide.",
+        "caption": "Maya's notes go through the app server into one file.",
         "nodes": [
-          { "id": "api", "x": 1.6, "y": 4, "label": "Notely API", "sublabel": "Next.js on Vercel", "icon": "server", "kind": "server" },
-          { "id": "file", "x": 6.2, "y": 4, "label": "notes.json", "sublabel": "every note, one file", "icon": "file", "kind": "data", "status": "warn" }
+          { "id": "users", "x": 0.6, "y": 3.6, "label": "Maya", "icon": "user", "kind": "person" },
+          { "id": "app", "x": 4.4, "y": 3.6, "label": "App Server", "icon": "server", "kind": "server" },
+          { "id": "store", "x": 8.4, "y": 3.6, "label": "Notes File", "icon": "file", "shape": "stack", "kind": "data" }
         ],
         "edges": [
-          { "from": "api", "to": "file", "label": "read everything", "packet": { "label": "all notes", "speed": "fast" } }
-        ],
-        "notes": [
-          { "id": "n-slow", "x": 7.2, "y": 2.4, "text": "To find one note, read them all", "status": "warn" },
-          { "id": "n-lost", "x": 6.4, "y": 5.7, "text": "Two saves at once: one is lost", "status": "error" }
+          { "from": "users", "to": "app", "packet": { "kind": "request", "direction": "both", "speed": "slow" } },
+          { "from": "app", "to": "store", "packet": { "kind": "data", "direction": "both", "returns": "data", "speed": "slow" } }
         ]
       }
     },
     {
-      "title": "A database is a set of tidy tables",
-      "chapter": "idea",
+      "title": "Ten thousand users, one fragile file",
+      "chapter": "problem",
       "body": [
-        "A <span class=\"term\">relational database</span> stores data in <span class=\"term\" data-term=\"table\">tables</span>, one table per kind of thing: <code>users</code>, <code>notes</code>, later <code>tags</code>.",
-        "It also does the hard parts for you: finding things fast, letting many people write at once without losing anything, and refusing data that breaks your rules. Every Supabase project is one of these: <span class=\"term\">Postgres</span>."
+        "Notely grows to 10,000 users and two million notes. To show Maya one note, the server now reads through every note anyone ever wrote.",
+        "Worse, when two people save at the same moment, both rewrite the file, and the second write wipes out the first. Saves quietly disappear."
       ],
       "callout": {
-        "type": "tip",
-        "text": "You met replication and sharding in system design. Those are ways to run many copies or pieces of this same database. This module is about what goes inside one."
+        "type": "analogy",
+        "text": "A shoebox of receipts. Fine for ten. With two million, finding one means tipping the whole box onto the floor."
+      },
+      "changes": [
+        "~ Maya → 10,000 users",
+        "~ Notes checked 3 → 2,000,000 to find one",
+        "~ Lost saves 0 → 12 a day"
+      ],
+      "metrics": {
+        "checked": { "value": 2000000, "tone": "bad" },
+        "lost": { "value": 12, "tone": "bad" }
       },
       "scene": {
         "extends": "previous",
-        "caption": "The file is gone. Postgres keeps one table per kind of thing.",
-        "remove": ["file", "n-slow", "n-lost"],
-        "zones": [
-          { "id": "db", "x": 3.4, "y": 0.4, "w": 8.3, "h": 7.2, "label": "Postgres database" }
-        ],
+        "caption": "Every request reads the whole file, and saves collide.",
         "nodes": [
-          { "id": "users", "x": 5.6, "y": 1.6, "label": "users", "sublabel": "one row per person", "icon": "table", "kind": "data" },
-          { "id": "notes", "x": 9.6, "y": 1.6, "label": "notes", "sublabel": "one row per note", "icon": "table", "kind": "data", "status": "active" }
+          { "id": "users", "label": "10,000 users", "shape": "crowd", "icon": "users" },
+          { "id": "store", "status": "error" }
         ],
         "edges": [
-          { "from": "api", "to": "notes", "label": "SQL query", "packet": { "label": "query" } }
+          { "id": "users>app", "packet": { "kind": "request", "direction": "both", "speed": "fast" } },
+          { "id": "app>store", "status": "error", "packet": { "kind": "data", "direction": "both", "returns": "data", "speed": "fast" } }
+        ]
+      }
+    },
+    {
+      "title": "A database instead of a file",
+      "chapter": "idea",
+      "body": [
+        "The fix is a <span class=\"term\">database</span>: a program built to store data safely and find it fast. Notely uses <span class=\"term\">Postgres</span>, run for us by Supabase.",
+        "Postgres lets thousands of people save at the same moment without losing anything. It is a <span class=\"term\">relational database</span>: it keeps data in tables, one per kind of thing."
+      ],
+      "changes": [
+        "− Notes File",
+        "+ Database: Postgres, run for us by Supabase",
+        "~ Lost saves 12 → 0 a day"
+      ],
+      "metrics": {
+        "lost": { "value": 0, "tone": "good" }
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "The file is gone. The app server talks to a database.",
+        "remove": ["store"],
+        "nodes": [
+          { "id": "users", "status": "dim" },
+          { "id": "db", "x": 8.4, "y": 3.6, "label": "Database", "icon": "database", "kind": "data", "status": "active" }
+        ],
+        "edges": [
+          { "id": "users>app", "status": "dim", "packet": false },
+          { "from": "app", "to": "db", "packet": { "kind": "data", "direction": "both", "returns": "data" } }
         ]
       }
     },
@@ -79,17 +121,22 @@
       "title": "Rows are things, columns are facts",
       "chapter": "how",
       "body": [
-        "Picture a spreadsheet with stricter rules. Each <span class=\"term\">row</span> is one thing: one note. Each <span class=\"term\">column</span> is one fact about it: its title, its owner, when it was made.",
-        "Unlike a spreadsheet, every column has a fixed type. A <code>created_at</code> column only takes dates, so a stray \"next week-ish\" cannot sneak in."
+        "Let's look inside the database. A <span class=\"term\">table</span> is like a spreadsheet with strict rules. Each <span class=\"term\">row</span> is one thing: one note. Each <span class=\"term\">column</span> is one fact about it: its title, its owner, when it was made.",
+        "Every column has a fixed type. A <code>created_at</code> column only takes dates, so \"next week-ish\" cannot sneak in."
+      ],
+      "changes": [
+        "− 10,000 users, App Server and Database: we zoom inside",
+        "+ notes table with three rows: Groceries, Book ideas, Trip plan"
       ],
       "scene": {
-        "extends": "previous",
-        "caption": "The notes table: three columns, one row per note.",
+        "caption": "The notes table: one row per note.",
+        "zones": [
+          { "id": "notes", "x": 5.6, "y": 0.5, "w": 2.8, "h": 6.9, "label": "notes table" }
+        ],
         "nodes": [
-          { "id": "notes", "status": "normal", "tags": ["id", "user_id", "title"] },
-          { "id": "n1", "x": 9.6, "y": 3.8, "label": "Groceries", "sublabel": "id 101 · user_id 7", "icon": "file", "shape": "tile", "kind": "data", "status": "active" },
-          { "id": "n2", "x": 9.6, "y": 5.4, "label": "Book ideas", "sublabel": "id 102 · user_id 7", "icon": "file", "shape": "tile", "kind": "data", "status": "active" },
-          { "id": "n3", "x": 9.6, "y": 7.0, "label": "Trip plan", "sublabel": "id 103 · user_id 8", "icon": "file", "shape": "tile", "kind": "data", "status": "active" }
+          { "id": "n1", "x": 7.0, "y": 1.7, "label": "Groceries", "icon": "file", "shape": "tile", "kind": "data", "status": "active" },
+          { "id": "n2", "x": 7.0, "y": 4.0, "label": "Book ideas", "icon": "file", "shape": "tile", "kind": "data", "status": "active" },
+          { "id": "n3", "x": 7.0, "y": 6.3, "label": "Trip plan", "icon": "file", "shape": "tile", "kind": "data", "status": "active" }
         ]
       }
     },
@@ -97,20 +144,24 @@
       "title": "Every row needs a name tag",
       "chapter": "how",
       "body": [
-        "Two notes can share a title, so the title cannot tell them apart. Each table gets a <span class=\"term\">primary key</span>: one column, usually <code>id</code>, whose value is unique and never changes.",
-        "The database guarantees it. Try to insert a second row with id <code>101</code> and it refuses. Ids are usually numbers the database counts up, or a random <span class=\"term\">uuid</span>."
+        "Two notes can share a title, so a title cannot tell rows apart. Each table gets a <span class=\"term\">primary key</span>: one column, usually <code>id</code>, whose value is different for every row and never changes.",
+        "Postgres keeps the keys sorted, like the index of a book. Finding note 102 means checking one row, not two million."
       ],
+      "changes": [
+        "~ Each row gets an id: 101, 102, 103",
+        "~ Trip plan renamed Groceries: same title, different id",
+        "~ Notes checked 2,000,000 → 1"
+      ],
+      "metrics": {
+        "checked": { "value": 1, "tone": "good" }
+      },
       "scene": {
         "extends": "previous",
-        "caption": "Id 101 is taken, so the database refuses the duplicate row.",
+        "caption": "Two notes called Groceries, told apart by their ids.",
         "nodes": [
-          { "id": "n1", "status": "ok" },
-          { "id": "n2", "status": "normal" },
-          { "id": "n3", "status": "normal" },
-          { "id": "dup", "x": 8.4, "y": 5.4, "label": "Another id 101", "sublabel": "insert refused", "icon": "x", "kind": "neutral", "status": "error" }
-        ],
-        "edges": [
-          { "from": "dup", "to": "n1", "label": "id taken", "style": "dashed", "status": "error" }
+          { "id": "n1", "status": "normal", "pill": "id 101" },
+          { "id": "n2", "status": "normal", "pill": "id 102" },
+          { "id": "n3", "status": "normal", "label": "Groceries", "pill": "id 103" }
         ]
       }
     },
@@ -118,48 +169,51 @@
       "title": "Keys that point at other tables",
       "chapter": "how",
       "body": [
-        "How does a note know it belongs to Maya? It stores her id in a column called <code>user_id</code>. A column that holds another table's primary key is a <span class=\"term\">foreign key</span>.",
-        "Declare it, and Postgres guards the link: it will not save a note for user 99 if user 99 does not exist. These links are the \"relational\" in relational database."
+        "Users get a table too: Maya's row has id 7, Leo's has id 8. Each note stores its owner's id in a column called <code>user_id</code>. A column that holds another table's primary key is a <span class=\"term\">foreign key</span>.",
+        "Postgres guards the link: it refuses a note for user 99 when user 99 does not exist."
+      ],
+      "changes": [
+        "+ users table with two rows: Maya and Leo",
+        "+ Arrows: each note's user_id points at its owner"
       ],
       "scene": {
         "extends": "previous",
-        "caption": "Each note row points at exactly one user row through user_id.",
-        "remove": ["dup"],
+        "caption": "Each note points at exactly one user.",
+        "zones": [
+          { "id": "users-t", "x": 1.6, "y": 0.5, "w": 2.8, "h": 6.9, "label": "users table" }
+        ],
         "nodes": [
-          { "id": "n1", "status": "normal" },
-          { "id": "maya", "x": 5.6, "y": 3.8, "label": "Maya", "sublabel": "users row, id 7", "icon": "user", "shape": "tile", "kind": "data", "status": "active" },
-          { "id": "leo", "x": 5.6, "y": 6.4, "label": "Leo", "sublabel": "users row, id 8", "icon": "user", "shape": "tile", "kind": "data" }
+          { "id": "maya", "x": 3.0, "y": 1.7, "label": "Maya", "icon": "user", "shape": "tile", "kind": "person", "pill": "id 7", "status": "active" },
+          { "id": "leo", "x": 3.0, "y": 6.3, "label": "Leo", "icon": "user", "shape": "tile", "kind": "person", "pill": "id 8" }
         ],
         "edges": [
-          { "from": "n1", "to": "maya", "label": "user_id 7", "packet": { "label": "7" } },
+          { "from": "n1", "to": "maya", "label": "user_id 7" },
           { "from": "n2", "to": "maya" },
-          { "from": "n3", "to": "leo", "label": "user_id 8" }
+          { "from": "n3", "to": "leo" }
         ]
       }
     },
     {
-      "title": "Notely's first two tables in SQL",
+      "title": "Notely's first two tables, in SQL",
       "chapter": "example",
       "body": [
-        "Here is the whole idea as real code. Paste it into the Supabase SQL editor and you get both tables, both primary keys and the link between them.",
-        "Read each line like a form field: name, type, then rules such as <code>not null</code> (must be filled) and <code>unique</code> (no repeats). Rules like these are called <span class=\"term\" data-term=\"constraint\">constraints</span>."
+        "Here is the same picture as real code. Pasted into the Supabase SQL editor, it creates both tables, both primary keys and the link between them.",
+        "Read each line like a form field: a name, a type, then rules like <code>not null</code> (must be filled). Rules like these are called <span class=\"term\" data-term=\"constraint\">constraints</span>."
       ],
       "code": {
         "language": "sql",
         "filename": "Supabase SQL editor",
         "code": "create table users (\n  id bigint generated always as identity primary key,\n  email text not null unique,\n  name text\n);\n\ncreate table notes (\n  id bigint generated always as identity primary key,\n  user_id bigint not null references users (id),\n  title text not null\n);",
-        "caption": "References users (id) is the foreign key. Real Supabase apps get users from Supabase Auth, with uuid ids; lesson 6 shows how."
+        "caption": "references users (id) is the foreign key. Real Supabase apps get users from Supabase Auth, with uuid ids; lesson 6 shows how."
       },
+      "changes": [
+        "~ Same two tables, now written as SQL on the right"
+      ],
       "scene": {
         "extends": "previous",
-        "caption": "Two create table statements: two tables, two primary keys, one foreign key.",
+        "caption": "Two create table statements: two tables, two keys, one link.",
         "nodes": [
-          { "id": "users", "status": "active", "tags": ["id", "email", "name"] },
-          { "id": "notes", "status": "active" },
           { "id": "maya", "status": "normal" }
-        ],
-        "edges": [
-          { "id": "n1>maya", "packet": false }
         ]
       }
     },
@@ -168,23 +222,28 @@
       "chapter": "watch-out",
       "body": [
         "Tempting: make Maya's email the primary key of <code>users</code>. It is unique, after all.",
-        "Then Maya changes her email. Every note that stored the old address must change too, or the database refuses the update. Keys should be boring values with no meaning, so they never need to change. Keep the email as a normal column with a <code>unique</code> rule."
+        "Then Maya changes her email. Every note that stored the old address must change too, or Postgres refuses the update. Keys should be boring numbers that never need to change. Keep the email as a normal column with a <code>unique</code> rule."
       ],
       "callout": {
         "type": "claude-code",
-        "text": "When Claude Code creates tables, check: does every table have a primary key? Is each link a real <code>references</code> foreign key, not a plain column that happens to hold an id? Are required columns <code>not null</code>? Ask it to show the final <code>create table</code> SQL, even if it used a dashboard or an ORM."
+        "text": "When Claude Code creates tables, check: does every table have a primary key? Is each link a real <code>references</code>, not a plain number column? Ask it to show the final <code>create table</code> SQL."
       },
+      "changes": [
+        "~ Maya's key: id 7 → her email",
+        "~ Her notes' links break when the email changes"
+      ],
       "scene": {
         "extends": "previous",
-        "caption": "If the email were the key, changing it would break every note that points at it.",
+        "caption": "With the email as the key, changing it breaks every link to Maya.",
         "nodes": [
-          { "id": "users", "status": "normal", "tags": null },
-          { "id": "notes", "status": "normal" },
-          { "id": "maya", "sublabel": "key: new email", "status": "warn" }
+          { "id": "maya", "pill": { "text": "key: email", "tone": "bad" }, "status": "warn" },
+          { "id": "leo", "status": "dim" },
+          { "id": "n3", "status": "dim" }
         ],
         "edges": [
           { "id": "n1>maya", "label": "old email?", "status": "error" },
-          { "id": "n2>maya", "status": "error" }
+          { "id": "n2>maya", "status": "error" },
+          { "id": "n3>leo", "status": "dim" }
         ]
       }
     },
@@ -192,15 +251,20 @@
       "title": "Recap in one breath",
       "chapter": "recap",
       "body": [
-        "A relational database is a set of tables. Rows are things, columns are typed facts. A primary key names each row for good. A foreign key stores another row's key, and the database keeps those links honest.",
+        "A relational database is a set of tables. Rows are things, columns are typed facts. A primary key names each row for good. A foreign key stores another row's key, and Postgres keeps those links honest.",
         "The rest of this module, from joins to migrations, builds on these four ideas."
+      ],
+      "changes": [
+        "~ Maya's key back to id 7",
+        "~ Every link checked and holding"
       ],
       "scene": {
         "extends": "previous",
         "caption": "Tables, rows, a key on every row, and checked links between them.",
         "nodes": [
-          { "id": "maya", "sublabel": "users row, id 7", "status": "ok" },
-          { "id": "leo", "status": "ok" }
+          { "id": "maya", "pill": "id 7", "status": "ok" },
+          { "id": "leo", "status": "ok" },
+          { "id": "n3", "status": "normal" }
         ],
         "edges": [
           { "id": "n1>maya", "label": "user_id 7", "status": "ok" },
@@ -230,9 +294,9 @@
     {
       "question": "A bug in Notely tries to save a note with <code>user_id = 99</code>, but there is no user 99. The foreign key is declared. What happens?",
       "options": [
-        { "text": "Postgres rejects the insert with an error.", "correct": true, "why": "A foreign key means the referenced row must exist. The bad write never lands, so the bug shows up instead of hiding." },
-        { "text": "The note is saved and simply never shows up for anyone.", "why": "That is what happens <em>without</em> a foreign key: orphan rows that quietly pile up." },
-        { "text": "Postgres creates an empty user 99 to keep things consistent.", "why": "Databases never invent rows for you. A constraint can only accept or refuse a write." }
+        { "text": "Postgres rejects the save with an error.", "correct": true, "why": "A foreign key means the row it points at must exist. The bad write never lands, so the bug shows up instead of hiding." },
+        { "text": "The note is saved and never shows up for anyone.", "why": "That is what happens <em>without</em> a foreign key: orphan rows that quietly pile up." },
+        { "text": "Postgres creates an empty user 99 to keep things consistent.", "why": "Databases never invent rows for you. A rule can only accept or refuse a write." }
       ]
     }
   ],

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { resolveLessonScenes } from '../../shared/schema.js';
 import { polyBox, sceneLayout } from '../../shared/iso.js';
 import type { ResolvedScene } from '../../shared/schema.js';
-import { allLessons, findModule, loadLesson, modules, moduleNumber } from '../content';
+import { allLessons, findModule, loadLesson, modules, moduleNumber, storyIntro } from '../content';
 import { lessonRatio, useProgress } from '../progress';
 import { href } from '../router';
 import { IsoBadge, LEVEL_LABEL, ProgressRing, useReducedMotion } from './bits';
@@ -12,22 +12,19 @@ import { UiIcon } from './UiIcon';
 // The home page hero diagram: the stack every lesson builds on.
 const HERO: ResolvedScene = {
   nodes: [
-    { id: 'you', x: 1.3, y: 3.5, label: 'You', sublabel: 'designer who ships', kind: 'person', icon: 'user' },
-    { id: 'app', x: 3.6, y: 3.5, label: 'Your app', icon: 'browser', kind: 'client' },
-    { id: 'api', x: 6.2, y: 3.5, label: 'API', icon: 'function', kind: 'server', status: 'active' },
-    { id: 'llm', x: 6.2, y: 1.2, label: 'Claude', icon: 'sparkle', kind: 'ai' },
-    { id: 'db', x: 6.2, y: 6.3, label: 'Postgres', icon: 'database', kind: 'data' },
+    { id: 'maya', x: 0.8, y: 3.2, label: 'Maya', kind: 'person', icon: 'user' },
+    { id: 'browser', x: 4.1, y: 3.2, label: 'Browser', icon: 'browser', kind: 'client' },
+    { id: 'app', x: 7.5, y: 3.2, label: 'App Server', icon: 'server', kind: 'server', status: 'active' },
+    { id: 'llm', x: 11.2, y: 3.2, label: 'Claude API', icon: 'sparkle', kind: 'ai' },
+    { id: 'db', x: 7.5, y: 7.1, label: 'Database', icon: 'database', kind: 'data' },
   ],
   edges: [
-    { id: 'you>app', from: 'you', to: 'app', packet: { speed: 'slow' } },
-    { id: 'app>api', from: 'app', to: 'api', packet: { label: 'POST', status: 'active' } },
-    { id: 'api>db', from: 'api', to: 'db', packet: { status: 'ok', direction: 'both', speed: 'slow' } },
-    { id: 'api>llm', from: 'api', to: 'llm', style: 'dashed', packet: { status: 'normal' } },
+    { id: 'maya>browser', from: 'maya', to: 'browser' },
+    { id: 'browser>app', from: 'browser', to: 'app', packet: { kind: 'request', direction: 'both' } },
+    { id: 'app>db', from: 'app', to: 'db', packet: { kind: 'data', speed: 'slow' } },
+    { id: 'app>llm', from: 'app', to: 'llm', packet: { kind: 'request', direction: 'both', speed: 'slow' } },
   ],
-  zones: [
-    { id: 'client', x: 0.3, y: 2.5, w: 4.4, h: 2.0, label: 'Your side' },
-    { id: 'server', x: 5.1, y: 0.2, w: 2.2, h: 7.2, label: 'Server', status: 'active' },
-  ],
+  zones: [],
   notes: [],
 };
 
@@ -44,6 +41,7 @@ export function Home() {
   const resume = last && !lastP?.completed ? last : firstOpen;
   const resumeModule = resume ? findModule(resume.moduleId) : undefined;
   const hours = Math.round(minutes / 6) / 10;
+  const intro = storyIntro();
 
   return (
     <div className="page home">
@@ -90,6 +88,12 @@ export function Home() {
               <span className="resume-go" aria-hidden="true">
                 <UiIcon name="arrow-right" size={20} />
               </span>
+            </a>
+          )}
+          {intro && resume?.key !== intro.key && (
+            <a className="start-here" href={href.lesson(intro.moduleId, intro.id)}>
+              <b>Start here:</b> {intro.title}, the small app every lesson builds on ({intro.minutes} min)
+              <UiIcon name="arrow-right" size={15} />
             </a>
           )}
         </div>

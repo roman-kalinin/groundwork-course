@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { resolveLessonScenes } from '../../shared/schema.js';
+import { resolveLessonScenes, resolveMetrics } from '../../shared/schema.js';
 import type { Lesson, Step } from '../../shared/schema.js';
-import { findLesson, findModule, loadLesson, moduleNumber, nextLesson, type LessonMeta } from '../content';
+import { findLesson, findModule, isModuleOpener, loadLesson, moduleNumber, nextLesson, storyIntro, STORY_INTRO_KEY, type LessonMeta } from '../content';
+import { ChangeList, MetricTiles } from './Metrics';
 import { getLessonProgress, resetLesson, updateLesson, useProgress } from '../progress';
 import { href, navigate } from '../router';
 import { CHAPTER_LABEL, IsoBadge, LEVEL_LABEL, useReducedMotion } from './bits';
@@ -59,6 +60,8 @@ function LessonPlayer({ meta, lesson, at }: { meta: LessonMeta; lesson: Lesson; 
   const bounds = useMemo(() => sceneBounds(scenes), [scenes]);
   const firstScene = scenes.find(Boolean);
   const previewBounds = useMemo(() => (firstScene ? sceneBounds([firstScene]) : null), [firstScene]);
+  const metrics = useMemo(() => resolveMetrics(lesson), [lesson]);
+  const hasMetrics = (lesson.metrics?.length ?? 0) > 0;
 
   const go = (p: number | 'intro', replace = false) =>
     navigate(p === 'intro' ? href.lesson(meta.moduleId, meta.id) : href.lesson(meta.moduleId, meta.id, atFor(p, n)), replace);
@@ -153,10 +156,12 @@ function LessonPlayer({ meta, lesson, at }: { meta: LessonMeta; lesson: Lesson; 
           <div className={`stage${bounds ? ' has-scene' : ''}`}>
             {bounds && (
               <div className="stage-scene">
+                {hasMetrics && <MetricTiles metrics={metrics[pos]} reduced={reduced} stepKey={pos} />}
                 <SceneView scene={scenes[pos]} prevScene={pos > 0 ? scenes[pos - 1] : undefined} bounds={bounds} reduced={reduced} stepKey={pos} frame="fill" controls />
               </div>
             )}
             <div className="stage-text" ref={textRef}>
+              {!bounds && hasMetrics && <MetricTiles metrics={metrics[pos]} reduced={reduced} stepKey={pos} />}
               <StepText key={pos} step={lesson.steps[pos]} index={pos} total={n} />
             </div>
           </div>
@@ -201,6 +206,7 @@ function Intro({ lesson, meta, resumeAt, completed, onStart, preview }: { lesson
           <UiIcon name="level" size={14} /> {LEVEL_LABEL[lesson.level] ?? lesson.level}
         </li>
       </ul>
+      {meta.key !== STORY_INTRO_KEY && isModuleOpener(meta) && <StoryLink />}
       <div className="learn">
         <h2>You will learn</h2>
         <ul>
@@ -267,8 +273,26 @@ function StepText({ step, index, total }: { step: Step; index: number; total: nu
           </div>
         </aside>
       )}
+      <ChangeList changes={index > 0 ? step.changes : undefined} />
       {step.code && <CodeBlock snippet={step.code} />}
     </article>
+  );
+}
+
+/** "New here? Meet Notely first": the running example, introduced from zero. */
+function StoryLink() {
+  const intro = storyIntro();
+  if (!intro) return null;
+  return (
+    <a className="story-link" href={href.lesson(intro.moduleId, intro.id)}>
+      <span className="story-link-icon" aria-hidden="true">
+        <UiIcon name="sparkle" size={16} />
+      </span>
+      <span>
+        <b>New here? Meet Notely first.</b> The small app every lesson builds on, introduced piece by piece ({intro.minutes} min).
+      </span>
+      <UiIcon name="arrow-right" size={16} />
+    </a>
   );
 }
 

@@ -16,18 +16,38 @@ export const ISO = {
   /** extra room around the content */
   pad: 30,
   lift: 16, // how far an "active" block floats up
-  card: { label: 20, sub: 14.5, padX: 13, h1: 36, h2: 55, gap: 10, tail: 7, minW: 64 },
+  /** the name plate printed on the block's front corner (the node label) */
+  plate: { size: 19, padX: 12, h: 33, minW: 58, overlap: 7 },
+  /** kept for older code paths: the plate is the node's only "card", with no tail */
+  card: { tail: 0, gap: 0 },
   edge: { size: 14.5, padX: 10, h: 27 },
-  tag: { size: 13, padX: 7, h: 22, gap: 5, below: 8 },
+  /** the one small pill a node may carry (a live value or state), floating just above the block */
+  pill: { size: 13, padX: 9, h: 24, gap: 7, icon: 15, gauge: 30 },
   note: { padX: 14, h: 36, rise: 24 },
-  packet: { size: 13, padX: 9, h: 23, r: 7 },
+  packet: { size: 13, padX: 9, h: 23, r: 8 },
   zone: { size: 12.5, padX: 9, h: 24, thick: 7, inset: 0.1 },
   /** the smallest view (screen units) the per-step camera zooms in to */
-  minView: { w: 820, h: 500 },
+  minView: { w: 780, h: 480 },
 };
 
+/** Size factor of blocks against the 1 x 1 grid cell (scenes hold at most 6 blocks, so they can be big). */
+const K = 1.22;
+/** Packet kinds: colour = meaning, explained by the legend under the diagram. Packets carry no text. */
+export const PACKET_KINDS = ['request', 'response', 'data', 'secret', 'job', 'error'];
+/** Legend text per packet kind. */
+export const PACKET_MEANING = {
+  request: 'request',
+  response: 'response',
+  data: 'data / rows',
+  secret: 'key or token',
+  job: 'background job',
+  error: 'error or attack',
+};
+/** Pill tones (and metric tones). */
+export const TONES = ['neutral', 'good', 'warn', 'bad'];
+
 /** Node shapes an author may pick with `shape` (overrides the kind's default shape). */
-export const NODE_SHAPES = ['block', 'tile', 'token', 'flag', 'stack'];
+export const NODE_SHAPES = ['block', 'tile', 'token', 'flag', 'stack', 'crowd'];
 
 const SQRT2 = Math.SQRT2;
 
@@ -43,39 +63,46 @@ export function project(x, y, z = 0) {
  * height in px.
  */
 export function nodeShape(n) {
+  const sc = (o) => {
+    const out = { ...o };
+    for (const k of ['hw', 'hd', 'r', 'cap', 'lid', 'h', 'capH', 'lidH', 'screenH', 'figH', 'poleH']) if (typeof o[k] === 'number') out[k] = o[k] * K;
+    return out;
+  };
   switch (n.shape) {
     case 'block':
-      return { type: 'box', hw: 0.48, hd: 0.48, h: 31 };
+      return sc({ type: 'box', hw: 0.48, hd: 0.48, h: 31 });
     case 'tile':
-      return { type: 'tile', hw: 0.5, hd: 0.5, h: 11 };
+      return sc({ type: 'tile', hw: 0.5, hd: 0.5, h: 11 });
     case 'token':
-      return { type: 'token', hw: 0.43, hd: 0.43, r: 0.43 * SQRT2, h: 15 };
+      return sc({ type: 'token', hw: 0.43, hd: 0.43, r: 0.43 * SQRT2, h: 15 });
     case 'flag':
-      return { type: 'flag', hw: 0.24, hd: 0.24, h: 7, poleH: 64 };
+      return sc({ type: 'flag', hw: 0.24, hd: 0.24, h: 7, poleH: 64 });
     case 'stack':
-      return { type: 'stack', hw: 0.46, hd: 0.46, h: 33 };
+      return sc({ type: 'stack', hw: 0.46, hd: 0.46, h: 33 });
+    case 'crowd':
+      return sc({ type: 'crowd', hw: 0.62, hd: 0.62, h: 8, figH: 50 });
     default:
   }
   const kind = n.kind ?? 'neutral';
   switch (kind) {
     case 'server':
-      return { type: 'server', hw: 0.5, hd: 0.5, h: 48 };
+      return sc({ type: 'server', hw: 0.5, hd: 0.5, h: 48 });
     case 'data':
-      return { type: 'cylinder', hw: 0.49, hd: 0.49, r: 0.49 * SQRT2, h: 42 };
+      return sc({ type: 'cylinder', hw: 0.49, hd: 0.49, r: 0.49 * SQRT2, h: 42 });
     case 'ai':
-      return { type: 'chip', hw: 0.5, hd: 0.5, h: 26, cap: 0.36, capH: 15 };
+      return sc({ type: 'chip', hw: 0.5, hd: 0.5, h: 26, cap: 0.36, capH: 15 });
     case 'external':
-      return { type: 'crate', hw: 0.45, hd: 0.45, h: 31, lid: 0.53, lidH: 9 };
+      return sc({ type: 'crate', hw: 0.45, hd: 0.45, h: 31, lid: 0.53, lidH: 9 });
     case 'threat':
-      return { type: 'hazard', hw: 0.48, hd: 0.48, h: 38 };
+      return sc({ type: 'hazard', hw: 0.48, hd: 0.48, h: 38 });
     case 'client':
       return n.icon === 'phone'
-        ? { type: 'phone', hw: 0.29, hd: 0.16, h: 60 }
-        : { type: 'laptop', hw: 0.55, hd: 0.43, h: 8, screenH: 46 };
+        ? sc({ type: 'phone', hw: 0.29, hd: 0.16, h: 60 })
+        : sc({ type: 'laptop', hw: 0.55, hd: 0.43, h: 8, screenH: 46 });
     case 'person':
-      return { type: 'person', hw: 0.37, hd: 0.37, h: 9, figure: n.icon === 'users' ? 2 : 1, figH: 66 };
+      return { ...sc({ type: 'person', hw: 0.37, hd: 0.37, h: 9, figH: 66 }), figure: n.icon === 'users' ? 2 : 1 };
     default:
-      return { type: 'box', hw: 0.48, hd: 0.48, h: 31 };
+      return sc({ type: 'box', hw: 0.48, hd: 0.48, h: 31 });
   }
 }
 
@@ -84,7 +111,7 @@ export function shapeHeight(s) {
   if (s.type === 'chip') return s.h + s.capH;
   if (s.type === 'crate') return s.h + s.lidH;
   if (s.type === 'laptop') return s.h + s.screenH;
-  if (s.type === 'person') return s.h + s.figH;
+  if (s.type === 'person' || s.type === 'crowd') return s.h + s.figH;
   if (s.type === 'flag') return s.h + s.poleH;
   return s.h;
 }
@@ -107,7 +134,7 @@ export function silhouette(s, lift = 0) {
   if (s.type === 'person') {
     const b0 = boxCorners(s.hw, s.hd, 0);
     const b1 = boxCorners(s.hw, s.hd, s.h + lift);
-    const fw = s.figure === 2 ? 36 : 20;
+    const fw = (s.figure === 2 ? 36 : 20) * K;
     const top = -s.h - lift - s.figH - (s.hw + s.hd) * G * 0.1;
     return [b0.W, b1.W, { x: -fw, y: b1.N.y }, { x: -fw, y: top }, { x: fw, y: top }, { x: fw, y: b1.N.y }, b1.E, b0.E, b0.S];
   }
@@ -134,16 +161,40 @@ export function silhouette(s, lift = 0) {
 }
 
 // ---------------------------------------------------------------- text boxes
-export function cardSize(n) {
-  const c = ISO.card;
-  const tw = Math.max(textWidth(n.label, 'label'), n.sublabel ? textWidth(n.sublabel, 'sub') : 0);
-  return { w: Math.max(c.minW, Math.ceil(tw + c.padX * 2)), h: n.sublabel ? c.h2 : c.h1 };
+/** The node's name plate: its label, upright, on the block's front corner. Sublabels are not drawn. */
+export const plateFont = (label) => textWidth(label, 'label') * (ISO.plate.size / 20);
+export function plateSize(n) {
+  const p = ISO.plate;
+  return { w: Math.max(p.minW, Math.ceil(plateFont(n.label) + p.padX * 2)), h: p.h };
 }
-export const tagWidth = (t) => Math.ceil(monoWidth(t, ISO.tag.size) + ISO.tag.padX * 2);
+/** @deprecated name kept for older imports */
+export const cardSize = plateSize;
+/** The node's one pill: `pill` (string or { text, icon?, gauge?, tone? }), or the first legacy tag. */
+export function nodePill(n) {
+  const p = n.pill ?? (Array.isArray(n.tags) && n.tags.length ? n.tags[0] : null);
+  if (p === null || p === undefined || p === '') return null;
+  return typeof p === 'object' ? { text: String(p.text ?? ''), icon: p.icon, gauge: p.gauge, tone: p.tone } : { text: String(p) };
+}
+export function pillWidth(p) {
+  if (!p) return 0;
+  const P = ISO.pill;
+  return Math.ceil(monoWidth(p.text, P.size) + P.padX * 2 + (p.icon ? P.icon + 5 : 0) + (Number.isFinite(p.gauge) ? P.gauge + 7 : 0));
+}
+export const tagWidth = (t) => pillWidth({ text: t });
 /** Edge labels use the text sans (Instrument Sans 600); widths scale from the measured 14.5px / 500 table. */
 export const sansWidth = (text, size) => textWidth(text, 'sub') * (size / 14.5) * 1.045;
 export const edgeLabelWidth = (label) => (label ? Math.ceil(sansWidth(label, ISO.edge.size) + ISO.edge.padX * 2) : 0);
-export const packetWidth = (label) => (label ? Math.ceil(monoWidth(label, ISO.packet.size) + ISO.packet.padX * 2) : ISO.packet.r * 2 + 6);
+/** Packets are plain dots (any legacy label is ignored). */
+export const packetWidth = () => ISO.packet.r * 2 + 6;
+/** Kind of a packet (legacy `status` maps onto a kind). `back`: the packet travelling back when direction is "both". */
+export function packetKind(pk, back = false) {
+  const p = pk === true ? {} : pk || {};
+  const LEG = { error: 'error', ok: 'response', warn: 'secret', active: 'request', normal: 'request', dim: 'request' };
+  const fwd = PACKET_KINDS.includes(p.kind) ? p.kind : LEG[p.status] ?? 'request';
+  if (!back) return fwd;
+  if (PACKET_KINDS.includes(p.returns)) return p.returns;
+  return fwd === 'request' ? 'response' : fwd;
+}
 export const noteWidth = (text) => Math.ceil(textWidth(text, 'note') + ISO.note.padX * 2);
 export const zoneLabelWidth = (label) => Math.ceil(monoWidth(String(label).toUpperCase(), ISO.zone.size) * (0.68 / 0.6) + ISO.zone.padX * 2);
 
@@ -158,20 +209,16 @@ export function nodeLayout(n, x = n.x, y = n.y, lift = n.status === 'active' ? I
   const c = project(x, y);
   const sil = silhouette(shape, lift).map((p) => ({ x: c.x + p.x, y: c.y + p.y }));
   const topY = Math.min(...sil.map((p) => p.y));
-  const size = cardSize(n);
-  const card = rect(c.x - size.w / 2, topY - ISO.card.gap - ISO.card.tail - size.h, size.w, size.h);
-  const front = c.y + (shape.hw + shape.hd) * ISO.G / 2; // lowest floor point of the footprint
-  const tags = [];
-  if (n.tags?.length) {
-    const ws = n.tags.map(tagWidth);
-    const total = ws.reduce((a, w) => a + w, 0) + ISO.tag.gap * (ws.length - 1);
-    let tx = c.x - total / 2;
-    for (const w of ws) {
-      tags.push(rect(tx, front + ISO.tag.below, w, ISO.tag.h));
-      tx += w + ISO.tag.gap;
-    }
-  }
-  return { c, shape, sil, topY, card, tags, depth: x + y, x, y };
+  // the name plate hangs on the block's front corner (the lowest point of its footprint)
+  const size = plateSize(n);
+  const front = { x: c.x + (shape.hw - shape.hd) * ISO.G, y: c.y + ((shape.hw + shape.hd) * ISO.G) / 2 - lift };
+  const plate = rect(front.x - size.w / 2, front.y - ISO.plate.overlap, size.w, size.h);
+  // the one pill floats just above the block
+  const pv = nodePill(n);
+  let pill = null;
+  if (pv) { const w = pillWidth(pv); pill = rect(c.x - w / 2, topY - ISO.pill.gap - ISO.pill.h, w, ISO.pill.h); }
+  // `card` and `tags` are the names the collision code uses for "the plate" and "the pill"
+  return { c, shape, sil, topY, plate, pill, pillValue: pv, card: plate, tags: pill ? [pill] : [], depth: x + y, x, y };
 }
 
 // ---------------------------------------------------------------- polygons
@@ -1050,8 +1097,8 @@ export function layoutProblems(scene) {
   }
   const texts = [];
   for (const [id, n] of nodes) {
-    texts.push({ what: `card of "${id}"`, owner: id, ids: [id], r: n.card });
-    n.tags.forEach((r, k) => texts.push({ what: `tag "${scene.nodes.find((x) => x.id === id).tags[k]}" of "${id}"`, owner: id, ids: [id], r }));
+    texts.push({ what: `name plate of "${id}"`, owner: id, ids: [id], r: n.card });
+    if (n.pill) texts.push({ what: `pill "${n.pillValue.text}" of "${id}"`, owner: id, ids: [id], r: n.pill });
   }
   for (const { e, g } of L.edges) {
     if (g.label) texts.push({ what: `label "${e.label}" of edge "${e.id}"`, owner: `edge:${e.id}`, ends: [e.from, e.to], ids: [e.from, e.to], r: g.label });
@@ -1086,7 +1133,7 @@ export function layoutProblems(scene) {
   }
   // arrowheads must stay visible: not under a card, tag, note or other label
   const cover = [];
-  for (const [id, n] of nodes) { cover.push({ what: `the card of "${id}"`, r: { ...n.card, h: n.card.h + ISO.card.tail }, id }); n.tags.forEach((r) => cover.push({ what: `a tag of "${id}"`, r, id })); }
+  for (const [id, n] of nodes) { cover.push({ what: `the name plate of "${id}"`, r: { ...n.card, h: n.card.h + ISO.card.tail }, id }); n.tags.forEach((r) => cover.push({ what: `the pill of "${id}"`, r, id })); }
   for (const n of L.notes) cover.push({ what: `note "${n.n.id}"`, r: n.rect, id: n.n.id });
   for (const { e, g } of L.edges) {
     for (const p of [g.tip, g.tail]) {
@@ -1116,7 +1163,7 @@ export function layoutProblems(scene) {
       }
     }
     const frac = hidden / (N + 1);
-    if (frac > 0.45) out.push({ level: 'warn', msg: `edge "${e.id}" runs ${Math.round(frac * 100)}% under the card of ${[...by].map((x) => `"${x}"`).join(', ')}; it is hard to follow`, ids: [e.from, e.to, ...by], depth: frac * 20 });
+    if (frac > 0.45) out.push({ level: 'warn', msg: `edge "${e.id}" runs ${Math.round(frac * 100)}% under the name plate of ${[...by].map((x) => `"${x}"`).join(', ')}; it is hard to follow`, ids: [e.from, e.to, ...by], depth: frac * 20 });
   }
   // two edges running on top of each other (edges between the same two nodes take lanes and never do;
   // a shared trunk out of one block, without packets, is fine)

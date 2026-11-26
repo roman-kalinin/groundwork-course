@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useId, useLayoutEffect, useMemo, 
 import { ICONS } from '../../shared/schema.js';
 import type { Packet, ResolvedScene, SceneEdge, SceneNode, SceneNote, SceneZone } from '../../shared/schema.js';
 import {
-  FLAG_W, ISO, PACKET_MOVE, boxCorners, edgeLayout, layoutBounds, nodeLayout, project, sceneLayout, stillPacket, zoneLayout,
+  FLAG_W, ISO, PACKET_KINDS, PACKET_MEANING, PACKET_MOVE, boxCorners, edgeLayout, layoutBounds, nodeLayout, packetKind, project, sceneLayout, stillPacket, zoneLayout,
 } from '../../shared/iso.js';
 import type { EdgeGeom, EdgeRoute, NodeLayout, PacketMotion, Pt, Rect, Shape } from '../../shared/iso.js';
 import { UiIcon } from './UiIcon';
@@ -16,10 +16,14 @@ import { UiIcon } from './UiIcon';
 // Things that leave fade out first; new things rise in after them.
 
 const TWEEN_MS = 680;
+/** On a phone the camera never zooms out further than this (screen px per scene unit). */
+const MIN_PHONE_SCALE = 0.56;
 const CAMERA_MS = 760;
 const LEAVE_MS = 260;
 const ENTER_AFTER_LEAVE = 0.2; // s
 const G = ISO.G;
+/** blocks are drawn this much larger than the 1 x 1 grid cell (same factor as shared/iso.js) */
+const BK = 1.22;
 /** ids of the shared gradients of the current <svg> (several diagrams can be on one page) */
 const Paint = createContext({ cyl: '', haz: '' });
 
@@ -195,7 +199,7 @@ function Decal({ name, c, u, v, className = 'decal' }: { name?: string; c: Pt; u
 }
 /** Icon lying on a horizontal surface at height z (size in grid units). */
 const topDecal = (name: string | undefined, z: number, size: number, at: Pt = { x: 0, y: 0 }) => {
-  const k = (size / 24) * G;
+  const k = ((size * BK) / 24) * G;
   return <Decal name={name} c={{ x: at.x, y: at.y - z }} u={{ x: k, y: k / 2 }} v={{ x: -k, y: k / 2 }} />;
 };
 
@@ -447,12 +451,37 @@ function Block({ n, shape, lift }: { n: SceneNode; shape: Shape; lift: number })
           <Cylinder r={r} z0={z} z1={base} />
           {two ? (
             <>
-              <Figure x={14} base={base + 8} h={shape.figH ?? 48} scale={1.0} />
-              <Figure x={-11} base={base - 2} h={shape.figH ?? 48} scale={1.12} />
+              <Figure x={14 * BK} base={base + 8} h={shape.figH ?? 48} scale={1.0 * BK} />
+              <Figure x={-11 * BK} base={base - 2} h={shape.figH ?? 48} scale={1.12 * BK} />
             </>
           ) : (
-            <Figure x={0} base={base} h={shape.figH ?? 48} scale={1.18} />
+            <Figure x={0} base={base} h={shape.figH ?? 48} scale={1.18 * BK} />
           )}
+        </>
+      );
+    }
+    case 'crowd': {
+      // a group of people on one plinth: many users drawn as one block
+      const { hw, hd, h } = shape;
+      const base = z + h;
+      const spots = [
+        { x: -0.3, y: -0.3, s: 0.92 },
+        { x: 0.3, y: -0.3, s: 0.92 },
+        { x: -0.32, y: 0.26, s: 0.98 },
+        { x: 0.26, y: 0.3, s: 0.98 },
+        { x: 0, y: 0, s: 1.04 },
+      ].sort((a, b) => a.x + a.y - (b.x + b.y));
+      return (
+        <>
+          <Box hw={hw} hd={hd} z0={z} z1={base} />
+          {spots.map((p, i) => {
+            const q = project(p.x * hw * 1.25, p.y * hd * 1.25);
+            return (
+              <g key={i} transform={`translate(${q.x},${q.y})`}>
+                <Figure x={0} base={base} h={shape.figH ?? 50} scale={0.82 * p.s * BK} />
+              </g>
+            );
+          })}
         </>
       );
     }
@@ -468,9 +497,11 @@ function Block({ n, shape, lift }: { n: SceneNode; shape: Shape; lift: number })
 }
 
 const isRound = (s: Shape) => s.type === 'cylinder' || s.type === 'person' || s.type === 'token';
+/** The colour family of a node: crowds are people unless the author says otherwise. */
+const kindOf = (n: SceneNode) => n.kind ?? (n.shape === 'crowd' ? 'person' : 'neutral');
 
 /** Soft shadow + status ring on the floor under a node. */
-function FloorMark({ n, L, leaving, delay }: { n: SceneNode; L: NodeLayout; leaving: boolean; delay: number }) {
+function FloorMark({ n, L, leaving, delay, fresh }: { n: SceneNode; L: NodeLayout; leaving: boolean; delay: number; fresh?: boolean }) {
   const s = L.shape;
   const sh = boxCorners(s.hw + 0.06, s.hd + 0.06, 0);
   const off = { x: 0.16 * G, y: 0.02 * G };
@@ -491,6 +522,15 @@ function FloorMark({ n, L, leaving, delay }: { n: SceneNode; L: NodeLayout; leav
           <polygon className="ring" points={pts([ring.N, ring.E, ring.S, ring.W])} />
         )}
       </g>
+      {fresh && !leaving && (
+        <g className="fresh-mark" style={{ ['--d' as string]: `${delay}s` }} aria-hidden="true">
+          {round ? (
+            <ellipse className="fresh-ring" rx={(rr + 0.08) * Math.SQRT2 * G} ry={((rr + 0.08) / Math.SQRT2) * G} />
+          ) : (
+            <polygon className="fresh-ring" points={pts(Object.values(boxCorners(s.hw + 0.24, s.hd + 0.24, 0)).slice(0, 4))} />
+          )}
+        </g>
+      )}
     </g>
   );
 }
@@ -499,7 +539,7 @@ function NodeBlock({ n, L, lift, leaving, delay, tint }: { n: SceneNode; L: Node
   return (
     <g transform={`translate(${L.c.x},${L.c.y})`} aria-hidden="true">
       <g
-        className={`iso-node kind-${n.kind ?? 'neutral'} shape-${L.shape.type} ${st(n.status)}${tint ? ` zt-${tint}` : ''}${leaving ? ' leaving' : ''}`}
+        className={`iso-node kind-${kindOf(n)} shape-${L.shape.type} ${st(n.status)}${tint ? ` zt-${tint}` : ''}${leaving ? ' leaving' : ''}`}
         style={{ ['--d' as string]: `${delay}s` }}
       >
         <g className="iso-node-in">
@@ -526,54 +566,63 @@ function Badge({ status, x, y }: { status?: string; x: number; y: number }) {
   );
 }
 
-function NodeCard({ n, L, leaving, delay, badge }: { n: SceneNode; L: NodeLayout; leaving: boolean; delay: number; badge: boolean }) {
-  const c = L.card;
-  const T = ISO.card;
-  const cx = c.w / 2;
-  const tail = `M${cx - 7},${c.h - 1.2} L${cx},${c.h + T.tail} L${cx + 7},${c.h - 1.2}`;
+/** The node's name, printed on a plate fixed to the block's front corner (no floating cards). */
+function NamePlate({ n, L, leaving, delay, badge }: { n: SceneNode; L: NodeLayout; leaving: boolean; delay: number; badge: boolean }) {
+  const c = L.plate;
+  const pill = L.pillValue;
   return (
     <g
-      className={`iso-card kind-${n.kind ?? 'neutral'} ${st(n.status)}${leaving ? ' leaving' : ''}`}
+      className={`iso-plate kind-${kindOf(n)} ${st(n.status)}${leaving ? ' leaving' : ''}`}
       data-node={n.id}
       role="img"
-      aria-label={`${n.label}${n.sublabel ? `, ${n.sublabel}` : ''}${n.status && n.status !== 'normal' ? ` (${n.status})` : ''}${n.tags?.length ? `. Tags: ${n.tags.join(', ')}` : ''}`}
+      aria-label={`${n.label}${n.status && n.status !== 'normal' ? ` (${n.status})` : ''}${pill ? `, ${pill.text}` : ''}`}
       style={{ ['--d' as string]: `${delay}s` }}
     >
       <g transform={`translate(${c.x},${c.y})`}>
-        <g className="iso-card-in">
-          <rect className="card-lip" x={0} y={3} width={c.w} height={c.h} rx={9} />
-          <rect className="card-bg" width={c.w} height={c.h} rx={9} />
-          <path className="card-tail" d={tail} />
-          <text className="card-label" x={T.padX} y={n.sublabel ? 25 : 24.5}>
+        <g className="iso-plate-in">
+          <rect className="plate-lip" x={0} y={2.5} width={c.w} height={c.h} rx={7} />
+          <rect className="plate-bg" width={c.w} height={c.h} rx={7} />
+          <text className="plate-label" x={c.w / 2} y={c.h / 2 + 6.6} textAnchor="middle">
             {n.label}
           </text>
-          {n.sublabel && (
-            <text className="card-sub" x={T.padX} y={44}>
-              {n.sublabel}
-            </text>
-          )}
-          {badge && <Badge status={n.status} x={c.w - 3} y={2} />}
+          {badge && <Badge status={n.status} x={c.w - 2} y={1} />}
         </g>
       </g>
     </g>
   );
 }
 
-/** Floor tags in front of a block (drawn above packets, so a packet slips under them). */
-function NodeTags({ n, L, leaving, delay }: { n: SceneNode; L: NodeLayout; leaving: boolean; delay: number }) {
-  if (!L.tags.length) return null;
+/** The one pill a node may carry: a live value or state ("25%", "23 queued"), just above the block. */
+function NodePill({ n, L, leaving, delay }: { n: SceneNode; L: NodeLayout; leaving: boolean; delay: number }) {
+  const r = L.pill;
+  const p = L.pillValue;
+  if (!r || !p) return null;
+  const P = ISO.pill;
+  const hasGauge = typeof p.gauge === 'number' && Number.isFinite(p.gauge);
+  let x = P.padX;
+  const iconAt = x;
+  if (p.icon) x += P.icon + 5;
+  const gaugeAt = x;
+  if (hasGauge) x += P.gauge + 7;
+  const markup = p.icon ? ICONS[p.icon] : undefined;
+  const g = hasGauge ? Math.max(0, Math.min(100, p.gauge!)) / 100 : 0;
   return (
-    <g className={`iso-tags${leaving ? ' leaving' : ''}`} data-node={n.id} style={{ ['--d' as string]: `${delay}s` }} aria-hidden="true">
-      {L.tags.map((r, i) => (
-        <g key={i} transform={`translate(${r.x},${r.y})`}>
-          <g className="iso-tag">
-            <rect width={r.w} height={r.h} rx={6} />
-            <text x={r.w / 2} y={15.6} textAnchor="middle">
-              {n.tags![i]}
-            </text>
-          </g>
+    <g className={`iso-pill tone-${p.tone ?? 'neutral'} ${st(n.status)}${leaving ? ' leaving' : ''}`} data-node={n.id} style={{ ['--d' as string]: `${delay}s` }} aria-hidden="true">
+      <g transform={`translate(${r.x},${r.y})`}>
+        <g className="iso-pill-in">
+          <rect className="pill-bg" width={r.w} height={r.h} rx={r.h / 2} />
+          {markup && <g className="pill-icon" transform={`translate(${iconAt},${(r.h - P.icon) / 2}) scale(${P.icon / 24})`} dangerouslySetInnerHTML={{ __html: markup }} />}
+          {hasGauge && (
+            <>
+              <rect className="pill-gauge-track" x={gaugeAt} y={r.h / 2 - 3.5} width={P.gauge} height={7} rx={3.5} />
+              <rect className="pill-gauge" x={gaugeAt} y={r.h / 2 - 3.5} width={Math.max(7, P.gauge * g)} height={7} rx={3.5} />
+            </>
+          )}
+          <text x={x} y={r.h / 2 + 4.6}>
+            {p.text}
+          </text>
         </g>
-      ))}
+      </g>
     </g>
   );
 }
@@ -581,24 +630,12 @@ function NodeTags({ n, L, leaving, delay }: { n: SceneNode; L: NodeLayout; leavi
 // ------------------------------------------------------------------ packets
 const MOVE = PACKET_MOVE; // share of the loop spent travelling (shared with the validator)
 
-function PacketBody({ packet }: { packet: Packet }) {
-  if (packet.label) {
-    const w = Math.ceil(packet.label.length * ISO.packet.size * 0.6 + ISO.packet.padX * 2);
-    return (
-      <>
-        <rect className="pk-glow" x={-w / 2 - 5} y={-ISO.packet.h / 2 - 5} width={w + 10} height={ISO.packet.h + 10} rx={16} />
-        <rect className="pk-body" x={-w / 2} y={-ISO.packet.h / 2} width={w} height={ISO.packet.h} rx={ISO.packet.h / 2} />
-        <text y={4.6} textAnchor="middle">
-          {packet.label}
-        </text>
-      </>
-    );
-  }
+function PacketBody() {
   return (
     <>
-      <circle className="pk-glow" r={13} />
+      <circle className="pk-glow" r={14} />
       <circle className="pk-body" r={ISO.packet.r} />
-      <circle className="pk-shine" cx={-2} cy={-2.2} r={2.1} />
+      <circle className="pk-shine" cx={-2.4} cy={-2.6} r={2.3} />
     </>
   );
 }
@@ -606,19 +643,20 @@ function PacketBody({ packet }: { packet: Packet }) {
 type Motion = PacketMotion;
 
 function PacketView({ d, packet, reverse, begin, dur, sa, sb, still }: { d: string; packet: Packet; reverse: boolean; begin: number; dur: number; sa: number; sb: number; still?: Pt | null }) {
+  const kind = packetKind(packet, reverse && packet.direction === 'both');
   if (still) {
     return (
       <g transform={`translate(${still.x},${still.y})`}>
-        <g className={`packet ${st(packet.status)}`}>
-          <PacketBody packet={packet} />
+        <g className={`packet pk-${kind}`}>
+          <PacketBody />
         </g>
       </g>
     );
   }
   const a = sa.toFixed(4), b = sb.toFixed(4);
   return (
-    <g className={`packet ${st(packet.status)}`} opacity={0}>
-      <PacketBody packet={packet} />
+    <g className={`packet pk-${kind}`} opacity={0}>
+      <PacketBody />
       <animateMotion dur={`${dur}s`} begin={`${begin}s`} repeatCount="indefinite" path={d} keyPoints={reverse ? `${b};${b};${a};${a}` : `${a};${a};${b};${b}`} keyTimes={`0;${MOVE.start};${MOVE.end};1`} calcMode="linear" />
       <animate attributeName="opacity" dur={`${dur}s`} begin={`${begin}s`} repeatCount="indefinite" values="0;1;1;0;0" keyTimes="0;0.07;0.84;0.9;1" />
     </g>
@@ -627,10 +665,11 @@ function PacketView({ d, packet, reverse, begin, dur, sa, sb, still }: { d: stri
 
 const edgePacket = (e: SceneEdge): Packet | null => (e.packet === true ? {} : e.packet && typeof e.packet === 'object' ? e.packet : null);
 
-function EdgeLine({ e, g, leaving, delay }: { e: SceneEdge; g: EdgeGeom; leaving: boolean; delay: number }) {
+function EdgeLine({ e, g, leaving, delay, fresh }: { e: SceneEdge; g: EdgeGeom; leaving: boolean; delay: number; fresh?: boolean }) {
   return (
-    <g className={`iso-edge ${st(e.status)} style-${e.style ?? 'solid'}${leaving ? ' leaving' : ''}`} style={{ ['--d' as string]: `${delay}s` }}>
+    <g className={`iso-edge ${st(e.status)} style-${e.style ?? 'solid'}${leaving ? ' leaving' : ''}${fresh && !leaving ? ' fresh' : ''}`} style={{ ['--d' as string]: `${delay}s` }}>
       <path className="edge-track" d={g.d} />
+      {fresh && !leaving && <path className="edge-fresh" d={g.d} />}
       <path className="edge-line" d={g.d} />
       {g.heads.map((h, i) => (
         <path key={i} className="edge-head" d={h} />
@@ -782,37 +821,31 @@ function NoteBubble({ n, anchor, r, attached, leaving, delay }: { n: SceneNote; 
 }
 
 // ------------------------------------------------------------------ legend
-const PACKET_MEANING: Record<string, string> = {
-  normal: 'data moving',
-  active: 'in focus',
-  ok: 'allowed / success',
-  warn: 'slow or at risk',
-  error: 'blocked / failed',
-  dim: 'idle',
-};
-
+/** One legend under the diagram: what the packet colours mean (only kinds in this step), and line styles. */
 function Legend({ scene }: { scene: ResolvedScene }) {
-  const packets = new Set<string>();
+  const kinds = new Set<string>();
   const styles = new Set<string>();
   for (const e of scene.edges) {
     const p = edgePacket(e);
-    if (p) packets.add(p.status ?? 'normal');
+    if (p) {
+      kinds.add(packetKind(p));
+      if (p.direction === 'both') kinds.add(packetKind(p, true));
+    }
     if (e.style && e.style !== 'solid') styles.add(e.style);
   }
-  if (!packets.size && !styles.size) return null;
-  const order = ['normal', 'active', 'ok', 'warn', 'error', 'dim'];
+  if (!kinds.size && !styles.size) return null;
   return (
     <ul className="scene-legend" aria-label="Diagram legend">
-      {order.filter((k) => packets.has(k)).map((k) => (
+      {PACKET_KINDS.filter((k) => kinds.has(k)).map((k) => (
         <li key={k}>
-          <span className={`lg-dot ${st(k)}`} aria-hidden="true" />
-          {PACKET_MEANING[k]}
+          <span className={`lg-dot pk-${k}`} aria-hidden="true" />
+          {(PACKET_MEANING as Record<string, string>)[k]}
         </li>
       ))}
       {styles.has('dashed') && (
         <li>
           <span className="lg-line dashed" aria-hidden="true" />
-          optional / async
+          optional / later
         </li>
       )}
       {styles.has('dotted') && (
@@ -844,6 +877,33 @@ function focusNodes(scene: ResolvedScene, prev?: ResolvedScene) {
   if (prev && changed.length && changed.length < scene.nodes.length) return changed;
   const marked = scene.nodes.filter((n) => n.status && n.status !== 'normal' && n.status !== 'dim');
   return marked.length ? marked : scene.nodes;
+}
+
+/**
+ * What this step added or changed, compared with the step before: those blocks
+ * and edges get a brief highlight (it matches the step's "What changed" list).
+ */
+function freshSets(scene: ResolvedScene, prev?: ResolvedScene) {
+  const nodes = new Set<string>();
+  const edges = new Set<string>();
+  if (!prev) return { nodes, edges };
+  const pn = new Map(prev.nodes.map((n) => [n.id, n]));
+  // a status going back to normal (or dim) is the spotlight moving on, not news
+  const calm = (st?: string) => !st || st === 'normal' || st === 'dim';
+  const key = (n: SceneNode) => JSON.stringify([n.label, n.pill ?? n.tags?.[0] ?? null, n.kind, n.icon, n.shape]);
+  for (const n of scene.nodes) {
+    const b = pn.get(n.id);
+    if ((n.status ?? 'normal') === 'dim') continue;
+    if (!b || key(b) !== key(n) || b.x !== n.x || b.y !== n.y || (b.status !== n.status && !calm(n.status))) nodes.add(n.id);
+  }
+  const pe = new Map(prev.edges.map((e) => [e.id, e]));
+  const ek = (e: SceneEdge) => JSON.stringify([e.label ?? null, e.style ?? 'solid', e.packet ?? null, e.arrow ?? 'end']);
+  for (const e of scene.edges) {
+    const b = pe.get(e.id);
+    if ((e.status ?? 'normal') === 'dim') continue;
+    if (!b || ek(b) !== ek(e) || (b.status !== e.status && !calm(e.status))) edges.add(e.id);
+  }
+  return { nodes, edges };
 }
 
 /** Neutral blocks pick up a faint tint from the zone they stand in. */
@@ -916,9 +976,13 @@ export function SceneView({
     target = fullView;
     // on a phone, when the whole step would be too small to read, the camera
     // looks at what changed in this step (Expand shows everything)
-    if (narrow && focusBounds && size.w / fullView.w < 0.5) {
+    // (never smaller than MIN_PHONE_SCALE, so the names on the blocks stay readable)
+    if (narrow && focusBounds && size.w / fullView.w < MIN_PHONE_SCALE) {
       const Hu = size.h - reserve.top - reserve.bottom;
-      target = fitView(focusBounds, size, { w: size.w / 0.62, h: Hu / 0.62 }, reserve);
+      const f = fitView(focusBounds, size, { w: size.w / 0.7, h: Hu / 0.7 }, reserve);
+      const k = Math.max(size.w / f.w, MIN_PHONE_SCALE);
+      const cx = focusBounds.x + focusBounds.w / 2, cy = focusBounds.y + focusBounds.h / 2;
+      target = { x: cx - size.w / (2 * k), y: cy - (reserve.top + Hu / 2) / k, w: size.w / k, h: size.h / k };
     }
   }
   const view = useCamera(target, reduced || frame !== 'fill');
@@ -929,7 +993,9 @@ export function SceneView({
 
   const caption = s.caption;
   const describe = s.nodes.map((n) => n.label).join(', ');
-  const zoomedIn = !!fullView && target !== fullView;
+  // zoomed in = part of this step's diagram is outside the view
+  const zoomedIn = !!fullView && target !== fullView
+    && (stepBounds.x < target.x - 1 || stepBounds.y < target.y - 1 || stepBounds.x + stepBounds.w > target.x + target.w + 1 || stepBounds.y + stepBounds.h > target.y + target.h + 1);
 
   const togglePause = () => {
     const el = svgRef.current;
@@ -1062,6 +1128,7 @@ function SceneContent({ s, prevScene, reduced, view }: { s: ResolvedScene; prevS
   for (const [k, v] of poses) lastPose.current.set(k, v);
   const badges = useMemo(() => badgeSet(s, prevScene), [s, prevScene]);
   const tints = useMemo(() => zoneTints(s), [s]);
+  const fresh = useMemo(() => freshSets(s, prevScene), [s, prevScene]);
 
   // layouts at the current (tweened) poses; the same code the validator runs
   const livePoses = new Map<string, Pose>();
@@ -1153,12 +1220,12 @@ function SceneContent({ s, prevScene, reduced, view }: { s: ResolvedScene; prevS
         </g>
         <g className="layer-floor">
           {nodeOrder.map(({ item, leaving }) => (
-            <FloorMark key={item.id} n={item} L={layouts.get(item.id)!} leaving={leaving} delay={delayOf(item.id)} />
+            <FloorMark key={item.id} n={item} L={layouts.get(item.id)!} leaving={leaving} delay={delayOf(item.id)} fresh={!reduced && fresh.nodes.has(item.id)} />
           ))}
         </g>
         <g className="layer-edges">
           {edgeGeoms.map(({ item, leaving, g }) => (
-            <EdgeLine key={item.id} e={item} g={g} leaving={leaving} delay={delayOf(item.id)} />
+            <EdgeLine key={item.id} e={item} g={g} leaving={leaving} delay={delayOf(item.id)} fresh={!reduced && fresh.edges.has(item.id)} />
           ))}
         </g>
         <g className="layer-blocks">
@@ -1186,7 +1253,7 @@ function SceneContent({ s, prevScene, reduced, view }: { s: ResolvedScene; prevS
         </g>
         <g className="layer-cards">
           {nodeOrder.map(({ item, leaving }) => (
-            <NodeCard key={item.id} n={item} L={layouts.get(item.id)!} leaving={leaving} delay={delayOf(item.id)} badge={!leaving && badges.has(item.id)} />
+            <NamePlate key={item.id} n={item} L={layouts.get(item.id)!} leaving={leaving} delay={delayOf(item.id)} badge={!leaving && badges.has(item.id)} />
           ))}
         </g>
         <g className="layer-packets">
@@ -1196,7 +1263,7 @@ function SceneContent({ s, prevScene, reduced, view }: { s: ResolvedScene; prevS
         </g>
         <g className="layer-tags">
           {nodeOrder.map(({ item, leaving }) => (
-            <NodeTags key={item.id} n={item} L={layouts.get(item.id)!} leaving={leaving} delay={delayOf(item.id)} />
+            <NodePill key={item.id} n={item} L={layouts.get(item.id)!} leaving={leaving} delay={delayOf(item.id)} />
           ))}
         </g>
       </Paint.Provider>

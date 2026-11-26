@@ -3,11 +3,12 @@ import type { ResolvedScene, SceneEdge, SceneNode, SceneNote, SceneZone } from '
 export interface Pt { x: number; y: number }
 export interface Rect { x: number; y: number; w: number; h: number }
 export interface Shape {
-  type: 'server' | 'cylinder' | 'chip' | 'crate' | 'hazard' | 'phone' | 'laptop' | 'person' | 'box' | 'tile' | 'token' | 'flag' | 'stack';
+  type: 'server' | 'cylinder' | 'chip' | 'crate' | 'hazard' | 'phone' | 'laptop' | 'person' | 'crowd' | 'box' | 'tile' | 'token' | 'flag' | 'stack';
   hw: number; hd: number; h: number;
   r?: number; cap?: number; capH?: number; lid?: number; lidH?: number; screenH?: number; figure?: number; figH?: number; poleH?: number;
 }
-export interface NodeLayout { c: Pt; shape: Shape; sil: Pt[]; topY: number; card: Rect; tags: Rect[]; depth: number; x: number; y: number }
+export interface PillValue { text: string; icon?: string; gauge?: number; tone?: string }
+export interface NodeLayout { c: Pt; shape: Shape; sil: Pt[]; topY: number; plate: Rect; pill: Rect | null; pillValue: PillValue | null; card: Rect; tags: Rect[]; depth: number; x: number; y: number }
 export interface PacketMotion { dur: number; fwd: number | null; back: number | null; sa: number; sb: number; w: number }
 /** A route on the floor, in the edge's own direction (see shared/iso.js). */
 export interface EdgeRoute { kind: 'x' | 'y' | 'zx' | 'zy' | 'sx' | 'sy' | 'u'; f?: number; off?: number; lane?: number }
@@ -15,15 +16,23 @@ export interface EdgeSeg { a: Pt; b: Pt; axis: 'x' | 'y' }
 export interface EdgeGeom { route: EdgeRoute; segs: EdgeSeg[]; turns: Pt[]; hidden: number; firstLeg: number; lastLeg: number; labelSpots: number[]; motion?: PacketMotion; motionClash?: number; blockers?: string[]; d: string; at: (u: number) => Pt; atS: (s: number) => Pt; sOf: (u: number) => number; mid: Pt; length: number; heads: string[]; label: Rect | null; labelU: number; labelAt: (u: number) => Rect; tip: Pt | null; tail: Pt | null; run?: { a: number; b: number; ok: boolean }; duck?: { a: number; b: number }; stills?: { fwd?: { p: Pt; rect: Rect } | null; back?: { p: Pt; rect: Rect } | null } }
 export const ISO: {
   G: number; pad: number; lift: number;
-  card: { label: number; sub: number; padX: number; h1: number; h2: number; gap: number; tail: number; minW: number };
+  plate: { size: number; padX: number; h: number; minW: number; overlap: number };
+  card: { tail: number; gap: number };
   edge: { size: number; padX: number; h: number };
-  tag: { size: number; padX: number; h: number; gap: number; below: number };
+  pill: { size: number; padX: number; h: number; gap: number; icon: number; gauge: number };
   note: { padX: number; h: number; rise: number };
   packet: { size: number; padX: number; h: number; r: number };
   zone: { size: number; padX: number; h: number; thick: number; inset: number };
   minView: { w: number; h: number };
 };
 export const NODE_SHAPES: string[];
+export const PACKET_KINDS: string[];
+export const PACKET_MEANING: Record<string, string>;
+export const TONES: string[];
+export function packetKind(pk: unknown, back?: boolean): string;
+export function nodePill(n: SceneNode): PillValue | null;
+export function pillWidth(p: PillValue | null): number;
+export function plateSize(n: SceneNode): { w: number; h: number };
 export const PACKET_SPEED: Record<'slow' | 'normal' | 'fast', number>;
 export const PACKET_MOVE: { start: number; end: number; visibleFrom: number; visibleTo: number };
 export function packetRectAt(g: EdgeGeom, m: PacketMotion, begin: number, reverse: boolean, t: number): Rect | null;

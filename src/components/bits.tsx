@@ -68,6 +68,7 @@ export function ThemeToggle() {
 }
 
 export const CHAPTER_LABEL: Record<string, string> = {
+  setup: 'Where we are',
   problem: 'The problem',
   idea: 'The idea',
   how: 'How it works',

@@ -1,13 +1,13 @@
 // Crawls every step of every lesson in a running preview server and reports
 // layout problems, in two passes:
 //  1. still (reduced motion), 1440x900 and 390x844: overlapping diagram text
-//     (cards, tags, edge labels, notes, zone names, resting packets), text
-//     overflowing its pill or card, horizontal page scroll, console errors.
+//     (name plates, pills, edge labels, notes, zone names, resting packets),
+//     text overflowing its plate or pill, horizontal page scroll, console errors.
 //  2. moving (motion on), 1440x900: the real frames a learner sees. Packets
 //     are sampled at four moments of their loop and must not cover other text
-//     (their own edge label ducks; the end blocks' floor tags sit above them)
+//     (their own edge label ducks; the end blocks' pills sit above them)
 //     or run into each other.
-// Usage: node scripts/qa-audit.mjs [baseUrl] [--still-only]
+// Usage: node scripts/qa-audit.mjs [baseUrl] [--still-only] [--only=<module>[/<lesson>],...]
 import { chromium } from 'playwright';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -22,6 +22,9 @@ for (const m of fs.readdirSync(root)) {
     lessons.push({ m, id: j.id ?? f.slice(3, -5), n: j.steps.length });
   }
 }
+// --only=data or --only=data/tables-rows-keys,data/meet-notely: audit just those modules / lessons
+const only = process.argv.find((a) => a.startsWith('--only='))?.slice(7).split(',').filter(Boolean);
+if (only) lessons.splice(0, lessons.length, ...lessons.filter((L) => only.some((o) => o === L.m || o === `${L.m}/${L.id}`)));
 const browser = await chromium.launch();
 const issues = [];
 
@@ -32,18 +35,21 @@ function collect() {
   const out = [];
   const svg = document.querySelector('.stage .scene-svg');
   if (!svg) return { items, out };
-  svg.querySelectorAll('.layer-cards .iso-card:not(.leaving)').forEach((n) => {
-    const box = n.querySelector('.card-bg');
-    const label = n.querySelector('.card-label')?.textContent ?? '?';
-    items.push({ kind: 'card', name: label, rect: r(box).toJSON(), owner: n.dataset.node });
+  svg.querySelectorAll('.layer-cards .iso-plate:not(.leaving)').forEach((n) => {
+    const box = n.querySelector('.plate-bg');
+    const label = n.querySelector('.plate-label')?.textContent ?? '?';
+    items.push({ kind: 'plate', name: label, rect: r(box).toJSON(), owner: n.dataset.node });
     const bb = r(box);
-    n.querySelectorAll('.card-label, .card-sub').forEach((t) => {
+    n.querySelectorAll('.plate-label').forEach((t) => {
       const tr = r(t);
-      if (tr.right > bb.right - 2 || tr.left < bb.left + 2) out.push(`text overflows card "${label}": "${t.textContent}"`);
+      if (tr.right > bb.right - 2 || tr.left < bb.left + 2) out.push(`text overflows name plate "${label}": "${t.textContent}"`);
     });
   });
-  svg.querySelectorAll('.layer-tags .iso-tags:not(.leaving)').forEach((g) => {
-    g.querySelectorAll('.iso-tag').forEach((t) => items.push({ kind: 'tag', name: `${g.dataset.node}:${t.textContent}`, rect: r(t.querySelector('rect')).toJSON(), owner: g.dataset.node }));
+  svg.querySelectorAll('.layer-tags .iso-pill:not(.leaving)').forEach((g) => {
+    const box = g.querySelector('.pill-bg');
+    items.push({ kind: 'pill', name: `${g.dataset.node}:${g.textContent}`, rect: r(box).toJSON(), owner: g.dataset.node });
+    const tr = r(g.querySelector('text')), bb = r(box);
+    if (tr.right > bb.right - 2) out.push(`text overflows pill "${g.textContent}"`);
   });
   svg.querySelectorAll('.iso-elabel:not(.leaving)').forEach((e) => {
     items.push({ kind: 'elabel', name: e.textContent, rect: r(e.querySelector('rect')).toJSON(), edge: e.dataset.edge });
@@ -153,7 +159,7 @@ if (!stillOnly) {
         for (const p of list) {
           for (const it of items) {
             if (it.kind === 'elabel' && (it.edge === p.edge || ducked.includes(it.edge))) continue;
-            if (it.kind === 'tag' && (it.owner === p.from || it.owner === p.to)) continue;
+            if (it.kind === 'pill' && (it.owner === p.from || it.owner === p.to)) continue;
             const o = inter(p.rect, it.rect, 1);
             if (o > 3) seen.add(`moving packet "${p.name}" (${p.edge}) covers ${it.kind} "${it.name}" (${o.toFixed(0)}px)`);
           }

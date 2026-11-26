@@ -1,5 +1,14 @@
 export type Level = 'beginner' | 'intermediate' | 'advanced';
-export type Chapter = 'problem' | 'idea' | 'how' | 'example' | 'watch-out' | 'recap';
+export type Chapter = 'setup' | 'problem' | 'idea' | 'how' | 'example' | 'watch-out' | 'recap';
+export type Tone = 'neutral' | 'good' | 'warn' | 'bad';
+export type PacketKind = 'request' | 'response' | 'data' | 'secret' | 'job' | 'error';
+export interface Pill {
+  text: string;
+  icon?: string;
+  /** 0-100: draws a small gauge bar */
+  gauge?: number;
+  tone?: Tone;
+}
 export type CalloutType = 'tip' | 'warn' | 'analogy' | 'claude-code';
 export type NodeKind = 'neutral' | 'person' | 'client' | 'server' | 'data' | 'ai' | 'external' | 'threat';
 export type Status = 'normal' | 'active' | 'ok' | 'warn' | 'error' | 'dim';
@@ -14,13 +23,22 @@ export interface SceneNode {
   sublabel?: string;
   icon?: string;
   kind?: NodeKind;
-  shape?: 'block' | 'tile' | 'token' | 'flag' | 'stack';
+  shape?: 'block' | 'tile' | 'token' | 'flag' | 'stack' | 'crowd';
   status?: Status;
+  /** at most one small pill: a live value or state */
+  pill?: string | Pill;
+  /** legacy (pre-declutter lessons): only the first tag is drawn, as the pill */
   tags?: string[];
   w?: number;
 }
 export interface Packet {
+  /** colour = meaning (see the legend); packets carry no text */
+  kind?: PacketKind;
+  /** kind of the packet travelling back when direction is "both" (default: response for a request) */
+  returns?: PacketKind;
+  /** legacy */
   label?: string;
+  /** legacy: maps onto a kind */
   status?: Status;
   direction?: 'forward' | 'backward' | 'both';
   speed?: 'slow' | 'normal' | 'fast';
@@ -74,10 +92,24 @@ export interface CodeSnippet {
   filename?: string;
   caption?: string;
 }
+export interface MetricDef {
+  id: string;
+  label: string;
+  icon?: string;
+  unit?: string;
+}
+export interface MetricValue {
+  value: number | string;
+  tone?: Tone;
+}
 export interface Step {
   title: string;
   chapter: Chapter;
   body: string[];
+  /** "+ added", "~ changed", "− removed" lines (required on steps 2+) */
+  changes?: string[];
+  /** metric id -> value (or { value, tone }); carries forward to later steps */
+  metrics?: Record<string, number | string | MetricValue>;
   callout?: Callout;
   code?: CodeSnippet;
   scene?: SceneSpec;
@@ -99,6 +131,8 @@ export interface Lesson {
   level: Level;
   youWillLearn: string[];
   glossary: Record<string, string>;
+  /** optional numbers that tell the story, shown as tiles above the diagram */
+  metrics?: MetricDef[];
   steps: Step[];
   quiz: QuizQuestion[];
   takeaways: string[];
@@ -117,6 +151,9 @@ export const ICON_NAMES: string[];
 export const GRID: { cols: number; rows: number };
 export const LEVELS: Level[];
 export const CHAPTERS: Chapter[];
+export const TONES: Tone[];
+export function parseChange(line: string): { op: '+' | '~' | '-'; text: string } | null;
+export function resolveMetrics(lesson: Lesson): ({ def: MetricDef; value: number | string | null; tone: Tone; changed: boolean })[][];
 export const CALLOUT_TYPES: CalloutType[];
 export const NODE_KINDS: NodeKind[];
 export const STATUSES: Status[];

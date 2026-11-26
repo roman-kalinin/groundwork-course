@@ -4,18 +4,19 @@ Everything the learner sees is plain JSON in `src/content/`. The app finds files
 
 ```
 src/content/
-  security/                      <- module folder = module id
+  data/                          <- module folder = module id
     module.json                  <- module metadata
-    02-sessions-vs-tokens.json   <- lesson: NN-slug.json
+    00-meet-notely.json          <- the course's story intro ("Start here")
+    01-tables-rows-keys.json     <- lesson: NN-slug.json
 ```
 
 - **Module order** comes from `order` in `module.json`.
-- **Lesson order** comes from the two-digit `NN` prefix of the file name (01, 02, ...). Gaps are fine.
-- The lesson `id` must equal the slug part of the file name (`sessions-vs-tokens`).
+- **Lesson order** comes from the two-digit `NN` prefix of the file name (00, 01, 02, ...). Gaps are fine.
+- The lesson `id` must equal the slug part of the file name (`tables-rows-keys`).
 - The URL of a lesson is `#/l/<moduleId>/<lessonId>`.
-- Run `npm run validate` after every edit. It checks everything below and points at the exact field.
+- Run `npm run validate -- <module>` after every edit. It checks everything below and points at the exact field.
 
-The reference lesson is `src/content/security/02-sessions-vs-tokens.json`. When in doubt, copy its patterns.
+**The reference lessons are `src/content/data/01-tables-rows-keys.json` (a normal lesson) and `src/content/data/00-meet-notely.json` (the story intro).** When in doubt, copy their patterns. Read `WRITING_GUIDE.md` for the rules behind them.
 
 ---
 
@@ -32,7 +33,7 @@ The reference lesson is `src/content/security/02-sessions-vs-tokens.json`. When 
 }
 ```
 
-The seven modules already exist: `data` (1), `security` (2), `debugging` (3), `production` (4), `ai` (5), `clients` (6), `interviews` (7). An empty module shows "Coming soon".
+The seven modules already exist: `data` (1), `security` (2), `debugging` (3), `production` (4), `ai` (5), `clients` (6), `interviews` (7).
 
 ---
 
@@ -47,90 +48,66 @@ Comments (`//`) are only here for explanation. Real JSON files cannot contain co
   "summary": "One sentence: what this lesson gives the learner.",
   "minutes": 10,                          // whole number, honest reading time
   "level": "beginner",                    // beginner | intermediate | advanced
-  "youWillLearn": [                       // 2-5 bullets, inline HTML allowed
-    "Why an AI endpoint needs a limit",
-    "How a <b>token bucket</b> works"
-  ],
-
-  // term -> one plain sentence. Used by <span class="term"> tooltips.
-  // Keys are matched case-insensitively. Every key should be used at least once.
-  "glossary": {
-    "rate limit": "A cap on how many requests one user may make in a period of time.",
-    "429": "The HTTP status code that means: too many requests, slow down."
+  "youWillLearn": ["Why an AI endpoint needs a limit", "How a <b>token bucket</b> works"],
+  "glossary": {                           // term -> one plain sentence (tooltips)
+    "rate limit": "A cap on how many requests one user may make in a period of time."
   },
+
+  // OPTIONAL: numbers that tell the story. Shown as tiles ABOVE the diagram,
+  // updated per step. 1-4 definitions.
+  "metrics": [
+    { "id": "cost", "label": "AI cost", "icon": "money", "unit": "$ / day" },
+    { "id": "blocked", "label": "Blocked calls", "icon": "ban" }
+  ],
 
   "steps": [
     {
-      "title": "One user, ten thousand requests",   // under ~48 characters
-      "chapter": "problem",                // problem | idea | how | example | watch-out | recap
-      "body": [                            // 1-3 short paragraphs, max ~70 words in total
-        "Notely's <b>AI summary</b> button calls the Claude API. Each call costs money.",
-        "Without a <span class=\"term\">rate limit</span>, one script can press it all night."
+      // STEP 1 IS ALWAYS "setup": where we are, before anything goes wrong.
+      "title": "Notely's Summarize button",
+      "chapter": "setup",
+      "body": [
+        "Notely has a Summarize button. Maya clicks it, the app server (the computer running Notely's code) sends her note to the Claude API (Anthropic's AI), and a summary comes back.",
+        "Each summary costs Notely a fraction of a cent."
       ],
-      "callout": {                         // optional
-        "type": "analogy",                 // tip | warn | analogy | claude-code
-        "title": "Optional custom title",  // optional; each type has a default title
-        "text": "A buffet with no plate limit. One guest can empty it."
-      },
-      "code": {                            // optional
-        "language": "ts",                  // ts tsx js jsx sql bash json http env yaml toml python diff text
-        "filename": "app/api/summary/route.ts",   // optional label above the code
-        "code": "if (!allowed) {\n  return new Response('Slow down', { status: 429 });\n}",
-        "caption": "Optional one-line note under the code."
-      },
-      "scene": {                           // optional diagram, see "Scenes" below
-        "caption": "One sentence that says what the diagram shows.",
-        "nodes": [
-          { "id": "user", "x": 2, "y": 4, "label": "Script", "sublabel": "runs all night", "icon": "robot", "kind": "threat" },
-          { "id": "api", "x": 6.4, "y": 4, "label": "Notely API", "icon": "server", "kind": "server", "status": "warn" },
-          { "id": "llm", "x": 10.4, "y": 4, "label": "Claude API", "sublabel": "paid per token", "icon": "sparkle", "kind": "ai", "tags": ["$$$"] }
-        ],
-        "edges": [
-          { "from": "user", "to": "api", "label": "POST /summary", "packet": { "label": "x10,000", "speed": "fast" } },
-          { "from": "api", "to": "llm", "packet": true }
-        ]
-      }
-    },
-    {
-      "title": "Put a bouncer at the door",
-      "chapter": "idea",
-      "body": ["..."],
+      "metrics": { "cost": { "value": 2, "tone": "good" }, "blocked": 0 },
       "scene": {
-        "extends": "previous",             // start from the previous step's diagram
-        "remove": ["api>llm"],             // ids of nodes / edges / zones / notes to drop
+        "caption": "Maya's click goes through the app server to the Claude API.",
         "nodes": [
-          { "id": "api", "status": "ok", "tags": ["10 / min"] },     // existing id: only changed fields
-          { "id": "limiter", "x": 6.4, "y": 1.6, "label": "Rate limiter", "icon": "shield", "kind": "server" }  // new id: full node
+          { "id": "maya", "x": 0.8, "y": 3.6, "label": "Maya", "icon": "user", "kind": "person" },
+          { "id": "app", "x": 4.6, "y": 3.6, "label": "App Server", "icon": "server", "kind": "server" },
+          { "id": "llm", "x": 8.4, "y": 3.6, "label": "Claude API", "icon": "sparkle", "kind": "ai" }
         ],
         "edges": [
-          { "id": "user>api", "status": "error", "label": "429 after 10" },   // auto id of an edge = "from>to"
-          { "from": "limiter", "to": "api", "style": "dashed", "label": "checks" }
+          { "from": "maya", "to": "app", "packet": { "kind": "request", "direction": "both" } },
+          { "from": "app", "to": "llm", "packet": { "kind": "request", "direction": "both" } }
         ]
       }
     },
     {
-      "title": "Recap",
-      "chapter": "recap",
-      "body": ["..."]
-      // no "scene": the previous diagram stays exactly as it was
+      "title": "One script, ten thousand clicks",
+      "chapter": "problem",
+      "body": ["Someone writes a script that presses Summarize all night. Every press costs money."],
+      "changes": [                         // REQUIRED from step 2 on: what is different from the step before
+        "+ Script: a program clicking Summarize nonstop",
+        "~ AI cost $2 → $900 a day"
+      ],
+      "metrics": { "cost": { "value": 900, "tone": "bad" } },   // only what changed; the rest carries forward
+      "scene": {
+        "extends": "previous",
+        "nodes": [
+          { "id": "maya", "status": "dim" },
+          { "id": "bot", "x": 4.6, "y": 0.6, "label": "Script", "icon": "robot", "kind": "threat", "status": "active" },
+          { "id": "llm", "status": "error", "pill": { "text": "$900/day", "tone": "bad" } }
+        ],
+        "edges": [
+          { "id": "maya>app", "status": "dim", "packet": false },
+          { "from": "bot", "to": "app", "packet": { "kind": "error", "speed": "fast" } }
+        ]
+      }
     }
   ],
-
-  "quiz": [                                // 2-4 questions (only one shown here)
-    {
-      "question": "What should the API answer when a user goes over the limit?",
-      "options": [                         // 2-4 options, exactly ONE has "correct": true
-        { "text": "<code>429</code>", "correct": true, "why": "It tells the client to slow down and retry later." },
-        { "text": "<code>500</code>", "why": "500 means the server broke. Nothing broke here." },
-        { "text": "Nothing, just drop the request", "why": "Silence makes clients retry immediately, which makes it worse." }
-      ]
-    }
-  ],
-
-  "takeaways": [                           // 2-6 short sentences, shown on the Recap screen
-    "Every paid or slow endpoint needs a limit per user.",
-    "Over the limit: answer <code>429</code>, do not crash."
-  ]
+  "quiz": [ /* 2-4 questions, see below */ ],
+  "takeaways": ["Every paid or slow endpoint needs a limit per user."]
 }
 ```
 
@@ -149,6 +126,7 @@ Comments (`//`) are only here for explanation. Real JSON files cannot contain co
 | `level` | enum | `beginner`, `intermediate`, `advanced`. |
 | `youWillLearn` | string[] | 2-5 items. Inline HTML allowed. |
 | `glossary` | object | `"term": "one sentence"`. Case-insensitive keys. |
+| `metrics` | Metric[] | Optional, 1-4. See "Metric tiles". |
 | `steps` | Step[] | Aim for 6-10. Validator warns under 4 or over 14. |
 | `quiz` | Question[] | 2-4. |
 | `takeaways` | string[] | 2-6. |
@@ -158,13 +136,49 @@ Comments (`//`) are only here for explanation. Real JSON files cannot contain co
 | Field | Type | Rules |
 | --- | --- | --- |
 | `title` | string | Required. Under ~48 characters. |
-| `chapter` | enum | Required. `problem`, `idea`, `how`, `example`, `watch-out`, `recap`. Shown as a small label ("The problem", "How it works", "Watch out"...). |
-| `body` | string[] | Required. Paragraphs. Warning above 70 words total, error above 110. |
-| `callout` | object | Optional. `{ type, title?, text }`. |
+| `chapter` | enum | Required. `setup` (step 1 only, and step 1 must be `setup`: shown as "Where we are"), `problem`, `idea`, `how`, `example`, `watch-out`, `recap`. |
+| `body` | string[] | Required. **At most 2 paragraphs** (error above 2). Warning above 60 words in total, error above 75. |
+| `changes` | string[] | **Required on every step except the first** (error on step 1). 1-4 lines, each starting with `+ ` (added), `~ ` (changed) or `− ` (removed; a plain `- ` also works). Inline HTML allowed. Shown as the "What changed" list. See "What changed" below. |
+| `metrics` | object | Optional. Metric id -> a number, a short string, or `{ "value", "tone" }`. See "Metric tiles". |
+| `callout` | object | Optional, at most one. `{ type, title?, text }`. Warning above 45 words. |
 | `code` | object | Optional. `{ language, code, filename?, caption? }`. `code` uses `\n` for new lines. Under 18 lines, lines under 72 characters. |
-| `scene` | object | Optional. See below. Omit it to keep the previous diagram unchanged. |
+| `scene` | object | Optional. See "Scenes". Omit it to keep the previous diagram unchanged. |
 
-### Inline HTML (body, callout text, youWillLearn, quiz text, why, takeaways, glossary)
+### What changed (`changes`)
+
+The side panel shows a **What changed** list under the text of every step after the first, comparing it with the step before, like this:
+
+```
++ Database: Postgres, run for us by Supabase
+~ Lost saves 12 → 0 a day
+− Notes File
+```
+
+- `+ ` something new appeared (a block, an edge that matters, a rule). A new block's line **names the block by its label** and says what it is in 5-10 plain words.
+- `~ ` something changed: a status, a pill, a metric (`~ Database CPU 92% → 25%`; use `→` between old and new).
+- `− ` something was removed. It **names the removed block by its label**.
+
+The validator enforces the match with the diagram and the tiles (errors):
+- every block that is new in this step's scene must be named in a `+ ` line (its `label`, case-insensitive);
+- every block that left must be named in a `− ` line;
+- every metric whose value or tone changed must be named (its `label`) in a `~ ` or `+ ` line.
+
+In the diagram, blocks and edges that were added or changed in this step get a short highlight ring/glow automatically, so the list and the picture point at the same things.
+
+### Metric tiles (`metrics`)
+
+Numbers leave the diagram. When the numbers tell the story (rows read, latency, cost, error rate, tokens, lost jobs), define them once at the top of the lesson and set their values per step. They are drawn as a row of tiles above the diagram; numbers count up or down when they change; the tile is coloured by its tone.
+
+Definition (top level, 1-4): `{ "id": "p95", "label": "P95 latency", "icon": "clock", "unit": "ms" }`
+- `id`: letters, digits, `-`, `_`. `label`: at most 16 characters. `icon`: optional scene icon name. `unit`: optional, at most 6 characters, shown after the value (`ms`, `%`, `/ day`, `a day`).
+
+Value (per step): `"metrics": { "p95": { "value": 40, "tone": "good" }, "hits": "80%" }`
+- `value`: a number (formatted as `2,000,000`, keeps your decimals, animates) or a short string (at most 10 characters, does not animate).
+- `tone`: `good` (green), `bad` (red), `warn` (amber), `neutral` (default). Say good when the number is where you want it.
+- Values **carry forward**: a step lists only the metrics it changes. Before a metric's first value its tile shows "–".
+- Set the first values in step 1 (setup), so the learner sees the starting point.
+
+### Inline HTML (body, changes, callout text, youWillLearn, quiz text, why, takeaways, glossary)
 
 Only these tags are allowed. Everything else is rejected by the validator and escaped by the app.
 
@@ -176,7 +190,7 @@ Only these tags are allowed. Everything else is rejected by the validator and es
 | `<span class="term">cookie</span>` | A glossary word. The text must match a glossary key (case-insensitive). |
 | `<span class="term" data-term="cookie">cookies</span>` | Glossary word whose visible text differs from the key (plurals etc.). |
 
-Inside JSON strings, quotes must be escaped: `<span class=\"term\">`. Write `&lt;` and `&gt;` for literal `<` and `>` in text (for example `&lt;div&gt;`). Plain `&`, `'`, `→` and `…` are fine.
+Inside JSON strings, quotes must be escaped: `<span class=\"term\">`. Write `&lt;` and `&gt;` for literal `<` and `>`. Plain `&`, `'`, `→`, `−` and `…` are fine.
 
 ### Quiz question
 
@@ -194,27 +208,28 @@ Inside JSON strings, quotes must be escaped: `<span class=\"term\">`. Write `&lt
 
 A scene is a drawing on a **12 x 8 grid**. `x` goes from 0 to 12, `y` from 0 to 8. Halves are fine (`6.5`).
 
-The app draws this grid as an **isometric floor** (classic 2:1 isometric): grid `x` runs down-right on screen, grid `y` runs down-left. Every node becomes a 3D block whose shape follows its `kind` (server = rack block, data = cylinder, person = figure on a plinth, client = laptop or phone, ai = chip with a sparkle, external = crate with a lid, threat = block with hazard stripes, neutral = plain block), or its `shape` when one is set (tile, token, flag, stack, block). Text stays upright: a card with the label and sublabel floats above each block, tags lie on the floor in front of it, edges run along the floor as ink lines with flat arrowheads, always along the two grid axes with rounded 90° turns (see "How edges are routed" below), zones are floor plates and notes are speech bubbles. The geometry lives in `shared/iso.js`, used by both the renderer and the validator.
+The app draws this grid as an **isometric floor** (classic 2:1): grid `x` runs down-right on screen, grid `y` runs down-left. Every node is a **big 3D block** (about 1.2 x 1.2 grid units of floor) whose shape follows its `kind` or `shape`. **Its name is printed on a plate fixed to the block's front corner**; its icon is painted on top. There are no floating cards and no second line of text. A block may carry **one pill** (a live value or state) just above it. Edges run along the floor as ink lines with flat arrowheads, along the two grid axes only, with rounded 90° turns. Packets are plain coloured dots; the legend under the diagram says what each colour means.
 
-The app animates between steps: things that leave fade out first, then new things rise in; nodes that keep their `id` glide to their new position (block and card move as one), status colours cross-fade, and packets travel along edges, staying off other text (their own edge label fades while they pass). **The camera frames each step on what that step shows** and pans and zooms smoothly between steps. Each diagram has Replay and Pause buttons. On a phone the diagram fits the screen width, zooms in on what changed when the whole step would be too small to read, and opens full screen with **Whole diagram**.
+The app animates between steps: things that leave fade out, new things rise in, nodes that keep their `id` glide to their new position, status colours cross-fade, packets travel along edges, and what changed gets a short highlight. **The camera frames each step on what that step shows.** Each diagram has Replay and Pause. On a phone the diagram fits the screen width, never zooms out so far that the names become unreadable (it centres on what changed instead), and **Whole diagram** opens it full screen.
 
 ### Scene object
 
 | Field | Type | Meaning |
 | --- | --- | --- |
 | `extends` | `"previous"` | Start from the previous step's resolved scene, then apply this one as a patch. |
-| `remove` | string[] | Only with `extends`. Ids of nodes, edges, zones or notes to delete. Removing a node also removes its edges. |
-| `nodes` | Node[] | Boxes. |
-| `edges` | Edge[] | Arrows between nodes. |
-| `zones` | Zone[] | Labelled dashed areas behind nodes ("Browser", "Server", "Sessions"). |
-| `notes` | Note[] | Free text on the canvas ("Who is this?"). |
+| `remove` | string[] | Only with `extends`. Ids of nodes, edges or zones to delete. Removing a node also removes its edges. |
+| `nodes` | Node[] | Blocks. **At most 6 per scene** (all of them count, dimmed ones too; a crowd counts as 1). |
+| `edges` | Edge[] | Arrows between nodes. **At most 2 with a label.** |
+| `zones` | Zone[] | At most 2 labelled floor plates ("users table", "Browser"). |
 | `caption` | string | One sentence under the diagram. Also read by screen readers. Strongly recommended. |
+
+`notes` (speech bubbles) are **not allowed** any more: text belongs in the side panel.
 
 **Three ways to write a step's scene:**
 
 1. **Omit `scene`**: the diagram stays exactly as in the previous step.
 2. **Full scene** (no `extends`): replaces everything. Items whose `id` matches the previous step still animate smoothly from where they were.
-3. **Patch** (`"extends": "previous"`): items with an existing `id` are merged (only the fields you write change), new ids are added, `remove` deletes. Setting a field to `null` removes it (for example `"tags": null`, `"route": null`).
+3. **Patch** (`"extends": "previous"`): items with an existing `id` are merged (only the fields you write change), new ids are added, `remove` deletes. Setting a field to `null` removes it (`"pill": null`, `"route": null`).
 
 The first step that has a scene must be a full scene.
 
@@ -223,17 +238,17 @@ The first step that has a scene must be a full scene.
 | Field | Type | Default | Meaning |
 | --- | --- | --- | --- |
 | `id` | string | | Letters, digits, `-`, `_`. Unique across the scene. |
-| `x`, `y` | number | | Centre of the box, in grid units. |
-| `label` | string | | Main text. Under ~18 characters. |
-| `sublabel` | string | | Second line, smaller. Under ~24 characters. |
-| `icon` | string | none | One of the icon names below. |
+| `x`, `y` | number | | Centre of the block, in grid units. |
+| `label` | string | | **The name printed on the block. At most 2 words and 16 characters** ("App Server", "Database", "Claude API", "20,000 users"). Error above. |
+| `icon` | string | none | One of the icon names below, painted on top of the block. |
 | `kind` | enum | `neutral` | What the thing is; sets the colour and the default shape: `neutral`, `person`, `client`, `server`, `data`, `ai`, `external`, `threat`. |
-| `shape` | enum | by kind | Optional shape override: `tile` (flat slab: a row, an array cell, a list item), `token` (round disc: a tree or graph node), `flag` (pin with a flag: a pointer or marker), `stack` (stacked slabs: a folder or a pile), `block` (plain box). |
-| `status` | enum | `normal` | `normal`, `active` (block floats up with a bright top, accent ring on the floor, gentle bob), `ok` (green ring), `warn` (amber ring), `error` (red block and ring, small shake), `dim` (faded). A badge (check, !, x) is added to the card only in the step where the status changes, at most three per step. |
-| `tags` | string[] | | Up to 3 small monospace chips on the floor in front of the block (`"HttpOnly"`, `"10 / min"`). |
-| `w` | number | | Kept for older lessons; the isometric renderer ignores it (cards size themselves to their text). |
+| `shape` | enum | by kind | Optional: `tile` (flat slab: a row, a list item), `token` (round disc: a tree or graph node), `flag` (a pointer or marker), `stack` (a pile, a file), `block` (plain box), **`crowd`** (a group of people on one plinth: many users drawn as ONE block; put the count in the label, "1,000 users"; colour is `person` unless you set `kind`). |
+| `status` | enum | `normal` | `normal`, `active` (floats up, accent ring: "look here"), `ok` (green ring), `warn` (amber ring), `error` (red, small shake), `dim` (strongly faded: not part of this step). A badge (check, !, x) appears on the name plate only in the step where the status changes. |
+| `pill` | string or object | none | **At most one per node**: a short **live value or state**, at most 12 characters: `"25%"`, `"23 queued"`, `"round robin"`, `"id 101"`. Object form: `{ "text": "92% CPU", "icon": "chart", "gauge": 92, "tone": "bad" }` (`gauge` 0-100 draws a small bar; `tone`: neutral, good, warn, bad). |
 
-A block covers about 1 x 1 grid unit of floor. Its card is as wide as the longer of label and sublabel. Two nodes stacked in `y` (same `x`) need about 1.7 grid units between centres so their cards do not touch, about 2 when the lower one is `active`.
+Removed fields (errors): `sublabel` (say it in the text), `tags` (use `pill`), `w`.
+
+Spacing: a block covers about 1.2 x 1.2 grid units, and its name plate hangs below its front corner. Keep **connected blocks about 3.5-4 grid units apart** along the line (so the edge and its packet have room), and **at least 2.2 apart** for blocks stacked in `y` or `x` without an edge between them (rows of a table: about 2.3). The validator measures the real picture and tells you when plates, pills or labels touch.
 
 ### Edge
 
@@ -241,36 +256,38 @@ A block covers about 1 x 1 grid unit of floor. Its card is as wide as the longer
 | --- | --- | --- | --- |
 | `id` | string | `"from>to"` | Only needed if two edges join the same two nodes in the same direction. |
 | `from`, `to` | node id | | Required. |
-| `label` | string | | Pill on the line, in the middle of its longest straight leg (it slides along when that spot is taken). Under ~26 characters. |
-| `style` | enum | `solid` | `solid`, `dashed` (optional, async, "uses"), `dotted` (weak, background). |
-| `status` | enum | `normal` | Same values as nodes; colours the line, arrow and label. |
+| `label` | string | | **Mostly leave it out.** At most 2 words and 14 characters ("pull", "enqueue job", "user_id 7"), and at most 2 labelled edges per scene. |
+| `style` | enum | `solid` | `solid`, `dashed` (optional or later), `dotted` (weak, background). |
+| `status` | enum | `normal` | Same values as nodes; colours the line and arrow. |
 | `arrow` | enum | `end` | `end`, `start`, `both`, `none`. |
-| `route` | enum | automatic | Only when the automatic route is not the one you want: `x-first` (along grid x, then turn into y: an L), `y-first` (along y, then x), `mid` (along the longer axis to halfway, a turn, the rest: a Z). See "How edges are routed". |
-| `bend` | number | | Legacy, prefer `route`. On its own edge, its sign picks the side of the elbow (positive = the elbow on the left of the travel direction, in grid terms); when the two ends line up, the line steps sideways by about `bend` grid units and back (a bracket). Ignored on an edge that shares its two nodes with another edge. -3 to 3. |
-| `packet` | `true` / `false` / object | none | Something travelling along the edge, on a loop. |
+| `route` | enum | automatic | `x-first`, `y-first` (an L) or `mid` (a Z). Only when the automatic route tells the story less well. |
+| `packet` | `true` / `false` / object | none | A dot travelling along the edge, on a loop. |
 
-**Packet object:** `{ "label"?: "JWT", "status"?: "active", "direction"?: "forward" | "backward" | "both", "speed"?: "slow" | "normal" | "fast" }`. `true` = a plain glowing dot. Keep packet labels under ~10 characters. Packets are drawn above cards and labels and follow the line round its turns; each one travels only along the longest stretch of its edge where it covers no other text (it may slip under the floor tags of its own end blocks), and packets on different edges are timed so they do not run into each other. The packet colour follows `status`; the legend under the diagram explains the colours in use (blue = data moving, orange = in focus, green = allowed / success, amber = slow or at risk, red = blocked / failed). With reduced motion the packet rests beside the edge label, or is left out when there is no free spot.
+**Packet object:** `{ "kind"?: "request", "direction"?: "forward" | "backward" | "both", "returns"?: "<kind>", "speed"?: "slow" | "normal" | "fast" }`. `true` = a request. **Packets carry no text** (`label` and `status` are errors). The colour is the meaning, explained by the legend under the diagram:
+
+| `kind` | Colour | Legend says | Use for |
+| --- | --- | --- | --- |
+| `request` | blue | request | something asked for or sent: a click, an API call, a prompt |
+| `response` | green | response | the answer coming back |
+| `data` | teal | data / rows | rows, files, query results moving to or from storage |
+| `secret` | amber | key or token | a password, API key, cookie or token travelling |
+| `job` | violet | background job | queued work, events, webhooks |
+| `error` | red | error or attack | a failure, a blocked call, a malicious request |
+
+With `"direction": "both"`, a second dot travels back; its kind is `returns`, by default `response` for a request (otherwise the same kind). Use it for request/response pairs instead of drawing two edges.
 
 ### How edges are routed
 
-Edges never cut diagonally across the floor. Every edge runs along the two grid axes only (grid x = down-right on screen, grid y = down-left), with small rounded corners where it turns:
+Edges never cut diagonally. Every edge runs along the two grid axes (x = down-right, y = down-left) with small rounded corners:
 
-- **Straight** when the two blocks line up on one axis: their centres differ by less than about 0.4 grid units on the other axis (up to ~0.9 still works when both blocks are wide enough to share a straight line). This is the cleanest picture, so line up nodes that talk to each other when you can.
-- **An L** (one turn) or **a Z** (two turns, the middle leg sideways) otherwise. The app tries both Ls and several Zs and keeps the one that stays off other blocks, cards, tags, notes and edge labels, does not run on top of another edge, keeps its arrowhead and its label visible, leaves room for its packet, and meets its blocks on their visible front faces. When a straight line is blocked by a block in the way, it steps around it as a bracket.
-- **Two edges between the same two nodes** (a request and its answer, for example) run side by side in two lanes, so both lines, labels and packets stay visible. Edges fanning out of one block take separate lanes when they carry packets; without packets they may share a trunk, as in a tree.
-- **Arrowheads** point along the last leg. The **label** sits on the longest straight leg. **Packets** follow the line round its corners.
-- **Steps keep their routes.** An edge keeps the route it had in the previous step unless the new step really needs another one, so lines do not jump while the learner clicks Next.
-
-Set `route` only when the automatic choice tells the story less well: `"x-first"` and `"y-first"` pick an L, `"mid"` a Z. To straighten a line, move a node instead so the two ends line up. `"route": null` in a patch goes back to automatic.
-
+- **Straight** when the two blocks line up on one axis (centres within ~0.4 on the other axis). The cleanest picture: line up blocks that talk to each other.
+- **An L** or **a Z** otherwise; the app keeps the one that stays off other blocks and text.
+- **Two edges between the same two nodes** run side by side in two lanes.
+- **Steps keep their routes**, so lines do not jump while the learner clicks Next.
 
 ### Zone
 
-`{ "id", "x", "y", "w", "h", "label"?, "status"? }`. Here `x`/`y` is the **top-left corner** (unlike nodes), `w`/`h` the size. Must fit inside the 12 x 8 grid. It is drawn as a low plate on the floor, inset a little so neighbouring plates keep a gap; its name sits on a tab at the plate's left corner (or another spot when that one would cover text or an edge). Zones may nest, but two zones must not partly overlap. Neutral blocks standing in a zone take a faint tint of the zone's colour.
-
-### Note
-
-`{ "id", "x", "y", "text", "status"? }`. A speech bubble above the floor spot (`x`, `y`). When the spot is within ~1.5 grid units of a block, the bubble has a tail pointing at it; otherwise it is a free-standing sticker without a tail (a caption). Under ~40 characters. Use `status` to colour it (`warn`, `error`, `ok`, `active`).
+`{ "id", "x", "y", "w", "h", "label"?, "status"? }`. `x`/`y` is the **top-left corner**, `w`/`h` the size. Must fit inside the grid. Drawn as a low plate on the floor with its name on a tab. At most 2 per scene; label at most 2 words / 16 characters. Zones may nest, but must not partly overlap. Use them for "inside the database" pictures (`"notes table"`) or "Browser" vs "Server".
 
 ### Icons
 
@@ -285,19 +302,21 @@ status & time      clock check x alert bell refresh link upload download trash
 business           mail calendar money cart handshake graduation-cap
 ```
 
-`incognito` is the "attacker / someone else" icon. `function` is a serverless function (ƒ). `vector` means embeddings. `bolt` means cache or "fast". The artwork comes from [Lucide](https://lucide.dev) (ISC licence); the names are the stable contract. The source of truth is `shared/icons.js`, generated by `node scripts/build-icons.mjs`.
+`incognito` = attacker / someone else. `function` = serverless function. `vector` = embeddings. `bolt` = cache or fast. Artwork from [Lucide](https://lucide.dev) (ISC); the names are the stable contract (`shared/icons.js`).
 
 ---
 
 ## What the validator checks
 
-`npm run validate` (or `npm run validate -- security` to check one module folder) reports, with file name and exact path such as `steps[3].scene.edges[1].to`:
+`npm run validate -- <module>` (one module folder; `npm run validate` checks all) reports, with file name and exact path such as `steps[3].scene.edges[1].to`. **Errors** (the run fails):
 
-- invalid JSON (with line and column), unknown fields (with "did you mean"), missing required fields, wrong types
-- file name pattern, `id` = slug, duplicate `NN` in a module, module `id` = folder, duplicate module `order`
-- enum values (chapter, level, kind, status, style, arrow, route, callout type, code language) with suggestions
-- inline HTML: only allowed tags, tags closed, stray `<`/`>`, every term exists in the glossary
-- scenes: `extends` without a previous scene, `remove` of unknown ids, nodes without `x`/`y`/`label`, edges pointing at unknown nodes, unknown icons, coordinates outside the grid, duplicate ids
-- isometric layout, measured in screen space with `shared/iso.js`, at rest and in motion: blocks standing on each other, any two pieces of text covering each other (cards, tags, edge labels, notes, zone names), zone plates partly overlapping, an arrowhead hidden under a card, tag or note, and a packet with no clear stretch of its edge to travel are errors; a card hiding most of another block, an edge running mostly underneath cards, two edges running on top of each other, or packets on different edges running into each other is a warning. All edge checks use the routed elbow lines, the same ones the app draws
+- invalid JSON, unknown fields, missing required fields, wrong types, file name pattern, `id` = slug, duplicate `NN`, module checks, enum values
+- inline HTML: only allowed tags, tags closed, every term exists in the glossary
+- **narration**: step 1 is `setup`; `setup` only on step 1; body at most 2 paragraphs and 75 words; `changes` required on steps 2+ (1-4 lines, `+ `/`~ `/`− ` prefixes), absent on step 1; new blocks named in a `+ ` line, removed blocks in a `− ` line, changed metrics in a `~ ` line
+- **metrics**: 1-4 definitions with short labels and units; step values only for defined ids, numbers or short strings, valid tones
+- **scene declutter**: at most 6 nodes; node label at most 2 words / 16 characters; no `sublabel`, `tags`, `w` or `notes`; pill at most 12 characters (one per node by construction); at most 2 labelled edges, edge labels at most 2 words / 14 characters; no packet `label` or `status`; packet `kind`/`returns` valid; at most 2 zones with short names
+- scenes: `extends` without a previous scene, `remove` of unknown ids, edges to unknown nodes, unknown icons, coordinates outside the grid, duplicate ids
+- isometric layout, measured in screen space with `shared/iso.js` (the renderer's own geometry), at rest and in motion: blocks standing on each other, any two pieces of text covering each other (name plates, pills, edge labels, zone names), zones partly overlapping, an arrowhead hidden under a plate or pill, a packet with no clear stretch of its edge
 - quiz: 2-4 questions, 2-4 options, exactly one correct, a `why` on every option
-- warnings (do not fail): long text, too many tags/nodes, glossary terms never used, long code lines
+
+**Warnings**: body above 60 words, callout above 45 words, long change lines, a plate hiding most of another block, edges on top of each other, packets running into each other, glossary terms never used, long code lines.
