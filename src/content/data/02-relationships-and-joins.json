@@ -58,13 +58,14 @@
       "title": "One screen, three tables",
       "chapter": "problem",
       "body": [
-        "Maya wants more on each line: the author's name and tag chips like <em>work</em> or <em>travel</em>. Those facts live in three tables: <code>notes</code>, <code>users</code>, and a new <code>tags</code> table.",
-        "Each table stores its own facts once. To build the list, the app server has to put the pieces back together, quickly and correctly."
+        "Maya wants more on each line: the author's name and tag chips like <em>work</em>. Those facts live in three tables: <code>notes</code>, <code>users</code>, and a new <code>tags</code> table.",
+        "Each table stores its facts once, so the app server must put the pieces back together. Fetch them one by one and the page crawls. Match them wrong and notes go missing."
       ],
       "changes": [
         "− Browser and Database: we zoom inside the database",
         "+ users and notes: the two tables from lesson 1",
-        "+ tags: a new table of labels like work or travel"
+        "+ tags: a new table of labels like work or travel",
+        "~ App Server: has to combine all three"
       ],
       "scene": {
         "caption": "One list on Maya's screen needs facts from three separate tables.",
@@ -206,7 +207,7 @@
       "chapter": "how",
       "body": [
         "Now add the tags, through <code>note_tags</code>. A plain <code>join</code> is an <span class=\"term\">inner join</span>: it keeps only rows that found a match on both sides.",
-        "Maya's Trip plan note has no tags yet. It finds no match, so it vanishes from her list. Nothing errors. The note is simply missing."
+        "One of Maya's three notes has no tags yet. It finds no match in <code>note_tags</code>, so it vanishes from her list. No error, no warning: the note is quietly missing."
       ],
       "code": {
         "language": "sql",
@@ -214,6 +215,7 @@
       },
       "changes": [
         "~ users steps back; note_tags and tags come forward",
+        "~ notes: the untagged one drops out of the result",
         "~ Notes shown 3 of 3 → 2 of 3"
       ],
       "metrics": {
@@ -268,8 +270,8 @@
       "title": "The N+1 query trap",
       "chapter": "watch-out",
       "body": [
-        "A classic slow page: fetch 50 notes, then loop and fetch each note's author one by one. That is 1 query plus 50 more: the <span class=\"term\">N+1 query</span> problem.",
-        "Each trip to the database costs a few milliseconds. Fine on your laptop with five notes, painful in production with hundreds. One joined query does the same work in one trip."
+        "Picture Maya with 50 notes. A classic slow page fetches the list, then loops and fetches each note's author one by one: 1 query plus 50 more. That is the <span class=\"term\">N+1 query</span> problem.",
+        "Each trip to the database costs a few milliseconds, and the page waits for every one. One joined query does the same work in one trip."
       ],
       "callout": {
         "type": "claude-code",
@@ -278,7 +280,8 @@
       "changes": [
         "~ Queries per page 1 → 51",
         "~ users: asked once for every single note",
-        "~ note_tags and tags step back"
+        "~ note_tags and tags step back",
+        "~ App Server: waits on 51 round trips"
       ],
       "metrics": {
         "queries": { "value": 51, "tone": "bad" }

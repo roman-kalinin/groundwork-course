@@ -107,7 +107,7 @@
       "chapter": "how",
       "body": [
         "Every column has a <span class=\"term\">data type</span>, and the right one works for you: dates sort as dates, numbers add up, bad values are refused.",
-        "Good defaults: <code>text</code> for words, <code>bigint</code> or <code>uuid</code> for ids, <code>boolean</code> for yes/no, <code>numeric</code> for money, <span class=\"term\">timestamptz</span> for moments, <span class=\"term\">jsonb</span> for loose extras like AI settings."
+        "Good defaults: <code>text</code> for words, <code>bigint</code> for ids, <code>boolean</code> for yes/no, <code>numeric</code> for money, <span class=\"term\">timestamptz</span> for moments, <span class=\"term\">jsonb</span> for loose extras like AI settings."
       ],
       "code": {
         "language": "sql",
@@ -119,7 +119,8 @@
       },
       "changes": [
         "~ App Server → notes: a text date like 'soon' is refused",
-        "~ Bad saves 25 → 9 a day"
+        "~ Bad saves 25 → 9 a day: notes with no title still get in",
+        "~ notes: rebuilt with real types (code on the right)"
       ],
       "metrics": {
         "bad": { "value": 9, "tone": "warn" }
@@ -207,7 +208,8 @@
       "code": {
         "language": "sql",
         "filename": "Supabase: keep updated_at fresh",
-        "code": "create extension if not exists moddatetime schema extensions;\n\ncreate trigger notes_updated_at\n  before update on notes\n  for each row execute procedure moddatetime (updated_at);"
+        "code": "create extension if not exists moddatetime schema extensions;\n\ncreate trigger notes_updated_at\n  before update on notes\n  for each row execute procedure moddatetime (updated_at);",
+        "caption": "moddatetime is a ready-made trigger that ships with Supabase. The first line switches it on."
       },
       "changes": [
         "+ Trigger: a tiny function Postgres runs on every update",
@@ -237,7 +239,7 @@
         "code": "-- delete\nupdate notes set deleted_at = now() where id = 101;\n\n-- undo\nupdate notes set deleted_at = null where id = 101;"
       },
       "changes": [
-        "+ Trash: deleted notes, still in the table, ready for Undo",
+        "+ Trash View: a screen of deleted notes, still in the table",
         "~ Trigger steps back",
         "~ Notes lost 1 → 0"
       ],
@@ -249,7 +251,7 @@
         "caption": "Deleting only stamps deleted_at. The note moves to the trash view, not out of the table.",
         "nodes": [
           { "id": "trig", "status": "dim" },
-          { "id": "trash", "x": 8.8, "y": 3.8, "label": "Trash", "icon": "trash", "kind": "neutral", "status": "active" }
+          { "id": "trash", "x": 8.8, "y": 3.8, "label": "Trash View", "icon": "trash", "kind": "neutral", "status": "active" }
         ],
         "edges": [
           { "id": "trig>notes", "status": "dim", "packet": false },
@@ -266,11 +268,11 @@
       ],
       "callout": {
         "type": "tip",
-        "text": "A view such as <code>active_notes</code> that filters out trashed rows gives every query one safe place to read from. A trashed row still holds its unique values; a partial index (<code>create unique index … where deleted_at is null</code>) ignores it."
+        "text": "Read from a view (a saved query you read like a table), such as <code>active_notes</code>, that filters out trashed rows. And <code>unique</code> rules still count trashed rows; a unique index with <code>where deleted_at is null</code> checks live rows only."
       },
       "changes": [
         "+ Claude API: the AI that writes Maya's weekly summary",
-        "~ Trash: its notes leak into the summary"
+        "~ Trash View: its notes leak into the summary"
       ],
       "scene": {
         "extends": "previous",

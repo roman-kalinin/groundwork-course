@@ -36,7 +36,7 @@
       "chapter": "setup",
       "body": [
         "Notely's <span class=\"term\">app server</span> (the computer running its code) keeps every note in the database. To read or change notes, it sends the database a <span class=\"term\">query</span> written in <span class=\"term\">SQL</span>, the language databases understand.",
-        "On the right are three rows of the <code>notes</code> table. Two belong to Maya (user 7), one to Leo (user 8)."
+        "On the right: three of the two million rows in its <code>notes</code> table. Two are Maya's (user 7), one is Leo's (user 8)."
       ],
       "metrics": {
         "rows": { "value": 0, "tone": "neutral" },
@@ -59,16 +59,16 @@
       "title": "A query you did not write",
       "chapter": "problem",
       "body": [
-        "Claude Code writes most of Notely's SQL. For Maya's list it wrote <code>select * from notes;</code>. It runs without an error, and returns every row in the table. Maya's list now shows Leo's Trip plan.",
-        "You do not need to write SQL from memory. You do need to read it, because one missing line decides whose notes get touched."
+        "Claude Code writes most of Notely's SQL. For Maya's list it wrote <code>select * from notes;</code>. It runs without an error and returns every note, from every user. Maya's list now shows Leo's Trip plan, and everyone else's notes.",
+        "You need not write SQL from memory. You do need to read it: one missing line decides whose notes get touched."
       ],
       "changes": [
-        "~ Rows touched 0 → 3: every row in the table",
-        "~ Others' notes 0 → 1: Leo's Trip plan on Maya's screen"
+        "~ Rows touched 0 → 2,000,000: every row in the table",
+        "~ Others' notes 0 → all: Leo's Trip plan on Maya's screen"
       ],
       "metrics": {
-        "rows": { "value": 3, "tone": "warn" },
-        "others": { "value": 1, "tone": "bad" }
+        "rows": { "value": 2000000, "tone": "bad" },
+        "others": { "value": "all", "tone": "bad" }
       },
       "scene": {
         "extends": "previous",
@@ -118,8 +118,8 @@
         "caption": "Keywords work in any case; lowercase is common."
       },
       "changes": [
-        "~ Rows touched 3 → 2",
-        "~ Others' notes 1 → 0: Leo's row is skipped",
+        "~ Rows touched 2,000,000 → 2: Maya's notes only",
+        "~ Others' notes all → 0: Leo's row is skipped",
         "~ App Server: the query now says which rows"
       ],
       "metrics": {
@@ -152,7 +152,8 @@
       "changes": [
         "~ Book ideas moves to the top: it is the newest",
         "~ Groceries is cut by the limit",
-        "~ Rows touched 2 → 1"
+        "~ Rows touched 2 → 1",
+        "~ App Server: asks for the newest one"
       ],
       "metrics": {
         "rows": { "value": 1, "tone": "good" }
@@ -249,7 +250,8 @@
       "changes": [
         "~ Every row turns red: no WHERE means every row matches",
         "~ Rows touched 1 → 2,000,000",
-        "~ Others' notes 0 → all"
+        "~ Others' notes 0 → all",
+        "~ App Server: sends a delete with no WHERE"
       ],
       "metrics": {
         "rows": { "value": 2000000, "tone": "bad" },

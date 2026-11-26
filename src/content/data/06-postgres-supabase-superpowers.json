@@ -96,7 +96,7 @@
       "title": "One Postgres, with services around it",
       "chapter": "idea",
       "body": [
-        "Supabase takes a different route: one Postgres database in the middle, with services wrapped around it. Auth and Storage keep their data in tables of that same database, and Realtime listens to its changes.",
+        "Notely's database already runs on Supabase, and Supabase offers these features around it. Auth and Storage keep their data in tables of that same Postgres database, Realtime listens to its changes, and search fits inside it.",
         "So \"who is Maya\" lives in one place, and one set of rules, written in SQL, can protect all of it."
       ],
       "callout": {
@@ -104,7 +104,8 @@
         "text": "A house with one fuse box. Lights, oven and heating are separate rooms, but the wiring meets in one place, and one switch can cut them all."
       },
       "changes": [
-        "~ Database in the middle, with Auth, Storage and Realtime around it",
+        "~ Database moves to the middle; App Server moves aside",
+        "~ Auth Provider, File Host, Live Server → Auth, Storage, Realtime",
         "− Vector DB: search by meaning moves inside Postgres",
         "~ Data services 5 → 1 and Copies of Maya 5 → 1"
       ],
@@ -140,8 +141,8 @@
       ],
       "code": {
         "language": "sql",
-        "code": "create table public.profiles (\n  id uuid primary key\n    references auth.users (id) on delete cascade,\n  display_name text\n);\n\nalter table public.profiles enable row level security;\n\ncreate policy \"Read own profile\" on public.profiles\n  for select using ((select auth.uid()) = id);",
-        "caption": "From here on, Notely's user ids are uuids from auth.users, not the small numbers of lesson 1."
+        "code": "create table public.profiles (\n  id uuid primary key\n    references auth.users (id) on delete cascade,\n  display_name text\n);",
+        "caption": "From here on, Notely's user ids are uuids (long random ids) from auth.users, not the small numbers of lesson 1."
       },
       "changes": [
         "+ App Server → Auth line: Maya signs in",
@@ -170,7 +171,7 @@
       "code": {
         "language": "ts",
         "code": "const path = `${user.id}/${noteId}/photo.png`;\n\nconst { error } = await supabase.storage\n  .from('attachments')\n  .upload(path, file);",
-        "caption": "Starting the path with the user's id makes \"only your own folder\" rules easy to write."
+        "caption": "Starting the path with the user's id makes \"only your own folder\" rules short to write."
       },
       "changes": [
         "~ Storage: holds Maya's photo",
@@ -228,7 +229,7 @@
       "chapter": "how",
       "body": [
         "<span class=\"term\">pgvector</span> is an <span class=\"term\">extension</span>, an add-on for Postgres, that adds a <code>vector</code> column. An AI model turns each note into an <span class=\"term\">embedding</span>: a long list of numbers that captures its meaning.",
-        "To search, embed the question, then sort notes by distance. \"Trips to Portugal\" finds the Lisbon note, though no word matches."
+        "To search, turn the question into an embedding too, then sort notes by distance. \"Trips to Portugal\" finds the Lisbon note, though no word matches."
       ],
       "code": {
         "language": "sql",
@@ -290,7 +291,7 @@
       "title": "Superpowers need row level security",
       "chapter": "watch-out",
       "body": [
-        "Tables in the <code>public</code> schema can be reached straight from any browser through Supabase's API, using the project's public key. Without <span class=\"term\">RLS</span>, anyone who opens dev tools can read every note.",
+        "Supabase also lets browsers reach <code>public</code> tables directly, with the project's public key. That key ships inside Notely's web page, so anyone can copy it. Without <span class=\"term\">RLS</span>, they can read every note.",
         "Turn RLS on for every public table and write a rule for each action. Keep the <span class=\"term\">service role key</span> on the server: it skips RLS entirely."
       ],
       "callout": {

@@ -31,7 +31,7 @@
       "title": "How Notely gets from your laptop to Maya",
       "chapter": "setup",
       "body": [
-        "You build Notely on your laptop with Claude Code. Your laptop runs its own copy of the database, to try things safely. You push code to GitHub, where it is stored; Vercel then puts it on the <span class=\"term\">app server</span>.",
+        "You build Notely on your laptop with Claude Code. Your laptop runs its own copy of the database, for safe tries. You push code to GitHub, a website that stores code. Vercel then puts it live on the <span class=\"term\">app server</span>.",
         "The app server talks to the live database that holds Maya's notes. Live, for real users, is <span class=\"term\">production</span>."
       ],
       "metrics": {
@@ -64,6 +64,7 @@
       "changes": [
         "~ Your Laptop: its database has the pinned column",
         "~ Database: the live one never got it",
+        "~ App Server: its requests to the Database fail",
         "~ Failed requests 0 → 120 / min"
       ],
       "metrics": {
@@ -87,7 +88,7 @@
       "chapter": "idea",
       "body": [
         "The fix: never change a database's shape by hand. Write each change as a small SQL file, a <span class=\"term\">migration</span>, and commit it to GitHub next to the code.",
-        "The <span class=\"term\">Supabase CLI</span>, a command-line tool, creates the file with a timestamp in its name, so files sort in order. Every database runs the same files, in the same order."
+        "The <span class=\"term\">Supabase CLI</span>, a tool you type commands into, names each file with a timestamp, so files sort in order. Every database runs the same files, in the same order."
       ],
       "code": {
         "language": "sql",
@@ -123,7 +124,7 @@
       "chapter": "how",
       "body": [
         "Each database keeps a <span class=\"term\">migration history</span>: a small table listing every migration already applied. Supabase keeps it in <code>supabase_migrations.schema_migrations</code>.",
-        "<code>supabase db push</code> compares your folder with that list and runs only the new files, in order. Run it twice and the second run does nothing."
+        "<code>supabase db push</code>, run by you or by your deploy, compares the migrations folder with that list and runs only the new files, in order. Run it twice and the second run does nothing."
       ],
       "code": {
         "language": "bash",
@@ -153,7 +154,7 @@
       }
     },
     {
-      "title": "Never edit history, never click-ops",
+      "title": "Don't edit old files or click changes in",
       "chapter": "watch-out",
       "body": [
         "Two habits break migrations. Editing a file that already ran: the database will not run it again, so your change never arrives. Write a new migration instead.",
@@ -184,7 +185,7 @@
     },
     {
       "title": "Old code and new schema overlap",
-      "chapter": "how",
+      "chapter": "problem",
       "body": [
         "A migration and a deploy never land at the same instant. For a while, old and new versions of Notely's code run side by side, on one database.",
         "Say one migration renames <code>title</code> to <code>heading</code>. The new code is happy. The old code still asks for <code>title</code>, and fails. Adding is safe; renaming or removing breaks someone."
@@ -213,7 +214,7 @@
     },
     {
       "title": "Expand: add the new, keep the old",
-      "chapter": "how",
+      "chapter": "idea",
       "body": [
         "The safe pattern is <span class=\"term\">expand and contract</span>. Expand first: add <code>heading</code> as a new column, and leave <code>title</code> alone.",
         "Old code keeps reading <code>title</code>, so nothing breaks. New code writes both columns, so every new note fills both. Each step is safe to deploy on its own."
