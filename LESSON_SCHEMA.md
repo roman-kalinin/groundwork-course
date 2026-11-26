@@ -194,7 +194,7 @@ Inside JSON strings, quotes must be escaped: `<span class=\"term\">`. Write `&lt
 
 A scene is a drawing on a **12 x 8 grid**. `x` goes from 0 to 12, `y` from 0 to 8. Halves are fine (`6.5`).
 
-The app draws this grid as an **isometric floor** (classic 2:1 isometric): grid `x` runs down-right on screen, grid `y` runs down-left. Every node becomes a 3D block whose shape follows its `kind` (server = rack block, data = cylinder, person = figure on a plinth, client = laptop or phone, ai = chip with a sparkle, external = crate with a lid, threat = block with hazard stripes, neutral = plain block), or its `shape` when one is set (tile, token, flag, stack, block). Text stays upright: a card with the label and sublabel floats above each block, tags lie on the floor in front of it, edges run along the floor as ink lines with flat arrowheads, zones are floor plates and notes are speech bubbles. The geometry lives in `shared/iso.js`, used by both the renderer and the validator.
+The app draws this grid as an **isometric floor** (classic 2:1 isometric): grid `x` runs down-right on screen, grid `y` runs down-left. Every node becomes a 3D block whose shape follows its `kind` (server = rack block, data = cylinder, person = figure on a plinth, client = laptop or phone, ai = chip with a sparkle, external = crate with a lid, threat = block with hazard stripes, neutral = plain block), or its `shape` when one is set (tile, token, flag, stack, block). Text stays upright: a card with the label and sublabel floats above each block, tags lie on the floor in front of it, edges run along the floor as ink lines with flat arrowheads, always along the two grid axes with rounded 90° turns (see "How edges are routed" below), zones are floor plates and notes are speech bubbles. The geometry lives in `shared/iso.js`, used by both the renderer and the validator.
 
 The app animates between steps: things that leave fade out first, then new things rise in; nodes that keep their `id` glide to their new position (block and card move as one), status colours cross-fade, and packets travel along edges, staying off other text (their own edge label fades while they pass). **The camera frames each step on what that step shows** and pans and zooms smoothly between steps. Each diagram has Replay and Pause buttons. On a phone the diagram fits the screen width, zooms in on what changed when the whole step would be too small to read, and opens full screen with **Whole diagram**.
 
@@ -214,7 +214,7 @@ The app animates between steps: things that leave fade out first, then new thing
 
 1. **Omit `scene`**: the diagram stays exactly as in the previous step.
 2. **Full scene** (no `extends`): replaces everything. Items whose `id` matches the previous step still animate smoothly from where they were.
-3. **Patch** (`"extends": "previous"`): items with an existing `id` are merged (only the fields you write change), new ids are added, `remove` deletes. Setting a field to `null` removes it (for example `"tags": null`, `"bend": null`).
+3. **Patch** (`"extends": "previous"`): items with an existing `id` are merged (only the fields you write change), new ids are added, `remove` deletes. Setting a field to `null` removes it (for example `"tags": null`, `"route": null`).
 
 The first step that has a scene must be a full scene.
 
@@ -241,14 +241,28 @@ A block covers about 1 x 1 grid unit of floor. Its card is as wide as the longer
 | --- | --- | --- | --- |
 | `id` | string | `"from>to"` | Only needed if two edges join the same two nodes in the same direction. |
 | `from`, `to` | node id | | Required. |
-| `label` | string | | Pill in the middle of the line. Under ~26 characters. |
+| `label` | string | | Pill on the line, in the middle of its longest straight leg (it slides along when that spot is taken). Under ~26 characters. |
 | `style` | enum | `solid` | `solid`, `dashed` (optional, async, "uses"), `dotted` (weak, background). |
 | `status` | enum | `normal` | Same values as nodes; colours the line, arrow and label. |
 | `arrow` | enum | `end` | `end`, `start`, `both`, `none`. |
-| `bend` | number | 0 | Curve along the floor, -3 to 3 grid units. Two edges going opposite ways between the same nodes curve apart automatically. |
+| `route` | enum | automatic | Only when the automatic route is not the one you want: `x-first` (along grid x, then turn into y: an L), `y-first` (along y, then x), `mid` (along the longer axis to halfway, a turn, the rest: a Z). See "How edges are routed". |
+| `bend` | number | | Legacy, prefer `route`. On its own edge, its sign picks the side of the elbow (positive = the elbow on the left of the travel direction, in grid terms); when the two ends line up, the line steps sideways by about `bend` grid units and back (a bracket). Ignored on an edge that shares its two nodes with another edge. -3 to 3. |
 | `packet` | `true` / `false` / object | none | Something travelling along the edge, on a loop. |
 
-**Packet object:** `{ "label"?: "JWT", "status"?: "active", "direction"?: "forward" | "backward" | "both", "speed"?: "slow" | "normal" | "fast" }`. `true` = a plain glowing dot. Keep packet labels under ~10 characters. Packets are drawn above cards and labels; each one travels only along the longest stretch of its edge where it covers no other text (it may slip under the floor tags of its own end blocks), and packets on different edges are timed so they do not run into each other. The packet colour follows `status`; the legend under the diagram explains the colours in use (blue = data moving, orange = in focus, green = allowed / success, amber = slow or at risk, red = blocked / failed). With reduced motion the packet rests beside the edge label, or is left out when there is no free spot.
+**Packet object:** `{ "label"?: "JWT", "status"?: "active", "direction"?: "forward" | "backward" | "both", "speed"?: "slow" | "normal" | "fast" }`. `true` = a plain glowing dot. Keep packet labels under ~10 characters. Packets are drawn above cards and labels and follow the line round its turns; each one travels only along the longest stretch of its edge where it covers no other text (it may slip under the floor tags of its own end blocks), and packets on different edges are timed so they do not run into each other. The packet colour follows `status`; the legend under the diagram explains the colours in use (blue = data moving, orange = in focus, green = allowed / success, amber = slow or at risk, red = blocked / failed). With reduced motion the packet rests beside the edge label, or is left out when there is no free spot.
+
+### How edges are routed
+
+Edges never cut diagonally across the floor. Every edge runs along the two grid axes only (grid x = down-right on screen, grid y = down-left), with small rounded corners where it turns:
+
+- **Straight** when the two blocks line up on one axis: their centres differ by less than about 0.4 grid units on the other axis (up to ~0.9 still works when both blocks are wide enough to share a straight line). This is the cleanest picture, so line up nodes that talk to each other when you can.
+- **An L** (one turn) or **a Z** (two turns, the middle leg sideways) otherwise. The app tries both Ls and several Zs and keeps the one that stays off other blocks, cards, tags, notes and edge labels, does not run on top of another edge, keeps its arrowhead and its label visible, leaves room for its packet, and meets its blocks on their visible front faces. When a straight line is blocked by a block in the way, it steps around it as a bracket.
+- **Two edges between the same two nodes** (a request and its answer, for example) run side by side in two lanes, so both lines, labels and packets stay visible. Edges fanning out of one block take separate lanes when they carry packets; without packets they may share a trunk, as in a tree.
+- **Arrowheads** point along the last leg. The **label** sits on the longest straight leg. **Packets** follow the line round its corners.
+- **Steps keep their routes.** An edge keeps the route it had in the previous step unless the new step really needs another one, so lines do not jump while the learner clicks Next.
+
+Set `route` only when the automatic choice tells the story less well: `"x-first"` and `"y-first"` pick an L, `"mid"` a Z. To straighten a line, move a node instead so the two ends line up. `"route": null` in a patch goes back to automatic.
+
 
 ### Zone
 
@@ -281,9 +295,9 @@ business           mail calendar money cart handshake graduation-cap
 
 - invalid JSON (with line and column), unknown fields (with "did you mean"), missing required fields, wrong types
 - file name pattern, `id` = slug, duplicate `NN` in a module, module `id` = folder, duplicate module `order`
-- enum values (chapter, level, kind, status, style, arrow, callout type, code language) with suggestions
+- enum values (chapter, level, kind, status, style, arrow, route, callout type, code language) with suggestions
 - inline HTML: only allowed tags, tags closed, stray `<`/`>`, every term exists in the glossary
 - scenes: `extends` without a previous scene, `remove` of unknown ids, nodes without `x`/`y`/`label`, edges pointing at unknown nodes, unknown icons, coordinates outside the grid, duplicate ids
-- isometric layout, measured in screen space with `shared/iso.js`, at rest and in motion: blocks standing on each other, any two pieces of text covering each other (cards, tags, edge labels, notes, zone names), zone plates partly overlapping, an arrowhead hidden under a card, tag or note, and a packet with no clear stretch of its edge to travel are errors; a card hiding most of another block, an edge running mostly underneath cards, or packets on different edges running into each other is a warning
+- isometric layout, measured in screen space with `shared/iso.js`, at rest and in motion: blocks standing on each other, any two pieces of text covering each other (cards, tags, edge labels, notes, zone names), zone plates partly overlapping, an arrowhead hidden under a card, tag or note, and a packet with no clear stretch of its edge to travel are errors; a card hiding most of another block, an edge running mostly underneath cards, two edges running on top of each other, or packets on different edges running into each other is a warning. All edge checks use the routed elbow lines, the same ones the app draws
 - quiz: 2-4 questions, 2-4 options, exactly one correct, a `why` on every option
 - warnings (do not fail): long text, too many tags/nodes, glossary terms never used, long code lines

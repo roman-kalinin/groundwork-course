@@ -9,7 +9,10 @@ export interface Shape {
 }
 export interface NodeLayout { c: Pt; shape: Shape; sil: Pt[]; topY: number; card: Rect; tags: Rect[]; depth: number; x: number; y: number }
 export interface PacketMotion { dur: number; fwd: number | null; back: number | null; sa: number; sb: number; w: number }
-export interface EdgeGeom { motion?: PacketMotion; motionClash?: number; blockers?: string[]; d: string; at: (u: number) => Pt; atS: (s: number) => Pt; sOf: (u: number) => number; mid: Pt; length: number; heads: string[]; label: Rect | null; labelU: number; labelAt: (u: number) => Rect; tip: Pt | null; tail: Pt | null; run?: { a: number; b: number; ok: boolean }; duck?: { a: number; b: number }; stills?: { fwd?: { p: Pt; rect: Rect } | null; back?: { p: Pt; rect: Rect } | null } }
+/** A route on the floor, in the edge's own direction (see shared/iso.js). */
+export interface EdgeRoute { kind: 'x' | 'y' | 'zx' | 'zy' | 'sx' | 'sy' | 'u'; f?: number; off?: number; lane?: number }
+export interface EdgeSeg { a: Pt; b: Pt; axis: 'x' | 'y' }
+export interface EdgeGeom { route: EdgeRoute; segs: EdgeSeg[]; turns: Pt[]; hidden: number; firstLeg: number; lastLeg: number; labelSpots: number[]; motion?: PacketMotion; motionClash?: number; blockers?: string[]; d: string; at: (u: number) => Pt; atS: (s: number) => Pt; sOf: (u: number) => number; mid: Pt; length: number; heads: string[]; label: Rect | null; labelU: number; labelAt: (u: number) => Rect; tip: Pt | null; tail: Pt | null; run?: { a: number; b: number; ok: boolean }; duck?: { a: number; b: number }; stills?: { fwd?: { p: Pt; rect: Rect } | null; back?: { p: Pt; rect: Rect } | null } }
 export const ISO: {
   G: number; pad: number; lift: number;
   card: { label: number; sub: number; padX: number; h1: number; h2: number; gap: number; tail: number; minW: number };
@@ -41,12 +44,13 @@ export function nodeLayout(n: SceneNode, x?: number, y?: number, lift?: number):
 export function pointInPoly(p: Pt, poly: Pt[]): boolean;
 export function polyBox(poly: Pt[]): Rect;
 export function rectOverlap(a: Rect, b: Rect, pad?: number): number;
-export function edgeLayout(e: SceneEdge, A: NodeLayout, B: NodeLayout, bend?: number): EdgeGeom;
+export const EDGE_ROUTES: string[];
+export function linkSceneRoutes<T extends ResolvedScene | undefined>(scenes: T[]): T[];
+export function edgeLayout(e: SceneEdge, A: NodeLayout, B: NodeLayout, route?: EdgeRoute): EdgeGeom;
 export function stillPacket(e: SceneEdge, g: EdgeGeom, which: 'fwd' | 'back', avoid?: (r: Rect) => number): { p: Pt; rect: Rect } | null;
 export function zoneLayout(z: SceneZone): { poly: Pt[]; label: Rect | null; candidates: Rect[]; depth: number };
 export function noteLayout(n: SceneNote): { anchor: Pt; rect: Rect };
-export function autoBends(edges: SceneEdge[]): Map<string, number>;
-export function sceneLayout(scene: ResolvedScene, poses?: Map<string, { x: number; y: number; lift: number }>): {
+export function sceneLayout(scene: ResolvedScene, poses?: Map<string, { x: number; y: number; lift: number }>, routes?: Map<string, EdgeRoute>): {
   nodes: Map<string, NodeLayout>;
   edges: { e: SceneEdge; g: EdgeGeom }[];
   zones: { z: SceneZone; poly: Pt[]; label: Rect | null; depth: number }[];

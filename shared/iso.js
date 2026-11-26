@@ -206,83 +206,295 @@ export function rectOverlap(a, b, pad = 0) {
   return ox > 0 && oy > 0 ? Math.min(ox, oy) : 0;
 }
 // ---------------------------------------------------------------- edges
+// Edges are orthogonal on the floor: every edge runs along the two grid axes
+// only (grid x and grid y), turning 90 degrees once (an L) or twice (a Z), with
+// small rounded corners. A route is a small spec, always in the edge's own
+// direction (from -> to):
+//   { kind: 'x' }          L: along x first, then y
+//   { kind: 'y' }          L: along y first, then x
+//   { kind: 'zx', f }      Z: along x for share f of the way, across in y, along x again
+//   { kind: 'zy', f }      Z: the same with y and x swapped
+//   { kind: 'sx' | 'sy' }  straight along x (or y): the ends line up on that axis
+//   { kind: 'u', off }     ends lined up: detour sideways by `off` grid units
+// plus `lane` (grid units, to the left of the travel direction) that keeps
+// parallel and opposite edges between the same two nodes side by side.
+
+/** Author values of an edge's `route` field. */
+export const EDGE_ROUTES = ['x-first', 'y-first', 'mid'];
+/** Ends closer than this (grid units) on one axis count as lined up: one straight line. */
+const ALIGN = 0.3;
+/** Furthest apart (grid units, across the line) two centres may be for one straight line to reach both blocks. */
+const STRAIGHT = 0.9;
+/** Corner radius at a turn (grid units). */
+const CORNER = 0.24;
+/** Gap between the edges of one node pair (grid units), and the sideways shift of a lone elbow (LANE / 2). */
+const LANE_PAIR = 0.86;
+const LANE = 0.6;
+
+const dist = (p, q) => Math.hypot(q.x - p.x, q.y - p.y);
+
+/** Floor polyline (grid units) of a route spec from a to b, lane offset applied. */
+function routeVerts(a, b, spec) {
+  const dx = b.x - a.x, dy = b.y - a.y;
+  let v;
+  switch (spec.kind) {
+    case 'x': v = [a, { x: b.x, y: a.y }, b]; break;
+    case 'y': v = [a, { x: a.x, y: b.y }, b]; break;
+    case 'zy': { const m = a.y + dy * (spec.f ?? 0.5); v = [a, { x: a.x, y: m }, { x: b.x, y: m }, b]; break; }
+    // straight, at share t of the way between the two centres on the other axis
+    // (the two footprints overlap there); a Z once the blocks drift too far apart
+    case 'sx':
+      if (Math.abs(dy) <= STRAIGHT) { const m = a.y + dy * (spec.t ?? 0.5); v = [{ x: a.x, y: m }, { x: b.x, y: m }]; }
+      else { const m = a.x + dx / 2; v = [a, { x: m, y: a.y }, { x: m, y: b.y }, b]; }
+      break;
+    case 'sy':
+      if (Math.abs(dx) <= STRAIGHT) { const m = a.x + dx * (spec.t ?? 0.5); v = [{ x: m, y: a.y }, { x: m, y: b.y }]; }
+      else { const m = a.y + dy / 2; v = [a, { x: a.x, y: m }, { x: b.x, y: m }, b]; }
+      break;
+    case 'u': {
+      // sideways detour; `off` is measured to the left of the travel direction
+      if (Math.abs(dx) >= Math.abs(dy)) {
+        const m = (a.y + b.y) / 2 + Math.sign(dx || 1) * spec.off;
+        v = [a, { x: a.x, y: m }, { x: b.x, y: m }, b];
+      } else {
+        const m = (a.x + b.x) / 2 - Math.sign(dy || 1) * spec.off;
+        v = [a, { x: m, y: a.y }, { x: m, y: b.y }, b];
+      }
+      break;
+    }
+    default: { const m = a.x + dx * (spec.f ?? 0.5); v = [a, { x: m, y: a.y }, { x: m, y: b.y }, b]; } // 'zx'
+  }
+  // drop zero-length legs and merge straight runs
+  const out = [];
+  for (const p of v) if (!out.length || dist(out[out.length - 1], p) > 1e-6) out.push({ x: p.x, y: p.y });
+  for (let i = out.length - 2; i >= 1; i--) {
+    const p = out[i - 1], q = out[i], r = out[i + 1];
+    if (Math.abs((q.x - p.x) * (r.y - q.y) - (q.y - p.y) * (r.x - q.x)) < 1e-9) out.splice(i, 1);
+  }
+  if (out.length < 2) out.push({ x: out[0].x + 1e-3, y: out[0].y });
+  const lane = spec.lane ?? 0;
+  if (!lane) return out;
+  const nrm = (p, q) => { const l = dist(p, q) || 1; return { x: -(q.y - p.y) / l, y: (q.x - p.x) / l }; };
+  return out.map((p, i) => {
+    // joints are right angles (straight runs are merged above), so adding both normals keeps every leg at `lane`
+    const n0 = i > 0 ? nrm(out[i - 1], p) : { x: 0, y: 0 };
+    const n1 = i < out.length - 1 ? nrm(p, out[i + 1]) : { x: 0, y: 0 };
+    return { x: p.x + (n0.x + n1.x) * lane, y: p.y + (n0.y + n1.y) * lane };
+  });
+}
+
+const quadAt = (p, t) => ({ x: (1 - t) ** 2 * p.p0.x + 2 * (1 - t) * t * p.c.x + t * t * p.p1.x, y: (1 - t) ** 2 * p.p0.y + 2 * (1 - t) * t * p.c.y + t * t * p.p1.y });
+
+/** Floor path of a polyline with rounded corners: straight legs ('L') and quadratic corners ('Q'). */
+function roundedPath(verts) {
+  const prims = [];
+  let cur = verts[0];
+  const toward = (p, q, r) => { const l = dist(p, q) || 1; return { x: p.x + ((q.x - p.x) / l) * r, y: p.y + ((q.y - p.y) / l) * r }; };
+  for (let i = 1; i < verts.length; i++) {
+    const v = verts[i];
+    if (i < verts.length - 1) {
+      const nx = verts[i + 1];
+      // a leg shared by two corners gives each at most 45% of its length; end legs give 90%
+      const r = Math.min(CORNER, dist(verts[i - 1], v) * (i === 1 ? 0.9 : 0.45), dist(v, nx) * (i === verts.length - 2 ? 0.9 : 0.45));
+      const p0 = toward(v, verts[i - 1], r), p1 = toward(v, nx, r);
+      prims.push({ t: 'L', p0: cur, p1: p0 });
+      prims.push({ t: 'Q', p0, c: v, p1 });
+      cur = p1;
+    } else prims.push({ t: 'L', p0: cur, p1: v });
+  }
+  for (const p of prims) {
+    if (p.t === 'L') p.len = dist(p.p0, p.p1);
+    else { let l = 0, q = p.p0; for (let k = 1; k <= 8; k++) { const n = quadAt(p, k / 8); l += dist(q, n); q = n; } p.len = l; }
+  }
+  const out = prims.filter((p) => p.len > 1e-6);
+  return out.length ? out : prims.slice(0, 1);
+}
+
+/** The legacy `bend` as a route: its sign picks the side of the elbow (or of the detour when the ends line up). */
+function bendSpec(bend, a, b) {
+  const dx = b.x - a.x, dy = b.y - a.y;
+  if (Math.abs(dy) <= ALIGN || Math.abs(dx) <= ALIGN) return { kind: 'u', off: bend };
+  // a positive bend bulged towards (-dy, dx); the x-first corner (b.x, a.y) lies on that side when dx * dy < 0
+  return { kind: (bend > 0) === (dx * dy < 0) ? 'x' : 'y' };
+}
+
+/** The route an author asked for with `route` (or the legacy `bend`), or null to choose automatically. */
+function authorSpec(e, a, b) {
+  const dx = b.x - a.x, dy = b.y - a.y;
+  if (e.route === 'x-first') return { kind: 'x' };
+  if (e.route === 'y-first') return { kind: 'y' };
+  if (e.route === 'mid') return Math.abs(dx) >= Math.abs(dy) ? { kind: 'zx', f: 0.5 } : { kind: 'zy', f: 0.5 };
+  if (typeof e.bend === 'number' && Math.abs(e.bend) > 0.001) return bendSpec(e.bend, a, b);
+  return null;
+}
+
 /**
- * Geometry of an edge between two laid-out nodes. The line lies on the floor;
- * it starts where it leaves node A's silhouette and ends where it disappears
- * behind / reaches node B. `bend` curves it sideways (grid units).
+ * Route choices worth trying, each with a penalty for its turns. When the two
+ * footprints overlap across the line, one straight line reaches both blocks
+ * (with sideways detours in reserve, used only when that line is blocked).
  */
-export function edgeLayout(e, A, B, bend = 0) {
+/** Routes of the previous step, per scene (see linkSceneRoutes). */
+const PREFER = new WeakMap();
+
+/**
+ * Link the scenes of one lesson, in step order, so each step prefers the routes
+ * its edges had in the step before: an edge keeps its shape while the learner
+ * clicks through, unless the new step really needs another route. The renderer
+ * and the validator both call this on the same resolved scenes.
+ */
+export function linkSceneRoutes(scenes) {
+  let prev = null, last = null;
+  for (const s of scenes) {
+    if (!s || s === last) continue;
+    last = s;
+    if (prev) PREFER.set(s, prev); else PREFER.delete(s);
+    prev = new Map(sceneLayout(s).edges.map(({ e, g }) => [e.id, g.route]));
+  }
+  return scenes;
+}
+
+function routeCandidates(a, b, A, B) {
+  const dx = b.x - a.x, dy = b.y - a.y;
+  const band = (ca, ha, cb, hb) => {
+    const lo = Math.max(ca - ha, cb - hb) + 0.06, hi = Math.min(ca + ha, cb + hb) - 0.06;
+    return hi >= lo ? (lo + hi) / 2 : null;
+  };
+  const tOf = (m, c, d) => (Math.abs(d) < 1e-6 ? 0.5 : (m - c) / d);
+  const my = Math.abs(dy) <= STRAIGHT ? band(a.y, A.shape.hd, b.y, B.shape.hd) : null;
+  const mx = Math.abs(dx) <= STRAIGHT ? band(a.x, A.shape.hw, b.x, B.shape.hw) : null;
+  let straight = null;
+  if (my !== null && (mx === null || Math.abs(dx) >= Math.abs(dy))) straight = { kind: 'sx', t: tOf(my, a.y, dy) };
+  else if (mx !== null) straight = { kind: 'sy', t: tOf(mx, a.x, dx) };
+  // a Z whose middle leg is very short reads as a wobble
+  const jog = (len) => (len < 1 ? 1.5 : 0);
+  const elbows = [
+    { spec: { kind: 'x' }, pen: 0.6 },
+    { spec: { kind: 'y' }, pen: 0.6 },
+    { spec: { kind: 'zx', f: 0.5 }, pen: 1.2 + jog(Math.abs(dy)) },
+    { spec: { kind: 'zy', f: 0.5 }, pen: 1.2 + jog(Math.abs(dx)) },
+    { spec: { kind: 'zx', f: 0.3 }, pen: 1.35 + jog(Math.abs(dy)) },
+    { spec: { kind: 'zx', f: 0.7 }, pen: 1.35 + jog(Math.abs(dy)) },
+    { spec: { kind: 'zy', f: 0.3 }, pen: 1.35 + jog(Math.abs(dx)) },
+    { spec: { kind: 'zy', f: 0.7 }, pen: 1.35 + jog(Math.abs(dx)) },
+  ];
+  if (!straight) return elbows;
+  const out = [{ spec: straight, pen: 0 }];
+  // slightly offset ends: an elbow is the fallback when the straight line is blocked
+  if (Math.abs(dx) > ALIGN && Math.abs(dy) > ALIGN) out.push(...elbows.map((c) => ({ ...c, pen: c.pen + 3 })));
+  for (const off of [1, -1, 1.5, -1.5]) out.push({ spec: { kind: 'u', off }, pen: 5 + Math.abs(off), detour: true });
+  return out;
+}
+
+/** The same route seen from the other end. */
+function reverseSpec(s) {
+  const r = { ...s, lane: -(s.lane ?? 0) };
+  if (s.kind === 'x') r.kind = 'y';
+  else if (s.kind === 'y') r.kind = 'x';
+  else if (s.kind === 'zx' || s.kind === 'zy') r.f = 1 - (s.f ?? 0.5);
+  else if (s.kind === 'u') r.off = -s.off;
+  else if (s.kind === 'sx' || s.kind === 'sy') r.t = 1 - (s.t ?? 0.5);
+  return r;
+}
+
+/**
+ * Geometry of an edge between two laid-out nodes. The line lies on the floor
+ * and runs along the grid axes (route specs above); it starts where it leaves
+ * node A's silhouette and ends where it disappears behind / reaches node B.
+ * Without a `spec`, the route is the author's `route` / `bend`, or the best one
+ * for the two nodes on their own (sceneLayout picks routes with the whole
+ * scene in view and passes them in).
+ */
+export function edgeLayout(e, A, B, spec) {
   const a = { x: A.x, y: A.y };
   const b = { x: B.x, y: B.y };
-  const dx = b.x - a.x, dy = b.y - a.y;
-  const len = Math.hypot(dx, dy) || 1;
-  // world-space quadratic control point (passes through the bent midpoint)
-  const m = { x: (a.x + b.x) / 2 - (dy / len) * bend, y: (a.y + b.y) / 2 + (dx / len) * bend };
-  const q = { x: 2 * m.x - (a.x + b.x) / 2, y: 2 * m.y - (a.y + b.y) / 2 };
-  const curved = Math.abs(bend) > 0.001;
-  const world = (t) => (curved
-    ? { x: (1 - t) ** 2 * a.x + 2 * (1 - t) * t * q.x + t * t * b.x, y: (1 - t) ** 2 * a.y + 2 * (1 - t) * t * q.y + t * t * b.y }
-    : { x: a.x + dx * t, y: a.y + dy * t });
-  const tangent = (t) => (curved
-    ? { x: 2 * (1 - t) * (q.x - a.x) + 2 * t * (b.x - q.x), y: 2 * (1 - t) * (q.y - a.y) + 2 * t * (b.y - q.y) }
-    : { x: dx, y: dy });
-  const scr = (t) => { const w = world(t); return project(w.x, w.y); };
+  if (!spec) spec = authorSpec(e, a, b) ?? pickRoute(e, A, B, null).spec;
+  const verts = routeVerts(a, b, spec);
+  const prims = roundedPath(verts);
+  const total = prims.reduce((s, p) => s + p.len, 0) || 1e-3;
+  /** floor point at arc length s (grid units) */
+  const world = (s) => {
+    let k = 0;
+    while (k < prims.length - 1 && s > prims[k].len) { s -= prims[k].len; k++; }
+    const p = prims[k];
+    const t = Math.max(0, Math.min(1, s / (p.len || 1)));
+    return p.t === 'L' ? { x: p.p0.x + (p.p1.x - p.p0.x) * t, y: p.p0.y + (p.p1.y - p.p0.y) * t } : quadAt(p, t);
+  };
+  const scr = (s) => { const w = world(s); return project(w.x, w.y); };
 
   const arrowEnd = (e.arrow ?? 'end') === 'end' || e.arrow === 'both';
   const arrowStart = e.arrow === 'start' || e.arrow === 'both';
-  const exitT = (poly, from, to, pad) => {
-    // first t (going from `from` to `to`) where the point is clear of poly
-    let lo = from, hi = to;
-    if (nearPoly(scr(hi), poly, pad)) return hi;
-    for (let i = 0; i < 22; i++) {
-      const mid = (lo + hi) / 2;
-      if (nearPoly(scr(mid), poly, pad)) lo = mid; else hi = mid;
+  /** first arc length (going from `from` towards `to`) where the line is clear of poly */
+  const exitS = (poly, from, to, pad) => {
+    const n = Math.max(1, Math.ceil(Math.abs(to - from) / 0.05));
+    let prev = from, hit = null;
+    for (let i = 0; i <= n; i++) {
+      const s = from + ((to - from) * i) / n;
+      if (!nearPoly(scr(s), poly, pad)) { hit = s; break; }
+      prev = s;
     }
+    if (hit === null) return to;
+    if (hit === from) return from;
+    let lo = prev, hi = hit;
+    for (let i = 0; i < 12; i++) { const mid = (lo + hi) / 2; if (nearPoly(scr(mid), poly, pad)) lo = mid; else hi = mid; }
     return hi;
   };
-  let t0 = exitT(A.sil, 0, 0.5, arrowStart ? 9 : 5);
-  let t1 = exitT(B.sil, 1, 0.5, arrowEnd ? 9 : 5);
-  if (t1 - t0 < 0.02) { const mid = (t0 + t1) / 2; t0 = mid - 0.01; t1 = mid + 0.01; }
+  let s0 = exitS(A.sil, 0, total / 2, arrowStart ? 9 : 5);
+  let s1 = exitS(B.sil, total, total / 2, arrowEnd ? 9 : 5);
+  if (s1 - s0 < 0.02 * total) { const m = (s0 + s1) / 2; s0 = m - 0.01 * total; s1 = m + 0.01 * total; }
 
-  // sub-curve [t0, t1] as a screen-space path
-  const s = scr(t0), en = scr(t1);
-  let d;
-  if (curved) {
-    const p0 = world(t0);
-    // exact control for sub-curve: C = P0 + (t1 - t0)/2 * B'(t0)
-    const tg = tangent(t0);
-    const cw = { x: p0.x + ((t1 - t0) / 2) * tg.x, y: p0.y + ((t1 - t0) / 2) * tg.y };
-    const cs = project(cw.x, cw.y);
-    d = `M${r1(s.x)},${r1(s.y)} Q${r1(cs.x)},${r1(cs.y)} ${r1(en.x)},${r1(en.y)}`;
-  } else {
-    d = `M${r1(s.x)},${r1(s.y)} L${r1(en.x)},${r1(en.y)}`;
+  // the visible part [s0, s1]: SVG path, a screen polyline for `at`, and its straight legs
+  let d = '';
+  const pts = [];
+  const legs = [];
+  let acc = 0;
+  const pushPt = (p) => {
+    const q = project(p.x, p.y);
+    q.cum = pts.length ? pts[pts.length - 1].cum + Math.hypot(q.x - pts[pts.length - 1].x, q.y - pts[pts.length - 1].y) : 0;
+    pts.push(q);
+    return q;
+  };
+  for (const p of prims) {
+    const a0 = acc, a1 = acc + p.len;
+    acc = a1;
+    if (a1 <= s0 || a0 >= s1) continue;
+    const u0 = Math.max(0, (s0 - a0) / p.len), u1 = Math.min(1, (s1 - a0) / p.len);
+    const lerp = (u) => ({ x: p.p0.x + (p.p1.x - p.p0.x) * u, y: p.p0.y + (p.p1.y - p.p0.y) * u });
+    const pa = p.t === 'L' ? lerp(u0) : quadAt(p, u0);
+    if (!pts.length) { const q = pushPt(pa); d = `M${r1(q.x)},${r1(q.y)}`; }
+    if (p.t === 'L') {
+      const c0 = pts[pts.length - 1].cum;
+      const pb = lerp(u1);
+      const q = pushPt(pb);
+      d += ` L${r1(q.x)},${r1(q.y)}`;
+      legs.push({ c0, c1: q.cum, w0: pa, w1: pb });
+    } else if (u0 === 0 && u1 === 1) {
+      const c = project(p.c.x, p.c.y);
+      for (let k = 1; k <= 8; k++) pushPt(quadAt(p, k / 8));
+      const q = pts[pts.length - 1];
+      d += ` Q${r1(c.x)},${r1(c.y)} ${r1(q.x)},${r1(q.y)}`;
+    } else {
+      for (let k = 1; k <= 8; k++) { const q = pushPt(quadAt(p, u0 + ((u1 - u0) * k) / 8)); d += ` L${r1(q.x)},${r1(q.y)}`; }
+    }
   }
-
-  const at = (u) => scr(t0 + (t1 - t0) * u); // u in 0..1 along the visible part
-  let length = 0;
-  const cum = [0];
-  { let p = at(0); for (let i = 1; i <= 32; i++) { const n = at(i / 32); length += Math.hypot(n.x - p.x, n.y - p.y); cum.push(length); p = n; } }
-  /** share of the drawn length -> screen point */
-  const atS = (sv) => {
-    const target = Math.max(0, Math.min(1, sv)) * length;
+  if (pts.length < 2) { const q = pushPt(world(s1)); d += ` L${r1(q.x)},${r1(q.y)}`; }
+  const length = pts[pts.length - 1].cum || 1;
+  /** share of the drawn length (0..1) -> screen point. (This is also what SVG animateMotion keyPoints use.) */
+  const at = (u) => {
+    const target = Math.max(0, Math.min(1, u)) * length;
     let i = 0;
-    while (i < 31 && cum[i + 1] < target) i++;
-    const seg = cum[i + 1] - cum[i] || 1;
-    return at((i + (target - cum[i]) / seg) / 32);
+    while (i < pts.length - 2 && pts[i + 1].cum < target) i++;
+    const p = pts[i], q = pts[i + 1] ?? p;
+    const k = Math.max(0, Math.min(1, (target - p.cum) / (q.cum - p.cum || 1)));
+    return { x: p.x + (q.x - p.x) * k, y: p.y + (q.y - p.y) * k };
   };
-  /** u (curve parameter share) -> share of the drawn length (what SVG animateMotion keyPoints use) */
-  const sOf = (u) => {
-    const f = Math.max(0, Math.min(1, u)) * 32;
-    const i = Math.min(31, Math.floor(f));
-    return length ? (cum[i] + (cum[i + 1] - cum[i]) * (f - i)) / length : u;
-  };
+  const ident = (u) => Math.max(0, Math.min(1, u));
 
-  // arrowheads lie flat on the floor
-  const head = (t, dir) => {
-    const w = world(t);
-    const tg = tangent(t);
-    const l = Math.hypot(tg.x, tg.y) || 1;
-    const ux = (tg.x / l) * dir, uy = (tg.y / l) * dir;
+  // arrowheads lie flat on the floor and point along the last (or first) leg
+  const head = (s, dir) => {
+    const w = world(s);
+    const back = world(dir > 0 ? Math.max(0, s - 0.03) : Math.min(total, s + 0.03));
+    const l = Math.hypot(w.x - back.x, w.y - back.y) || 1;
+    const ux = (w.x - back.x) / l, uy = (w.y - back.y) / l;
     const L = 0.27, W = 0.15;
     const tip = project(w.x, w.y);
     const p1 = project(w.x - ux * L - uy * W, w.y - uy * L + ux * W);
@@ -291,16 +503,188 @@ export function edgeLayout(e, A, B, bend = 0) {
     return `M${r1(tip.x)},${r1(tip.y)} L${r1(p1.x)},${r1(p1.y)} L${r1(notch.x)},${r1(notch.y)} L${r1(p2.x)},${r1(p2.y)}Z`;
   };
   const heads = [];
-  if (arrowEnd) heads.push(head(t1, 1));
-  if (arrowStart) heads.push(head(t0, -1));
+  if (arrowEnd) heads.push(head(s1, 1));
+  if (arrowStart) heads.push(head(s0, -1));
 
-  const mid = at(0.5);
+  // label spots: the middle of the longest straight leg, then along it, then the other legs
   const lw = edgeLabelWidth(e.label);
+  const spots = [];
+  for (const leg of [...legs].sort((p, q) => (q.c1 - q.c0) - (p.c1 - p.c0))) {
+    const len = leg.c1 - leg.c0;
+    const mid = (leg.c0 + leg.c1) / 2;
+    for (const k of [0, -0.12, 0.12, -0.22, 0.22, -0.32, 0.32, -0.4, 0.4]) {
+      const c = mid + k * len;
+      if (k && (c - leg.c0 < lw * 0.3 || leg.c1 - c < lw * 0.3)) continue;
+      spots.push(c / length);
+    }
+  }
+  for (const u of [0.5, 0.35, 0.65, 0.22, 0.78]) spots.push(u);
   const labelAt = (u) => { const p = at(u); return rect(p.x - lw / 2, p.y - ISO.edge.h / 2, lw, ISO.edge.h); };
-  const label = e.label ? labelAt(0.5) : null;
-  return { d, at, atS, sOf, mid, length, heads, label, labelU: 0.5, labelAt, tip: arrowEnd ? at(1) : null, tail: arrowStart ? at(0) : null };
+  const labelU = spots[0];
+  const label = e.label ? labelAt(labelU) : null;
+  const pk = !!e.packet;
+  const segs = legs.map((l) => ({ a: l.w0, b: l.w1, axis: Math.abs(l.w1.x - l.w0.x) >= Math.abs(l.w1.y - l.w0.y) ? 'x' : 'y', from: e.from, to: e.to, pk }));
+  const legLen = (l) => (l ? dist(l.w0, l.w1) : 0);
+  return {
+    d, at, atS: at, sOf: ident, mid: at(0.5), length, heads, label, labelU, labelAt, labelSpots: spots,
+    tip: arrowEnd ? at(1) : null, tail: arrowStart ? at(0) : null,
+    route: spec, segs, turns: verts.slice(1, -1), hidden: s0 + (total - s1),
+    firstLeg: legLen(legs[0]), lastLeg: legLen(legs[legs.length - 1]),
+  };
 }
 const r1 = (v) => Math.round(v * 10) / 10;
+
+/**
+ * Cost of a routed edge in a scene: running under other blocks, cards, tags,
+ * notes and edge labels, on top of another edge, a turn or an arrowhead
+ * hidden, and long hidden stretches behind its own blocks (meeting a block on
+ * its visible front faces reads best).
+ */
+function routeCost(e, g, A, B, ctx) {
+  let cost = 0;
+  const n = Math.max(8, Math.ceil(g.length / 8));
+  for (let i = 0; i <= n; i++) {
+    const p = g.at(i / n);
+    if (ctx) {
+      for (const [id, N] of ctx.nodes) if (id !== e.from && id !== e.to && pointInPoly(p, N.sil)) { cost += 2.5; break; }
+      for (const t of ctx.texts) {
+        if (p.x > t.r.x - 2 && p.x < t.r.x + t.r.w + 2 && p.y > t.r.y - 2 && p.y < t.r.y + t.r.h + 2) { cost += t.tag && (t.id === e.from || t.id === e.to) ? 0.2 : 1.2; break; }
+      }
+    }
+    // coming back behind its own end blocks
+    if (i > 1 && i < n - 1 && (pointInPoly(p, A.sil) || pointInPoly(p, B.sil))) cost += 2.5;
+  }
+  if (ctx) {
+    for (const p of [g.tip, g.tail]) {
+      if (p && ctx.texts.some((t) => p.x > t.r.x - 4 && p.x < t.r.x + t.r.w + 4 && p.y > t.r.y - 4 && p.y < t.r.y + t.r.h + 4)) cost += 40;
+    }
+    // running on top of another edge costs a lot; crossing one costs a little
+    for (const s of g.segs) for (const o of ctx.segs) cost += segClash(s, o);
+    // the label needs a free spot on the route
+    if (e.label) {
+      let least = Infinity;
+      for (const u of g.labelSpots.slice(0, 18)) {
+        const r = g.labelAt(u);
+        least = Math.min(least, ctx.texts.reduce((acc, t) => acc + rectOverlap(r, t.r, 2), 0) + [g.tip, g.tail].filter((p) => p && coversHead(r, p)).length * 20);
+        if (!least) break;
+      }
+      if (least > 0) cost += 3 + Math.min(least, 40) * 0.2;
+    }
+    // a packet needs a clear stretch of the route
+    const pk = e.packet === true ? {} : e.packet;
+    if (pk && typeof pk === 'object') {
+      const pw = packetWidth(pk.label), ph = ISO.packet.h;
+      const others = ctx.texts.filter((t) => !(t.tag && (t.id === e.from || t.id === e.to)));
+      const N = 32;
+      let run = 0, longest = 0;
+      for (let i = 0; i <= N; i++) {
+        const p = g.at(i / N);
+        const r = rect(p.x - pw / 2, p.y - ph / 2, pw, ph);
+        if (others.some((t) => rectOverlap(r, t.r, -1) > 0)) run = 0; else longest = Math.max(longest, run++);
+      }
+      if ((longest / N) * g.length < Math.min(80, g.length * 0.4)) cost += 8;
+    }
+  }
+  for (const t of g.turns) {
+    const p = project(t.x, t.y);
+    if (pointInPoly(p, A.sil) || pointInPoly(p, B.sil)) cost += 3;
+    else if (ctx) for (const [id, N] of ctx.nodes) if (id !== e.from && id !== e.to && pointInPoly(p, N.sil)) { cost += 2; break; }
+  }
+  if (g.turns.length && g.lastLeg < 0.3) cost += 3;
+  if (g.turns.length && g.firstLeg < 0.15) cost += 1;
+  cost += 0.6 * g.hidden + 0.04 * (g.length / ISO.G);
+  return cost;
+}
+
+/** Does an edge label (rect) sit on an arrowhead whose tip is at p? */
+const coversHead = (r, p) => p.x > r.x - 8 && p.x < r.x + r.w + 8 && p.y > r.y - 8 && p.y < r.y + r.h + 8;
+
+/** Length (grid units) over which two straight floor legs run alongside each other, at most `gap` apart. */
+function legOverlap(s, o, gap) {
+  if (s.axis !== o.axis) return 0;
+  const k = s.axis === 'x' ? 'y' : 'x', m = s.axis;
+  if (Math.abs(s.a[k] - o.a[k]) > gap) return 0;
+  const ov = Math.min(Math.max(s.a[m], s.b[m]), Math.max(o.a[m], o.b[m])) - Math.max(Math.min(s.a[m], s.b[m]), Math.min(o.a[m], o.b[m]));
+  return Math.max(0, ov);
+}
+
+/** Two legs leaving (or entering) the same block together, neither carrying a packet: a shared trunk, as in a tree. */
+const trunk = (s, o) => (s.from === o.from || s.to === o.to) && !s.pk && !o.pk;
+
+/**
+ * Cost of two straight floor legs: 25 per grid unit on top of each other (2 for a
+ * shared trunk), 3 close alongside, 2 per crossing.
+ */
+function segClash(s, o) {
+  if (s.axis === o.axis) {
+    const on = legOverlap(s, o, 0.26);
+    return on * (trunk(s, o) ? 2 : 25) + (legOverlap(s, o, 0.75) - on) * 3;
+  }
+  const h = s.axis === 'x' ? s : o, v = s.axis === 'x' ? o : s;
+  const inX = v.a.x > Math.min(h.a.x, h.b.x) && v.a.x < Math.max(h.a.x, h.b.x);
+  const inY = h.a.y > Math.min(v.a.y, v.b.y) && h.a.y < Math.max(v.a.y, v.b.y);
+  return inX && inY ? 2 : 0;
+}
+
+/**
+ * Best route for an edge, or for a group of edges between the same two nodes
+ * (they share one route, each in its own lane). `ctx` (or null) holds what is
+ * already on the floor: { nodes, texts: [{ r, id, tag }], segs }.
+ */
+function pickRoute(e, A, B, ctx, members = [{ e, rev: false, lane: 0 }], prefer = null) {
+  const a = { x: A.x, y: A.y }, b = { x: B.x, y: B.y };
+  // in a group the lanes keep the edges apart, so a legacy `bend` is ignored there
+  const asked = members.length === 1
+    ? authorSpec(e, a, b)
+    : members.map((m) => { const s = authorSpec({ ...m.e, bend: undefined }, m.rev ? b : a, m.rev ? a : b); return s && (m.rev ? reverseSpec(s) : s); }).find(Boolean) ?? null;
+  let cands = asked ? [{ spec: asked, pen: 0 }] : routeCandidates(a, b, A, B);
+  // a lone elbow may also shift one lane sideways, so edges fanning out of one block do not share a leg
+  if (!asked && members.length === 1 && ctx?.segs.length && !cands[0].spec.kind.startsWith('s')) {
+    cands = [...cands, ...cands.flatMap((c) => [LANE / 2, -LANE / 2].map((shift) => ({ ...c, shift, pen: c.pen + 0.8 })))];
+  }
+  // the route this edge had in the previous step keeps a head start, so lines do not jump between steps
+  const was = prefer?.get(e.id);
+  const same = (c) => was && was.kind === c.spec.kind && Math.abs((was.f ?? 0) - (c.spec.f ?? 0)) < 1e-6 && Math.abs((was.off ?? 0) - (c.spec.off ?? 0)) < 1e-6
+    && Math.abs((was.lane ?? 0) - (members[0].lane + (c.shift ?? 0))) < 1e-6;
+  let best = null;
+  for (const c of cands) {
+    if (c.detour && best && best.cost - best.pen < 2 && !same(c)) break; // the straight line is clear enough
+    let cost = c.pen - (same(c) ? 1.5 : 0);
+    const geoms = [];
+    for (const m of members) {
+      const spec = { ...c.spec, lane: m.lane + (c.shift ?? 0) };
+      const own = m.rev ? reverseSpec(spec) : spec;
+      const [MA, MB] = m.rev ? [B, A] : [A, B];
+      const g = edgeLayout(m.e, MA, MB, own);
+      if (cands.length > 1) cost += routeCost(m.e, g, MA, MB, ctx);
+      geoms.push(g);
+    }
+    if (!best || cost < best.cost - 0.01) best = { cost, pen: c.pen, spec: c.spec, geoms };
+  }
+  return best;
+}
+
+/** Edges between the same two nodes, with the lane each one takes (in the lead edge's direction). */
+function edgeGroups(edges, nodes) {
+  const groups = new Map();
+  for (const e of edges) {
+    const key = [e.from, e.to].sort().join('|');
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(e);
+  }
+  const of = new Map();
+  for (const list of groups.values()) {
+    const lead = list[0];
+    // wide enough for packets to pass each other, the same in every step (so lanes do not
+    // shift when a packet comes or goes); every lane still has to land inside both blocks
+    let gap = LANE_PAIR;
+    const A = nodes?.get(lead.from)?.shape, B = nodes?.get(lead.to)?.shape;
+    if (A && B && list.length > 1) gap = Math.min(gap, ((Math.min(A.hw, A.hd, B.hw, B.hd) - 0.06) * 2) / (list.length - 1));
+    const members = list.map((x, k) => ({ e: x, rev: x.from !== lead.from, lane: list.length > 1 ? (k - (list.length - 1) / 2) * gap : 0 }));
+    list.forEach((x, i) => of.set(x.id, { lead, members, index: i }));
+  }
+  return of;
+}
 
 /**
  * Where a packet rests when motion is reduced: on the edge, beside its label,
@@ -362,27 +746,22 @@ export function noteLayout(n) {
 }
 
 // ---------------------------------------------------------------- whole scene
-/** Opposite edges between the same two nodes curve apart automatically. */
-export function autoBends(edges) {
-  const keys = new Set(edges.map((e) => `${e.from}>${e.to}`));
-  const m = new Map();
-  for (const e of edges) if (e.bend === undefined && keys.has(`${e.to}>${e.from}`)) m.set(e.id, 0.55);
-  return m;
-}
-
 /**
  * Lay out a scene. `poses` (optional) overrides node positions and lift (the
- * renderer passes tweened values). Edge labels slide along their edge and zone
- * names move to another corner when their first spot would cover other text.
+ * renderer passes tweened values); `routes` (optional, edge id -> route spec)
+ * reuses routes picked earlier, so an edge keeps its shape while nodes glide.
+ * Edges are routed in scene order: each one picks the elbow that keeps off
+ * blocks, text and the edges routed before it, then its label takes the first
+ * free spot on its longest straight leg. Zone names move to another corner
+ * when their first spot would cover other text.
  */
-export function sceneLayout(scene, poses) {
+export function sceneLayout(scene, poses, routes) {
   const nodes = new Map();
   for (const n of scene.nodes) {
     const p = poses?.get(n.id);
     if (p) nodes.set(n.id, nodeLayout(n, p.x, p.y, p.lift));
     else if (Number.isFinite(n.x) && Number.isFinite(n.y)) nodes.set(n.id, nodeLayout(n));
   }
-  const bends = autoBends(scene.edges);
   const notes = scene.notes.filter((n) => Number.isFinite(n.x) && Number.isFinite(n.y)).map((n) => {
     // a note points at something only when its spot is next to a block;
     // otherwise it is a free-standing sticker without a tail
@@ -394,24 +773,79 @@ export function sceneLayout(scene, poses) {
   for (const L of nodes.values()) fixed.push(L.card, ...L.tags);
   for (const n of notes) fixed.push(n.rect);
   const hits = (r, list) => list.reduce((acc, o) => acc + rectOverlap(r, o, 2), 0);
+  // what a route should keep off: cards (with their tail), tags, notes, then edge labels as they are placed
+  const texts = [];
+  for (const [id, L] of nodes) { texts.push({ r: { ...L.card, h: L.card.h + ISO.card.tail }, id }); L.tags.forEach((r) => texts.push({ r, id, tag: true })); }
+  for (const n of notes) texts.push({ r: n.rect, id: n.n.id });
 
+  const live = scene.edges.filter((e) => nodes.has(e.from) && nodes.has(e.to));
+  const groups = edgeGroups(live, nodes);
+  const leads = [...new Set(live.map((e) => groups.get(e.id).lead))];
+  const routed = new Map();
+  const segsBut = (mine) => [...routed].filter(([id]) => !mine.has(id)).flatMap(([, g]) => g.segs);
+  const linesBut = (id) => {
+    const out = [];
+    for (const [k, g] of routed) {
+      if (k === id) continue;
+      const pk = !!live.find((x) => x.id === k)?.packet;
+      for (let i = 1; i < 24; i++) out.push({ p: g.at(i / 24), pk });
+    }
+    return out;
+  };
+  /** The free-est spot for an edge label on its route: off text, off blocks, off the lines of other edges. */
+  const placeLabel = (e, g, taken) => {
+    const A = nodes.get(e.from), B = nodes.get(e.to);
+    const lines = linesBut(e.id);
+    const heads = [...routed.values()].flatMap((h) => [h.tip, h.tail]).filter(Boolean);
+    let best = null;
+    const tried = new Set();
+    for (const u of g.labelSpots) {
+      const key = Math.round(u * 200);
+      if (tried.has(key)) continue;
+      tried.add(key);
+      const r = g.labelAt(u);
+      let others = 0;
+      for (const [id, N] of nodes) if (id !== e.from && id !== e.to) others += blockHit(r, N);
+      let crossing = 0;
+      for (const l of lines) if (l.p.x > r.x && l.p.x < r.x + r.w && l.p.y > r.y && l.p.y < r.y + r.h) crossing += l.pk ? 4 : 1; // packets need a clear line
+      // and never on an arrowhead, its own or another edge's
+      const onHead = heads.filter((p) => coversHead(r, p)).length;
+      const cost = 20 * (hits(r, fixed) + hits(r, taken)) + 0.5 * (blockHit(r, A) + blockHit(r, B)) + 0.3 * others + crossing + 25 * onHead;
+      if (!best || cost < best.cost - 0.01) best = { u, r, cost };
+      if (cost === 0) break;
+    }
+    return best;
+  };
+  const route = (lead, labels) => {
+    const grp = groups.get(lead.id);
+    const mine = new Set(grp.members.map((m) => m.e.id));
+    const ctx = { nodes, texts: [...texts, ...[...labels].filter(([id]) => !mine.has(id)).map(([id, r]) => ({ r, id: `edge:${id}` }))], segs: segsBut(mine) };
+    const { geoms } = pickRoute(lead, nodes.get(lead.from), nodes.get(lead.to), ctx, grp.members, PREFER.get(scene));
+    grp.members.forEach((m, i) => routed.set(m.e.id, geoms[i]));
+  };
+  if (routes && live.every((e) => routes.get(e.id))) {
+    for (const e of live) routed.set(e.id, edgeLayout(e, nodes.get(e.from), nodes.get(e.to), routes.get(e.id)));
+  } else {
+    // 1. greedy, in scene order: each group routes around what is already there (rough labels included)
+    const labels = new Map();
+    for (const lead of leads) {
+      route(lead, labels);
+      for (const m of groups.get(lead.id).members) {
+        const g = routed.get(m.e.id);
+        if (g.label) labels.set(m.e.id, placeLabel(m.e, g, [...labels.values()]).r);
+      }
+    }
+    // 2. two more rounds, each group now seeing every other edge, so an early edge
+    //    can step aside for a later one (and the later one settle in turn)
+    for (let round = 0; round < 2; round++) for (const lead of leads) route(lead, labels);
+  }
+  // labels, once every line is final
   const edges = [];
   const placed = [];
-  for (const e of scene.edges) {
-    const A = nodes.get(e.from), B = nodes.get(e.to);
-    if (!A || !B) continue;
-    const g = edgeLayout(e, A, B, e.bend ?? bends.get(e.id) ?? 0);
+  for (const e of live) {
+    const g = routed.get(e.id);
     if (g.label) {
-      let best = null;
-      for (const u of LABEL_SPOTS) {
-        const r = g.labelAt(u);
-        // keep the pill off the end blocks as well
-        let others = 0;
-        for (const [id, N] of nodes) if (id !== e.from && id !== e.to) others += blockHit(r, N);
-        const cost = hits(r, fixed) + hits(r, placed) + 0.5 * (blockHit(r, A) + blockHit(r, B)) + 0.3 * others;
-        if (!best || cost < best.cost - 0.01) best = { u, r, cost };
-        if (cost === 0) break;
-      }
+      const best = placeLabel(e, g, placed);
       g.label = best.r;
       g.labelU = best.u;
       placed.push(best.r);
@@ -563,7 +997,6 @@ function assignPacketPhases(edges) {
     done.push({ g, m: best.m });
   });
 }
-const LABEL_SPOTS = [0.5, 0.42, 0.58, 0.35, 0.65, 0.28, 0.72, 0.22, 0.78];
 /** Overlap depth between a rect and a node's block outline (bounding box). */
 function blockHit(r, L) {
   const b = polyBox(L.sil);
@@ -584,7 +1017,11 @@ export function layoutBounds(scenes) {
       add(polyBox(silhouette(n.shape, ISO.lift).map((p) => ({ x: n.c.x + p.x, y: n.c.y + p.y }))));
       add({ ...n.card, y: n.card.y - ISO.lift });
     }
-    for (const { g } of L.edges) if (g.label) add(g.label);
+    for (const { g } of L.edges) {
+      if (g.label) add(g.label);
+      // elbows can reach past the blocks: keep the whole line (and its arrowheads) in view
+      for (let i = 0; i <= 24; i++) { const p = g.at(i / 24); add(rect(p.x - 10, p.y - 10, 20, 20)); }
+    }
     for (const z of L.zones) { add(polyBox(z.poly)); add({ ...polyBox(z.poly), h: polyBox(z.poly).h + ISO.zone.thick }); if (z.label) add(z.label); }
     for (const n of L.notes) add(n.rect);
   }
@@ -680,6 +1117,14 @@ export function layoutProblems(scene) {
     }
     const frac = hidden / (N + 1);
     if (frac > 0.45) out.push({ level: 'warn', msg: `edge "${e.id}" runs ${Math.round(frac * 100)}% under the card of ${[...by].map((x) => `"${x}"`).join(', ')}; it is hard to follow`, ids: [e.from, e.to, ...by], depth: frac * 20 });
+  }
+  // two edges running on top of each other (edges between the same two nodes take lanes and never do;
+  // a shared trunk out of one block, without packets, is fine)
+  for (let i = 0; i < L.edges.length; i++) for (let j = i + 1; j < L.edges.length; j++) {
+    const p = L.edges[i], q = L.edges[j];
+    let ov = 0;
+    for (const s of p.g.segs) for (const o of q.g.segs) if (!trunk(s, o)) ov += legOverlap(s, o, 0.26);
+    if (ov > 0.4) out.push({ level: 'warn', msg: `edges "${p.e.id}" and "${q.e.id}" run on top of each other for ${ov.toFixed(1)} grid units; move a node or set "route" on one of them`, ids: [p.e.from, p.e.to, q.e.from, q.e.to], depth: ov * 10 });
   }
   return out;
 }

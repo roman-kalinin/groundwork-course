@@ -8,6 +8,7 @@ import { CHAPTER_LABEL, IsoBadge, LEVEL_LABEL, useReducedMotion } from './bits';
 import { CodeBlock } from './CodeBlock';
 import { GlossaryProvider, Rich } from './Rich';
 import { SceneView, sceneBounds } from './SceneView';
+import { linkSceneRoutes } from '../../shared/iso.js';
 import { UiIcon } from './UiIcon';
 import { NotFound } from './Home';
 
@@ -53,7 +54,8 @@ function LessonPlayer({ meta, lesson, at }: { meta: LessonMeta; lesson: Lesson; 
   const progress = useProgress();
   const lp = progress.lessons[meta.key];
 
-  const scenes = useMemo(() => resolveLessonScenes(lesson.steps), [lesson]);
+  // linkSceneRoutes: each step keeps the edge routes of the step before when it can
+  const scenes = useMemo(() => linkSceneRoutes(resolveLessonScenes(lesson.steps)), [lesson]);
   const bounds = useMemo(() => sceneBounds(scenes), [scenes]);
   const firstScene = scenes.find(Boolean);
   const previewBounds = useMemo(() => (firstScene ? sceneBounds([firstScene]) : null), [firstScene]);

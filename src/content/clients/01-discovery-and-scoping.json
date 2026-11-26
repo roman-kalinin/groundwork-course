@@ -175,7 +175,7 @@
           { "id": "api", "x": 6.4, "y": 4, "label": "Next.js API", "sublabel": "on Vercel", "icon": "server", "kind": "server" },
           { "id": "db", "x": 10.4, "y": 4, "label": "Supabase", "sublabel": "bookings, clients", "icon": "database", "kind": "data" },
           { "id": "cron", "x": 6.4, "y": 1.6, "label": "Scheduled job", "sublabel": "every hour", "icon": "clock", "kind": "server", "status": "active" },
-          { "id": "sms", "x": 10.4, "y": 0.8, "label": "SMS / email", "sublabel": "provider account", "icon": "mail", "kind": "external", "status": "warn" },
+          { "id": "sms", "x": 10.4, "y": 1.6, "label": "SMS / email", "sublabel": "provider account", "icon": "mail", "kind": "external", "status": "warn" },
           { "id": "pay", "x": 10.4, "y": 6.4, "label": "Payments", "sublabel": "later, not MVP", "icon": "money", "kind": "external", "status": "dim" }
         ],
         "edges": [

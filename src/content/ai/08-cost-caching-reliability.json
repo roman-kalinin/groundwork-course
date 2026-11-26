@@ -184,7 +184,7 @@
         "nodes": [
           { "id": "llm", "status": "error", "tags": null, "sublabel": "still overloaded" },
           { "id": "route", "status": "ok", "tags": ["fallback plan"] },
-          { "id": "alt", "x": 10.4, "y": 7.4, "label": "Fallback model", "sublabel": "other size or provider", "icon": "sparkle", "kind": "ai", "status": "ok" },
+          { "id": "alt", "x": 10.4, "y": 7.6, "label": "Fallback model", "sublabel": "other size or provider", "icon": "sparkle", "kind": "ai", "status": "ok" },
           { "id": "usage", "status": "dim" }
         ],
         "edges": [

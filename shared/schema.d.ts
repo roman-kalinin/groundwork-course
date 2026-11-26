@@ -33,6 +33,8 @@ export interface SceneEdge {
   style?: EdgeStyle;
   status?: Status;
   arrow?: Arrow;
+  route?: 'x-first' | 'y-first' | 'mid';
+  /** legacy: its sign picks the side of the elbow */
   bend?: number;
   packet?: Packet | boolean;
 }

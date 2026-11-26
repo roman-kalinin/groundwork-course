@@ -2,9 +2,9 @@ import { createContext, useContext, useEffect, useId, useLayoutEffect, useMemo, 
 import { ICONS } from '../../shared/schema.js';
 import type { Packet, ResolvedScene, SceneEdge, SceneNode, SceneNote, SceneZone } from '../../shared/schema.js';
 import {
-  FLAG_W, ISO, PACKET_MOVE, autoBends, boxCorners, edgeLayout, layoutBounds, nodeLayout, project, sceneLayout, stillPacket, zoneLayout,
+  FLAG_W, ISO, PACKET_MOVE, boxCorners, edgeLayout, layoutBounds, nodeLayout, project, sceneLayout, stillPacket, zoneLayout,
 } from '../../shared/iso.js';
-import type { EdgeGeom, NodeLayout, PacketMotion, Pt, Rect, Shape } from '../../shared/iso.js';
+import type { EdgeGeom, EdgeRoute, NodeLayout, PacketMotion, Pt, Rect, Shape } from '../../shared/iso.js';
 import { UiIcon } from './UiIcon';
 
 // Isometric scene renderer. The lesson grid (12 x 8) becomes an iso floor;
@@ -1060,7 +1060,6 @@ function SceneContent({ s, prevScene, reduced, view }: { s: ResolvedScene; prevS
   const poses = useTweenedPoses(s.nodes, reduced);
   const lastPose = useRef(new Map<string, Pose>());
   for (const [k, v] of poses) lastPose.current.set(k, v);
-  const bends = useMemo(() => autoBends(s.edges), [s.edges]);
   const badges = useMemo(() => badgeSet(s, prevScene), [s, prevScene]);
   const tints = useMemo(() => zoneTints(s), [s]);
 
@@ -1070,7 +1069,13 @@ function SceneContent({ s, prevScene, reduced, view }: { s: ResolvedScene; prevS
     const p = poses.get(n.id) ?? lastPose.current.get(n.id);
     if (p) livePoses.set(n.id, p);
   }
-  const live = sceneLayout(s, livePoses);
+  // the resting layout picks each edge's route and its packet timing; the live (tweened)
+  // layout reuses those routes, so an edge keeps its shape while its nodes glide
+  const rest = useMemo(() => sceneLayout(s), [s]);
+  const routes = useMemo(() => new Map(rest.edges.map(({ e, g }) => [e.id, g.route])), [rest]);
+  const lastRoutes = useRef(new Map<string, EdgeRoute>());
+  for (const [k, v] of routes) lastRoutes.current.set(k, v);
+  const live = sceneLayout(s, livePoses, routes);
   const layouts = new Map<string, NodeLayout>(live.nodes);
   for (const { item, leaving } of nodes) {
     if (!leaving || layouts.has(item.id)) continue;
@@ -1094,13 +1099,13 @@ function SceneContent({ s, prevScene, reduced, view }: { s: ResolvedScene; prevS
     .sort((a, b) => a.L.depth - b.L.depth);
 
   // packet timing (start offsets that keep packets apart) comes from the resting layout
-  const motions = useMemo(() => new Map(sceneLayout(s).edges.map(({ e, g }) => [e.id, g.motion ?? null])), [s]);
+  const motions = useMemo(() => new Map(rest.edges.map(({ e, g }) => [e.id, g.motion ?? null])), [rest]);
   const edgeGeoms = edges.flatMap(({ item, leaving }) => {
     const g = !leaving ? liveEdges.get(item.id) : undefined;
     const geom = g ?? (() => {
       const A = layouts.get(item.from);
       const B = layouts.get(item.to);
-      return A && B ? edgeLayout(item, A, B, item.bend ?? bends.get(item.id) ?? 0) : null;
+      return A && B ? edgeLayout(item, A, B, lastRoutes.current.get(item.id)) : null;
     })();
     if (!geom) return [];
     return [{ item, leaving, g: geom, m: motions.get(item.id) ?? null }];

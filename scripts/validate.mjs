@@ -11,7 +11,7 @@ import {
   PACKET_DIRECTIONS, PACKET_SPEEDS, MODULE_COLORS, CODE_LANGUAGES, LESSON_FILE_RE,
   resolveLessonScenes, sanitizeInline, wordCount, plainText,
 } from '../shared/schema.js';
-import { layoutProblems, NODE_SHAPES } from '../shared/iso.js';
+import { EDGE_ROUTES, layoutProblems, linkSceneRoutes, NODE_SHAPES } from '../shared/iso.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CONTENT = join(ROOT, 'src', 'content');
@@ -212,7 +212,7 @@ function checkResolvedScene(path, scene, stepSpec) {
     curId = `edge:${e.id}`;
     const p = where('edges', e.id);
     claim(e.id, 'edge', p);
-    checkKeys(p, e, ['id', 'from', 'to', 'label', 'style', 'status', 'arrow', 'bend', 'packet']);
+    checkKeys(p, e, ['id', 'from', 'to', 'label', 'style', 'status', 'arrow', 'route', 'bend', 'packet']);
     for (const end of ['from', 'to']) {
       if (!isStr(e[end])) err(p, `edge needs "${end}" (a node id)`);
       else if (!nodeIds.has(e[end])) {
@@ -226,7 +226,8 @@ function checkResolvedScene(path, scene, stepSpec) {
     enumField(p, e, 'style', EDGE_STYLES);
     enumField(p, e, 'status', STATUSES);
     enumField(p, e, 'arrow', ARROWS);
-    opt(p, e, 'bend', (v) => isNum(v) && v >= -3 && v <= 3, 'a number from -3 to 3 (curve amount in grid units; 0 = straight)');
+    enumField(p, e, 'route', EDGE_ROUTES);
+    opt(p, e, 'bend', (v) => isNum(v) && v >= -3 && v <= 3, 'a number from -3 to 3 (legacy: its sign picks the side of the elbow; prefer "route")');
     if ('packet' in e) {
       const pk = e.packet;
       if (typeof pk === 'boolean') { /* ok */ } else if (!isObj(pk)) err(`${p}.packet`, 'must be true, false, or an object { label?, status?, direction?, speed? }');
