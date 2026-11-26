@@ -8,7 +8,7 @@
     "How a <b>stack</b> (last in, first out) powers undo and bracket matching",
     "How a <b>queue</b> (first in, first out) keeps work in order, and why <code>shift()</code> can be slow",
     "What a <b>linked list</b> is, and how to reverse one without losing it",
-    "How trimming a chat history for an LLM is a queue problem"
+    "How trimming a chat history for an AI model is a queue problem"
   ],
   "glossary": {
     "stack": "A list where you only add and remove at the top, so the last thing in is the first thing out (LIFO).",
@@ -20,78 +20,76 @@
     "linked list": "A chain of items where each item holds its value plus a pointer to the next item, instead of sitting in numbered boxes.",
     "pointer": "A reference that says where another item is, so you can follow it there.",
     "head": "The first item of a linked list. If you lose it, you lose the whole list.",
-    "context window": "The maximum amount of text, counted in tokens, that a model can read in one request."
+    "context window": "The maximum amount of text, counted in tokens, that a model can read in one request.",
+    "token": "A small piece of text, often part of a word, that AI models read, count and charge by.",
+    "serverless function": "Code that a host starts when a request arrives and may stop at any moment afterwards, so nothing kept in its memory is safe."
   },
   "steps": [
     {
-      "title": "Undo: which change goes first?",
-      "chapter": "problem",
+      "title": "Notely remembers every edit",
+      "chapter": "setup",
       "body": [
-        "Maya types a title in Notely, bolds a word, then deletes a line. She presses Cmd+Z.",
-        "Which change should come back? The <b>last</b> one: the deleted line. Press again, and the bold goes. The editor needs a structure where the newest item is always the easiest one to reach."
+        "Maya is editing a note in Notely, our notes app. She types a title, bolds a word, then deletes a line. The editor keeps each edit in a list, newest on top, so it can undo them later.",
+        "Now Maya presses Cmd+Z, the undo shortcut. Which edit should come back first?"
       ],
       "scene": {
-        "caption": "Three edits, newest on top. Undo needs the top one.",
+        "caption": "Three edits, newest on top. Maya is about to press undo.",
         "zones": [
           {
-            "id": "z-stack",
-            "x": 1.4,
-            "y": 1.4,
-            "w": 4.4,
-            "h": 6.4,
-            "label": "Edit history"
+            "id": "stack",
+            "x": 4.7,
+            "y": 0.3,
+            "w": 2.6,
+            "h": 7.4,
+            "label": "undo stack"
           }
         ],
         "nodes": [
           {
-            "id": "s1",
-            "x": 3.6,
-            "y": 7.1,
-            "label": "Typed title",
-            "sublabel": "1st edit",
-            "icon": "pencil",
-            "shape": "tile",
-            "kind": "data"
+            "id": "maya",
+            "x": 1.4,
+            "y": 1.4,
+            "label": "Maya",
+            "icon": "user",
+            "kind": "person"
           },
           {
-            "id": "s2",
-            "x": 3.6,
-            "y": 5.5,
-            "label": "Bold a word",
-            "sublabel": "2nd edit",
-            "icon": "pencil",
-            "shape": "tile",
-            "kind": "data"
-          },
-          {
-            "id": "s3",
-            "x": 3.6,
-            "y": 3.9,
+            "id": "e3",
+            "x": 6,
+            "y": 1.4,
             "label": "Deleted line",
-            "sublabel": "3rd edit, newest",
             "icon": "pencil",
-            "shape": "tile",
             "kind": "data",
-            "status": "active"
+            "shape": "tile",
+            "pill": "newest"
           },
           {
-            "id": "undo",
-            "x": 9,
-            "y": 3.9,
-            "label": "Cmd+Z",
-            "sublabel": "Maya hits undo",
-            "icon": "refresh",
-            "kind": "client",
-            "status": "warn"
+            "id": "e2",
+            "x": 6,
+            "y": 3.7,
+            "label": "Bold word",
+            "icon": "pencil",
+            "kind": "data",
+            "shape": "tile"
+          },
+          {
+            "id": "e1",
+            "x": 6,
+            "y": 6,
+            "label": "Typed title",
+            "icon": "pencil",
+            "kind": "data",
+            "shape": "tile"
           }
         ],
         "edges": [
           {
-            "from": "undo",
-            "to": "s3",
-            "label": "which one?",
-            "style": "dashed",
-            "status": "warn"
+            "from": "maya",
+            "to": "e3",
+            "packet": {
+              "kind": "request",
+              "speed": "slow"
+            }
           }
         ]
       }
@@ -100,67 +98,39 @@
       "title": "Stacks: last in, first out",
       "chapter": "idea",
       "body": [
-        "A <span class=\"term\">stack</span> only lets you touch the top. You <span class=\"term\">push</span> a new item onto the top, and you <span class=\"term\">pop</span> the top item off. Both are <b>O(1)</b>.",
-        "That rule is called <span class=\"term\">LIFO</span>. In JavaScript, a plain array is a fine stack: <code>push()</code> and <code>pop()</code> both work at the end, so nothing shifts."
+        "Undo brings back the <b>last</b> edit first: the deleted line. That calls for a <span class=\"term\">stack</span>. You <span class=\"term\">push</span> new items onto the top and <span class=\"term\">pop</span> the top item off. Both are <b>O(1)</b>.",
+        "The rule is called <span class=\"term\">LIFO</span>. In JavaScript, a plain array is a fine stack: <code>push()</code> and <code>pop()</code> both work at the end, so nothing shifts."
       ],
       "callout": {
         "type": "analogy",
         "text": "A pile of plates. You put clean plates on top and take from the top. Nobody pulls a plate from the middle."
       },
+      "changes": [
+        "~ Deleted line: popped off the top and undone",
+        "~ Bold word: now on top, next in line for undo"
+      ],
       "scene": {
         "extends": "previous",
-        "caption": "New edits are pushed on top. Undo pops the top.",
+        "caption": "Undo pops the newest edit. The one below becomes the new top.",
         "nodes": [
           {
-            "id": "s3",
-            "status": "normal",
-            "sublabel": "3rd edit"
+            "id": "e3",
+            "x": 10.2,
+            "status": "ok",
+            "pill": "undone"
           },
           {
-            "id": "s4",
-            "x": 3.6,
-            "y": 2.3,
-            "label": "Added link",
-            "sublabel": "4th edit, top",
-            "icon": "pencil",
-            "shape": "tile",
-            "kind": "data",
-            "status": "active"
-          },
-          {
-            "id": "edit",
-            "x": 9,
-            "y": 1.8,
-            "label": "New edit",
-            "sublabel": "Maya types",
-            "icon": "pencil",
-            "kind": "client"
-          },
-          {
-            "id": "undo",
-            "status": "ok"
+            "id": "e2",
+            "status": "active",
+            "pill": "top"
           }
-        ],
-        "remove": [
-          "undo>s3"
         ],
         "edges": [
           {
-            "from": "edit",
-            "to": "s4",
-            "label": "push()",
+            "id": "maya>e3",
+            "label": "Cmd+Z",
             "packet": {
-              "label": "edit"
-            }
-          },
-          {
-            "from": "s4",
-            "to": "undo",
-            "label": "pop()",
-            "status": "ok",
-            "packet": {
-              "label": "undo",
-              "status": "ok"
+              "kind": "request"
             }
           }
         ]
@@ -170,68 +140,79 @@
       "title": "Stacks check brackets, too",
       "chapter": "how",
       "body": [
-        "A classic interview problem: is <code>{[()]}</code> balanced? Walk the string. Push every opening bracket. On a closing bracket, pop the top and check it is the matching opener.",
-        "If anything mismatches, or the stack is not empty at the end, it is unbalanced. One pass: <b>O(n)</b>. Your program's call stack works the same way: the newest function call finishes first."
+        "A classic problem: is <code>{[()]}</code> balanced? Walk the string. Push every opening bracket. On a closing bracket, pop the top and check that it is the matching opener.",
+        "Any mismatch, or anything left on the stack at the end, means unbalanced. One pass: <b>O(n)</b>. Your program's call stack works the same way: the newest function call finishes first."
       ],
-      "code": {
-        "language": "ts",
-        "code": "const PAIRS = new Map([[\")\", \"(\"], [\"]\", \"[\"], [\"}\", \"{\"]]);\n\nfunction isBalanced(s: string): boolean {\n  const stack: string[] = [];\n  for (const ch of s) {\n    if (\"([{\".includes(ch)) stack.push(ch);\n    else if (PAIRS.has(ch) && stack.pop() !== PAIRS.get(ch)) {\n      return false;\n    }\n  }\n  return stack.length === 0;\n}"
-      },
       "callout": {
         "type": "tip",
         "text": "Tools that parse streamed JSON from a model use the same idea: a stack of the braces and brackets still open tells them what has not closed yet."
       },
+      "code": {
+        "language": "ts",
+        "code": "const PAIRS = new Map([[\")\", \"(\"], [\"]\", \"[\"], [\"}\", \"{\"]]);\n\nfunction isBalanced(s: string): boolean {\n  const stack: string[] = [];\n  for (const ch of s) {\n    if (\"([{\".includes(ch)) stack.push(ch);\n    else if (PAIRS.has(ch) && stack.pop() !== PAIRS.get(ch)) {\n      return false;\n    }\n  }\n  return stack.length === 0;\n}"
+      },
+      "changes": [
+        "− Maya, Typed title, Bold word, Deleted line",
+        "+ {, [, (: opening brackets, pushed in that order",
+        "+ Next: ): a closing bracket, checked against the top"
+      ],
       "scene": {
-        "extends": "previous",
-        "caption": "Openers pile up. A closer must match whatever is on top.",
-        "remove": [
-          "s4",
-          "edit"
+        "caption": "The closing bracket matches the opener on top, so the top is popped.",
+        "zones": [
+          {
+            "id": "stack",
+            "x": 4.7,
+            "y": 0.3,
+            "w": 2.6,
+            "h": 7.4,
+            "label": "open brackets"
+          }
         ],
         "nodes": [
           {
-            "id": "s1",
-            "label": "(",
-            "sublabel": "pushed 3rd",
-            "icon": "code",
-            "y": 3.9
-          },
-          {
-            "id": "s2",
-            "label": "[",
-            "sublabel": "pushed 2nd",
-            "icon": "code"
-          },
-          {
-            "id": "s3",
-            "label": "{",
-            "sublabel": "pushed 1st",
-            "icon": "code",
-            "y": 7.1
-          },
-          {
-            "id": "undo",
+            "id": "next",
+            "x": 1.4,
+            "y": 1.4,
             "label": "Next: )",
-            "sublabel": "matches top (",
-            "icon": "check",
-            "status": "ok"
-          }
-        ],
-        "zones": [
+            "kind": "neutral",
+            "shape": "flag",
+            "status": "active"
+          },
           {
-            "id": "z-stack",
-            "label": "Open brackets"
+            "id": "b3",
+            "x": 6,
+            "y": 1.4,
+            "label": "(",
+            "kind": "data",
+            "shape": "tile",
+            "status": "ok",
+            "pill": "top"
+          },
+          {
+            "id": "b2",
+            "x": 6,
+            "y": 3.7,
+            "label": "[",
+            "kind": "data",
+            "shape": "tile"
+          },
+          {
+            "id": "b1",
+            "x": 6,
+            "y": 6,
+            "label": "{",
+            "kind": "data",
+            "shape": "tile"
           }
         ],
         "edges": [
           {
-            "from": "undo",
-            "to": "s1",
-            "label": "pop and compare",
-            "status": "ok",
+            "from": "next",
+            "to": "b3",
+            "label": "match?",
             "packet": {
-              "label": ")",
-              "status": "ok"
+              "kind": "request",
+              "direction": "both"
             }
           }
         ]
@@ -241,87 +222,91 @@
       "title": "Queues: first in, first out",
       "chapter": "how",
       "body": [
-        "Now the opposite rule. Notely gets many AI summary jobs and should handle them in the order they arrived. That is a <span class=\"term\">queue</span>: add at the back, take from the front.",
-        "That rule is called <span class=\"term\">FIFO</span>. You met queues as services in system design. Inside an algorithm, the same shape keeps work in arrival order, and breadth-first search (next lesson) depends on it."
+        "The opposite rule: many people click Summarize at once. Each click becomes a job, and a <b>worker</b> (a program that runs one job at a time) should handle them in arrival order.",
+        "That is a <span class=\"term\">queue</span>: add at the back, take from the front. The rule is called <span class=\"term\">FIFO</span>. Breadth-first search, in the next lesson, depends on it."
       ],
       "callout": {
         "type": "analogy",
         "text": "A line at a coffee shop. New people join at the back. The barista serves whoever is at the front."
       },
+      "changes": [
+        "− {, [, (, Next: )",
+        "+ New job, Job 3, Job 2, Job 1: Summarize jobs in a line",
+        "+ Worker: runs one job at a time, from the front"
+      ],
       "scene": {
-        "caption": "Jobs join at the back. The worker takes from the front.",
+        "caption": "Jobs join at the back. The worker takes the oldest from the front.",
+        "zones": [
+          {
+            "id": "queue",
+            "x": 3.3,
+            "y": 0.8,
+            "w": 6.9,
+            "h": 2.4,
+            "label": "job queue"
+          }
+        ],
         "nodes": [
           {
             "id": "in",
-            "x": 1.6,
-            "y": 4,
+            "x": 0.6,
+            "y": 2,
             "label": "New job",
-            "sublabel": "enqueue",
             "icon": "upload",
             "kind": "client"
           },
           {
             "id": "q3",
-            "x": 4.2,
-            "y": 4,
+            "x": 4.4,
+            "y": 2,
             "label": "Job 3",
-            "sublabel": "newest",
-            "shape": "tile",
-            "kind": "data"
+            "icon": "box",
+            "kind": "data",
+            "shape": "tile"
           },
           {
             "id": "q2",
-            "x": 6.4,
-            "y": 4,
+            "x": 6.7,
+            "y": 2,
             "label": "Job 2",
-            "shape": "tile",
-            "kind": "data"
+            "icon": "box",
+            "kind": "data",
+            "shape": "tile"
           },
           {
             "id": "q1",
-            "x": 8.6,
-            "y": 4,
+            "x": 9,
+            "y": 2,
             "label": "Job 1",
-            "sublabel": "oldest, front",
-            "shape": "tile",
+            "icon": "box",
             "kind": "data",
-            "status": "active"
+            "shape": "tile",
+            "pill": "oldest"
           },
           {
             "id": "worker",
-            "x": 10.8,
-            "y": 4,
+            "x": 9,
+            "y": 5.8,
             "label": "Worker",
-            "sublabel": "dequeue",
             "icon": "gear",
             "kind": "server"
-          }
-        ],
-        "zones": [
-          {
-            "id": "z-queue",
-            "x": 2.8,
-            "y": 2.6,
-            "w": 7.2,
-            "h": 2.8,
-            "label": "Queue"
           }
         ],
         "edges": [
           {
             "from": "in",
             "to": "q3",
+            "label": "enqueue",
             "packet": {
-              "label": "job 4"
+              "kind": "job"
             }
           },
           {
             "from": "q1",
             "to": "worker",
-            "status": "ok",
+            "label": "dequeue",
             "packet": {
-              "label": "job 1",
-              "status": "ok"
+              "kind": "job"
             }
           }
         ]
@@ -331,40 +316,56 @@
       "title": "The shift() trap",
       "chapter": "how",
       "body": [
-        "In JavaScript, the obvious queue is an array with <code>push()</code> and <code>shift()</code>. But <code>shift()</code> removes index 0, and you saw in the last lesson what that costs: everything moves. <b>O(n)</b> per dequeue.",
-        "For a few dozen items, it does not matter. For a loop that dequeues thousands of times, keep a <code>head</code> index that moves forward instead of removing."
+        "In JavaScript, the obvious queue is an array with <code>push()</code> and <code>shift()</code>. But <code>shift()</code> removes index 0, and you saw what that costs: every other item moves. <b>O(n)</b> per dequeue.",
+        "For a few dozen items it does not matter. In a loop that dequeues thousands of times, keep a <code>head</code> index that moves forward instead of removing."
       ],
       "code": {
         "language": "ts",
         "code": "const queue: Job[] = [];\nlet head = 0;\n\nqueue.push(job);             // enqueue, O(1)\nconst next = queue[head++];  // dequeue, O(1), no shifting\nconst size = queue.length - head;",
         "caption": "A moving index instead of shift(). Fine for an algorithm that runs once."
       },
+      "changes": [
+        "− Job 1: taken by the Worker",
+        "~ Job 2 and Job 3: each shifts one place forward",
+        "~ New job: out of focus"
+      ],
       "scene": {
         "extends": "previous",
-        "caption": "shift() takes the front item, then every other item moves up one place.",
+        "caption": "shift() takes Job 1, and everything behind it has to move.",
+        "remove": [
+          "q1"
+        ],
         "nodes": [
           {
-            "id": "q1",
+            "id": "in",
             "status": "dim"
           },
           {
             "id": "q2",
+            "x": 9,
             "status": "warn",
-            "sublabel": "moves"
+            "pill": "moved"
           },
           {
             "id": "q3",
+            "x": 6.7,
             "status": "warn",
-            "sublabel": "moves"
+            "pill": "moved"
           }
         ],
-        "notes": [
+        "edges": [
           {
-            "id": "shift",
-            "x": 6.4,
-            "y": 6.4,
-            "text": "shift(): everyone moves. O(n)",
-            "status": "warn"
+            "id": "in>q3",
+            "status": "dim",
+            "packet": false
+          },
+          {
+            "from": "q2",
+            "to": "worker",
+            "label": "dequeue",
+            "packet": {
+              "kind": "job"
+            }
           }
         ]
       }
@@ -373,49 +374,57 @@
       "title": "Linked lists: a chain of pointers",
       "chapter": "how",
       "body": [
-        "A <span class=\"term\">linked list</span> skips the numbered boxes. Each item holds its value and a <span class=\"term\">pointer</span> to the next item. You keep the first one, the <span class=\"term\">head</span>.",
-        "Adding at the head is <b>O(1)</b>: point the new item at the old head. But reaching item 500 means following 500 pointers: <b>O(n)</b>. You rarely build one in app code, but interviews love them for testing pointer care."
+        "A <span class=\"term\">linked list</span> skips the numbered boxes. Each item holds its value and a <span class=\"term\">pointer</span>, an arrow to the next item. You keep only the first one, the <span class=\"term\">head</span>.",
+        "Adding at the head is <b>O(1)</b>: point the new item at the old head. Reaching item 500 means following 500 pointers: <b>O(n)</b>. Interviews love them."
       ],
       "code": {
         "language": "ts",
         "code": "type ListNode = { value: string; next: ListNode | null };\n\nconst c: ListNode = { value: \"Note C\", next: null };\nconst b: ListNode = { value: \"Note B\", next: c };\nlet head: ListNode = { value: \"Note A\", next: b };"
       },
+      "changes": [
+        "− New job, Job 2, Job 3, Worker",
+        "+ head: marks where the list starts",
+        "+ Note A, Note B, Note C: each points at the next"
+      ],
       "scene": {
-        "caption": "Each item points to the next. The last one points to nothing.",
+        "caption": "Follow the arrows from head: Note A, then B, then C.",
         "nodes": [
           {
             "id": "head",
-            "x": 1.6,
-            "y": 4,
+            "x": 1,
+            "y": 1,
             "label": "head",
             "icon": "link",
-            "shape": "flag",
-            "kind": "client",
-            "status": "active"
+            "kind": "neutral",
+            "shape": "flag"
           },
           {
             "id": "l1",
-            "x": 4.2,
-            "y": 4,
+            "x": 1,
+            "y": 4.6,
             "label": "Note A",
-            "shape": "token",
-            "kind": "data"
+            "icon": "file",
+            "kind": "data",
+            "shape": "tile"
           },
           {
             "id": "l2",
-            "x": 6.8,
-            "y": 4,
+            "x": 4.6,
+            "y": 4.6,
             "label": "Note B",
-            "shape": "token",
-            "kind": "data"
+            "icon": "file",
+            "kind": "data",
+            "shape": "tile"
           },
           {
             "id": "l3",
-            "x": 9.4,
-            "y": 4,
+            "x": 8.2,
+            "y": 4.6,
             "label": "Note C",
-            "shape": "token",
-            "kind": "data"
+            "icon": "file",
+            "kind": "data",
+            "shape": "tile",
+            "pill": "next: null"
           }
         ],
         "edges": [
@@ -427,21 +436,18 @@
             "from": "l1",
             "to": "l2",
             "label": "next",
-            "packet": true
+            "packet": {
+              "kind": "data",
+              "speed": "slow"
+            }
           },
           {
             "from": "l2",
             "to": "l3",
-            "label": "next",
-            "packet": true
-          }
-        ],
-        "notes": [
-          {
-            "id": "null-end",
-            "x": 11.1,
-            "y": 4,
-            "text": "→ null"
+            "packet": {
+              "kind": "data",
+              "speed": "slow"
+            }
           }
         ]
       }
@@ -457,33 +463,32 @@
         "language": "ts",
         "code": "function reverse(head: ListNode | null) {\n  let prev: ListNode | null = null;\n  let curr = head;\n  while (curr) {\n    const next = curr.next; // save first\n    curr.next = prev;       // flip\n    prev = curr;            // step forward\n    curr = next;\n  }\n  return prev; // the new head\n}"
       },
+      "changes": [
+        "~ Every arrow now points backwards",
+        "~ head moves to Note C",
+        "~ Note A now ends the list"
+      ],
       "scene": {
         "extends": "previous",
-        "caption": "Every pointer now points backwards, and head moves to the old tail.",
+        "caption": "Same three notes, arrows flipped. Note C is the new head.",
         "remove": [
           "head>l1",
           "l1>l2",
-          "l2>l3",
-          "null-end"
+          "l2>l3"
         ],
         "nodes": [
           {
             "id": "head",
-            "x": 9.4,
-            "y": 1.8,
-            "status": "ok"
-          },
-          {
-            "id": "l3",
-            "status": "ok"
-          },
-          {
-            "id": "l2",
-            "status": "ok"
+            "x": 8.2,
+            "status": "active"
           },
           {
             "id": "l1",
-            "status": "ok"
+            "pill": "next: null"
+          },
+          {
+            "id": "l3",
+            "pill": null
           }
         ],
         "edges": [
@@ -495,23 +500,20 @@
             "from": "l3",
             "to": "l2",
             "label": "next",
-            "status": "ok",
-            "packet": true
+            "status": "active",
+            "packet": {
+              "kind": "data",
+              "speed": "slow"
+            }
           },
           {
             "from": "l2",
             "to": "l1",
-            "label": "next",
-            "status": "ok",
-            "packet": true
-          }
-        ],
-        "notes": [
-          {
-            "id": "null-start",
-            "x": 2.4,
-            "y": 4,
-            "text": "null ←"
+            "status": "active",
+            "packet": {
+              "kind": "data",
+              "speed": "slow"
+            }
           }
         ]
       }
@@ -520,103 +522,94 @@
       "title": "Chat history is a queue",
       "chapter": "example",
       "body": [
-        "Notely adds \"chat with your notes\". Each request sends the conversation to Claude, but the model has a <span class=\"term\">context window</span>, and you also pay per token sent.",
-        "So you drop the <b>oldest</b> messages first until the rest fits a budget. First in, first out: a queue. Moving a start index forward, like the <code>head</code> trick, keeps it one pass."
+        "Notely adds chat with your notes. Each request sends the conversation to the <b>Claude API</b>, Anthropic's AI model. The model reads only so much at once, its <span class=\"term\">context window</span>, and you pay per <span class=\"term\">token</span> sent.",
+        "So you drop the <b>oldest</b> messages first until the rest fits a budget, here 800 tokens. First in, first out: a queue."
       ],
       "code": {
         "language": "ts",
         "code": "function fitHistory(msgs: Msg[], budget: number) {\n  let total = msgs.reduce((sum, m) => sum + m.tokens, 0);\n  let start = 0;\n  while (total > budget && start < msgs.length - 1) {\n    total -= msgs[start].tokens; // drop the oldest\n    start++;\n  }\n  return msgs.slice(start); // always keep the newest\n}",
         "caption": "Real code trims whole turns, so a question never loses its answer. The system prompt is sent separately and never trimmed."
       },
+      "changes": [
+        "− head, Note A, Note B, Note C",
+        "+ Msg 1, Msg 2, Msg 3, Msg 4: the chat, oldest first",
+        "+ Claude API: the AI model, with an 800-token budget",
+        "~ Msg 1: dropped, so the rest fits in 750 tokens"
+      ],
       "scene": {
-        "caption": "The oldest message leaves first so the newest ones fit the budget.",
+        "caption": "1,150 tokens is too many. Dropping the oldest message leaves 750.",
+        "zones": [
+          {
+            "id": "sent",
+            "x": 2.3,
+            "y": 0.8,
+            "w": 6.7,
+            "h": 2.4,
+            "label": "sent"
+          }
+        ],
         "nodes": [
           {
             "id": "m1",
-            "x": 1.6,
-            "y": 4,
+            "x": 0.6,
+            "y": 2,
             "label": "Msg 1",
-            "sublabel": "oldest",
-            "shape": "tile",
+            "icon": "chat",
             "kind": "data",
-            "status": "dim",
-            "tags": [
-              "400 tok"
-            ]
+            "shape": "tile",
+            "status": "error",
+            "pill": "dropped"
           },
           {
             "id": "m2",
-            "x": 3.8,
-            "y": 4,
+            "x": 3.4,
+            "y": 2,
             "label": "Msg 2",
-            "shape": "tile",
+            "icon": "chat",
             "kind": "data",
-            "tags": [
-              "250 tok"
-            ]
+            "shape": "tile",
+            "pill": "250 tok"
           },
           {
             "id": "m3",
-            "x": 6,
-            "y": 4,
+            "x": 5.7,
+            "y": 2,
             "label": "Msg 3",
-            "shape": "tile",
+            "icon": "chat",
             "kind": "data",
-            "tags": [
-              "300 tok"
-            ]
+            "shape": "tile",
+            "pill": "300 tok"
           },
           {
             "id": "m4",
-            "x": 8.2,
-            "y": 4,
+            "x": 8,
+            "y": 2,
             "label": "Msg 4",
-            "sublabel": "newest",
+            "icon": "chat",
+            "kind": "data",
             "shape": "tile",
-            "kind": "client",
-            "status": "active",
-            "tags": [
-              "200 tok"
-            ]
+            "pill": "200 tok"
           },
           {
             "id": "llm",
-            "x": 10.4,
-            "y": 1.6,
+            "x": 8,
+            "y": 5.8,
             "label": "Claude API",
-            "sublabel": "budget: 800 tok",
             "icon": "sparkle",
             "kind": "ai",
-            "status": "ok"
-          },
-          {
-            "id": "bin",
-            "x": 1.6,
-            "y": 6.8,
-            "label": "Dropped",
-            "icon": "trash",
-            "kind": "neutral",
-            "status": "dim"
+            "pill": {
+              "text": "750 / 800",
+              "tone": "good"
+            }
           }
         ],
         "edges": [
           {
-            "from": "m1",
-            "to": "bin",
-            "label": "first out",
-            "style": "dashed",
-            "packet": {
-              "label": "msg 1"
-            }
-          },
-          {
             "from": "m4",
             "to": "llm",
-            "label": "750 tok fit",
-            "status": "ok",
             "packet": {
-              "label": "send",
-              "status": "ok"
+              "kind": "request",
+              "direction": "both"
             }
           }
         ]
@@ -626,67 +619,84 @@
       "title": "Lost pointers and lost queues",
       "chapter": "watch-out",
       "body": [
-        "Linked list bugs are nearly always pointer order: overwriting <code>next</code> before saving it, or reading <code>.next</code> on <code>null</code>. Draw boxes and arrows before coding; interviewers like seeing that.",
-        "In real apps, the bigger trap is an in-memory array used as a job queue. A serverless function can stop at any time, and the queued jobs vanish with it."
+        "Linked list bugs are nearly always pointer order: overwriting <code>next</code> before saving it, or reading <code>.next</code> on <code>null</code>. Draw boxes and arrows before coding.",
+        "In real apps the bigger trap is a job queue kept in an array in memory. A <span class=\"term\">serverless function</span> can be stopped at any moment, and the queued jobs vanish with it."
       ],
       "callout": {
         "type": "claude-code",
-        "text": "If Claude Code keeps pending work in an array (<code>jobs.push(…)</code>) inside an API route, ask: \"What happens to these jobs if the function restarts?\" Real background work needs a durable queue or a jobs table. Also grep for <code>shift()</code> inside large loops."
+        "text": "If Claude Code keeps pending work in an array (<code>jobs.push(…)</code>) inside an API route, ask: \"What happens to these jobs if the function restarts?\" Real background work needs a durable queue or a jobs table. Also grep for <code>shift()</code> in big loops."
       },
+      "changes": [
+        "− Msg 1, Msg 2, Msg 3, Msg 4, Claude API",
+        "+ App Server: one serverless function, restarting",
+        "+ Job 1, Job 2, Job 3: kept only in its memory, lost"
+      ],
       "scene": {
-        "extends": "previous",
-        "caption": "Same row, now as jobs in an in-memory array. When the function stops, every job disappears.",
-        "remove": [
-          "m1>bin",
-          "bin"
+        "caption": "The function restarts, and the jobs it kept in memory are gone.",
+        "zones": [
+          {
+            "id": "mem",
+            "x": 4,
+            "y": 2.8,
+            "w": 6.7,
+            "h": 2.4,
+            "label": "in memory"
+          }
         ],
         "nodes": [
           {
-            "id": "m1",
+            "id": "app",
+            "x": 1,
+            "y": 4,
+            "label": "App Server",
+            "icon": "function",
+            "kind": "server",
             "status": "error",
-            "sublabel": "lost on restart",
+            "pill": {
+              "text": "restarted",
+              "tone": "bad"
+            }
+          },
+          {
+            "id": "j1",
+            "x": 5.1,
+            "y": 4,
             "label": "Job 1",
-            "tags": null
+            "icon": "box",
+            "kind": "data",
+            "shape": "tile",
+            "status": "error"
           },
           {
-            "id": "m2",
-            "status": "error",
+            "id": "j2",
+            "x": 7.4,
+            "y": 4,
             "label": "Job 2",
-            "tags": null
+            "icon": "box",
+            "kind": "data",
+            "shape": "tile",
+            "status": "error"
           },
           {
-            "id": "m3",
-            "status": "error",
+            "id": "j3",
+            "x": 9.7,
+            "y": 4,
             "label": "Job 3",
-            "tags": null
-          },
-          {
-            "id": "m4",
-            "status": "error",
-            "label": "Job 4",
-            "tags": null,
-            "sublabel": "newest"
-          },
-          {
-            "id": "llm",
-            "status": "dim"
+            "icon": "box",
+            "kind": "data",
+            "shape": "tile",
+            "status": "error"
           }
         ],
         "edges": [
           {
-            "id": "m4>llm",
-            "status": "dim",
-            "packet": false,
-            "label": "never sent"
-          }
-        ],
-        "notes": [
-          {
-            "id": "restart",
-            "x": 4.9,
-            "y": 1.6,
-            "text": "Function restarted: array gone",
-            "status": "error"
+            "from": "app",
+            "to": "j1",
+            "label": "push",
+            "status": "error",
+            "packet": {
+              "kind": "error"
+            }
           }
         ]
       }
@@ -697,7 +707,46 @@
       "body": [
         "A stack is last in, first out: undo, bracket matching, the call stack. A queue is first in, first out: jobs in order, chat history trimming, breadth-first search.",
         "A linked list is a chain of pointers: O(1) to add at the head, O(n) to reach anything. Save <code>next</code> before you change it."
-      ]
+      ],
+      "changes": [
+        "− App Server, Job 1, Job 2, Job 3",
+        "+ Stack, Queue, Linked list: the three shapes"
+      ],
+      "scene": {
+        "caption": "Three shapes, defined by where things go in and come out.",
+        "nodes": [
+          {
+            "id": "r-stack",
+            "x": 1,
+            "y": 4,
+            "label": "Stack",
+            "icon": "layers",
+            "kind": "data",
+            "status": "ok",
+            "pill": "LIFO"
+          },
+          {
+            "id": "r-queue",
+            "x": 4.8,
+            "y": 4,
+            "label": "Queue",
+            "icon": "queue",
+            "kind": "data",
+            "status": "ok",
+            "pill": "FIFO"
+          },
+          {
+            "id": "r-list",
+            "x": 8.6,
+            "y": 4,
+            "label": "Linked list",
+            "icon": "link",
+            "kind": "data",
+            "status": "ok",
+            "pill": "pointers"
+          }
+        ]
+      }
     }
   ],
   "quiz": [

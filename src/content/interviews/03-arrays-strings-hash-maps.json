@@ -18,109 +18,140 @@
     "hash function": "A function that turns a key into a number, always the same number for the same key, used to pick a storage slot.",
     "bucket": "One storage slot inside a hash map. The hash function decides which bucket a key goes into.",
     "collision": "When two different keys get the same bucket. The map still works, it only has to check a few entries in that bucket.",
-    "Map": "JavaScript's built-in hash map. Keys can be any type, and it has no surprise built-in keys."
+    "Map": "JavaScript's built-in hash map. Keys can be any type, and it has no surprise built-in keys.",
+    "app server": "The computer that runs Notely's own code and answers every click.",
+    "token": "A small piece of text, often part of a word, that AI models read, count and charge by."
   },
+  "metrics": [
+    {
+      "id": "checked",
+      "label": "Notes checked",
+      "icon": "search"
+    },
+    {
+      "id": "moved",
+      "label": "Notes moved",
+      "icon": "layers"
+    }
+  ],
   "steps": [
     {
-      "title": "\"The third note\" vs \"note n_83\"",
-      "chapter": "problem",
+      "title": "Maya's notes, held in a list",
+      "chapter": "setup",
       "body": [
-        "Notely keeps Maya's notes in a list. Two questions come up all day.",
-        "\"Show the third note\" is instant. \"Find the note with id <code>n_83</code>\" means checking notes one by one until it turns up. With four notes, nobody notices. With 50,000 notes, and that lookup repeated inside a loop on every request, the waiting adds up."
+        "When Maya opens Notely, our notes app, the <span class=\"term\">app server</span> (the computer running Notely's code) loads her notes and holds them in a list, in order: Groceries, Pitch deck, Trip plan, Ideas.",
+        "Code asks this list two kinds of questions all day: \"show the third note\" and \"find the note with id <code>n_83</code>\"."
       ],
+      "metrics": {
+        "checked": 0,
+        "moved": 0
+      },
       "scene": {
-        "caption": "Finding a note by its id means walking the list from the start.",
+        "caption": "The app server holds Maya's notes in a list, one after another.",
+        "zones": [
+          {
+            "id": "list",
+            "x": 0.1,
+            "y": 0.8,
+            "w": 11.3,
+            "h": 2.4,
+            "label": "notes list"
+          }
+        ],
         "nodes": [
           {
             "id": "c0",
-            "x": 1.6,
-            "y": 4.6,
+            "x": 1,
+            "y": 2,
             "label": "Groceries",
-            "sublabel": "index 0",
-            "shape": "tile",
+            "icon": "file",
             "kind": "data",
-            "status": "dim"
+            "shape": "tile"
           },
           {
             "id": "c1",
-            "x": 3.8,
-            "y": 4.6,
+            "x": 3.3,
+            "y": 2,
             "label": "Pitch deck",
-            "sublabel": "index 1",
-            "shape": "tile",
+            "icon": "file",
             "kind": "data",
-            "status": "dim"
+            "shape": "tile"
           },
           {
             "id": "c2",
-            "x": 6,
-            "y": 4.6,
+            "x": 5.6,
+            "y": 2,
             "label": "Trip plan",
-            "sublabel": "index 2",
-            "shape": "tile",
+            "icon": "file",
             "kind": "data",
-            "status": "dim"
+            "shape": "tile"
           },
           {
             "id": "c3",
-            "x": 8.2,
-            "y": 4.6,
+            "x": 7.9,
+            "y": 2,
             "label": "Ideas",
-            "sublabel": "index 3",
-            "shape": "tile",
+            "icon": "file",
             "kind": "data",
-            "status": "active"
+            "shape": "tile"
           },
           {
-            "id": "query",
-            "x": 5.1,
-            "y": 1.6,
-            "label": "Find n_83",
-            "sublabel": "check one by one",
-            "icon": "search",
-            "kind": "client",
+            "id": "app",
+            "x": 5.6,
+            "y": 5.8,
+            "label": "App Server",
+            "icon": "server",
+            "kind": "server"
+          }
+        ]
+      }
+    },
+    {
+      "title": "Finding n_83 means checking one by one",
+      "chapter": "problem",
+      "body": [
+        "\"Show the third note\" is instant. \"Find the note with id <code>n_83</code>\" is not: the code checks Groceries, then Pitch deck, then Trip plan, until the id matches.",
+        "With four notes nobody notices. Maya has 50,000, and one summary request may run that search 200 times. The checks add up."
+      ],
+      "changes": [
+        "~ Groceries and Pitch deck: checked, not a match",
+        "~ Trip plan: found, it is n_83",
+        "~ Notes checked 0 → up to 50,000 per search"
+      ],
+      "metrics": {
+        "checked": {
+          "value": 50000,
+          "tone": "bad"
+        }
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "To find one id, the code opens note after note.",
+        "nodes": [
+          {
+            "id": "c0",
             "status": "warn"
+          },
+          {
+            "id": "c1",
+            "status": "warn"
+          },
+          {
+            "id": "c2",
+            "status": "ok",
+            "pill": "n_83"
           }
         ],
         "edges": [
           {
-            "from": "query",
+            "from": "app",
             "to": "c0",
-            "label": "start here",
-            "style": "dashed"
-          },
-          {
-            "from": "c0",
-            "to": "c1",
+            "label": "scan",
+            "status": "warn",
             "packet": {
-              "label": "no",
+              "kind": "request",
               "speed": "fast"
             }
-          },
-          {
-            "from": "c1",
-            "to": "c2",
-            "packet": {
-              "label": "no",
-              "speed": "fast"
-            }
-          },
-          {
-            "from": "c2",
-            "to": "c3",
-            "packet": {
-              "label": "no",
-              "speed": "fast"
-            }
-          }
-        ],
-        "notes": [
-          {
-            "id": "scan",
-            "x": 9.4,
-            "y": 6.6,
-            "text": "Search by value: O(n)",
-            "status": "warn"
           }
         ]
       }
@@ -129,57 +160,54 @@
       "title": "Arrays: numbered boxes in a row",
       "chapter": "idea",
       "body": [
-        "An <span class=\"term\">array</span> stores values side by side, each at a numbered position called an <span class=\"term\">index</span>, starting at 0.",
-        "Because the boxes sit in a row, the computer can jump straight to box 2: <code>notes[2]</code> is <b>O(1)</b>. But asking \"which box holds n_83?\" still means looking in each box: <b>O(n)</b>. Arrays are fast by position, slow by content."
+        "This list is an <span class=\"term\">array</span>: values side by side, each at a numbered position called an <span class=\"term\">index</span>, starting at 0.",
+        "The computer can jump straight to box 2: <code>notes[2]</code> is <b>O(1)</b>. But \"which box holds n_83?\" still means opening boxes one by one: <b>O(n)</b>. Arrays are fast by position, slow by content."
       ],
       "callout": {
         "type": "analogy",
         "text": "Numbered lockers in a hallway. \"Open locker 2\" takes one step. \"Find the locker with the red jacket\" means opening lockers until you see it."
       },
+      "changes": [
+        "~ Each note shows its index: 0, 1, 2, 3",
+        "~ App Server jumps straight to index 2",
+        "− The scan from the first note"
+      ],
       "scene": {
         "extends": "previous",
-        "caption": "Jumping to an index is one step. Searching by content is a walk.",
+        "caption": "By index, the app server lands on Trip plan in one jump.",
         "remove": [
-          "c0>c1",
-          "c1>c2",
-          "c2>c3",
-          "query>c0",
-          "scan"
+          "app>c0"
         ],
         "nodes": [
           {
             "id": "c0",
-            "status": "normal"
+            "status": "normal",
+            "pill": "index 0"
           },
           {
             "id": "c1",
-            "status": "normal"
+            "status": "normal",
+            "pill": "index 1"
           },
           {
             "id": "c2",
-            "status": "ok"
+            "status": "active",
+            "pill": "index 2"
           },
           {
             "id": "c3",
-            "status": "normal"
-          },
-          {
-            "id": "query",
-            "label": "notes[2]",
-            "sublabel": "jump by index",
-            "status": "ok"
+            "pill": "index 3"
           }
         ],
         "edges": [
           {
-            "from": "query",
+            "from": "app",
             "to": "c2",
-            "label": "O(1)",
-            "status": "ok",
+            "label": "notes[2]",
             "packet": {
-              "label": "jump",
-              "status": "ok",
-              "speed": "fast"
+              "kind": "request",
+              "direction": "both",
+              "returns": "data"
             }
           }
         ]
@@ -189,57 +217,66 @@
       "title": "Inserting at the front moves everyone",
       "chapter": "how",
       "body": [
-        "Maya creates a new note, and Notely shows newest first, so it goes at index 0. Every other note must shift one box to the right to make room.",
+        "Maya writes a new note. Notely shows newest first, so it goes in at index 0, and every other note must move one box to the right to make room.",
         "Adding or removing at the <b>end</b> (<code>push</code>, <code>pop</code>) is O(1). At the <b>front</b> or in the middle (<code>unshift</code>, <code>splice</code>) it is O(n), because the rest of the row moves."
       ],
+      "changes": [
+        "+ New note: goes in at index 0",
+        "~ The four other notes each move one box right",
+        "~ Notes moved 0 → 50,000 for Maya's real list",
+        "− The jump to index 2"
+      ],
+      "metrics": {
+        "moved": {
+          "value": 50000,
+          "tone": "bad"
+        }
+      },
       "scene": {
         "extends": "previous",
-        "caption": "One new note at the front, and every index after it changes.",
+        "caption": "One insert at the front, and the whole row shifts.",
         "remove": [
-          "query"
+          "app>c2"
         ],
         "nodes": [
           {
+            "id": "app",
+            "status": "dim"
+          },
+          {
             "id": "new",
-            "x": 1.6,
-            "y": 4.6,
+            "x": 1,
+            "y": 2,
             "label": "New note",
-            "sublabel": "index 0",
-            "kind": "client",
-            "status": "active"
+            "icon": "pencil",
+            "kind": "data",
+            "shape": "tile",
+            "status": "active",
+            "pill": "index 0"
           },
           {
             "id": "c0",
-            "x": 3.8,
-            "sublabel": "index 1",
-            "status": "warn"
+            "x": 3.3,
+            "status": "warn",
+            "pill": "index 1"
           },
           {
             "id": "c1",
-            "x": 6,
-            "sublabel": "index 2",
-            "status": "warn"
+            "x": 5.6,
+            "status": "warn",
+            "pill": "index 2"
           },
           {
             "id": "c2",
-            "x": 8.2,
-            "sublabel": "index 3",
-            "status": "warn"
+            "x": 7.9,
+            "status": "warn",
+            "pill": "index 3"
           },
           {
             "id": "c3",
-            "x": 10.4,
-            "sublabel": "index 4",
-            "status": "warn"
-          }
-        ],
-        "notes": [
-          {
-            "id": "shift",
-            "x": 6.8,
-            "y": 2.6,
-            "text": "unshift(): everyone moves. O(n)",
-            "status": "warn"
+            "x": 10.2,
+            "status": "warn",
+            "pill": "index 4"
           }
         ]
       }
@@ -249,71 +286,66 @@
       "chapter": "how",
       "body": [
         "A string works like an array of characters: <code>title[0]</code> is the first letter, <code>title.length</code> is the count, and you can loop over it.",
-        "One difference: in JavaScript, strings are <span class=\"term\">immutable</span>. Methods like <code>toLowerCase()</code> or <code>replace()</code> return a <em>new</em> string. Interview string problems (reverse, palindrome, anagram) are mostly array problems in disguise."
+        "One difference: in JavaScript, strings are <span class=\"term\">immutable</span>. <code>toLowerCase()</code> or <code>replace()</code> return a <em>new</em> string. Interview string problems (reverse, palindrome, anagram) are mostly array problems in disguise."
       ],
       "code": {
         "language": "ts",
         "code": "const title = \"Maya\";\ntitle[0];             // \"M\"  (O(1) by index)\ntitle.length;         // 4\ntitle.toLowerCase();  // \"maya\", a new string\n[...title].reverse().join(\"\"); // \"ayaM\"",
         "caption": "Spread a string into an array when you need to reorder or edit characters."
       },
+      "changes": [
+        "− App Server, New note, Groceries, Pitch deck",
+        "− Trip plan, Ideas: we look at one word instead",
+        "+ M, a, y, a: the string \"Maya\", one letter per box"
+      ],
       "scene": {
-        "caption": "A string is a row of characters, each with an index, that you cannot edit in place.",
+        "caption": "The string \"Maya\": four characters, each with an index.",
+        "zones": [
+          {
+            "id": "str",
+            "x": 1.3,
+            "y": 0.8,
+            "w": 9,
+            "h": 2.4,
+            "label": "title string"
+          }
+        ],
         "nodes": [
           {
             "id": "s0",
             "x": 2.2,
-            "y": 4.2,
+            "y": 2,
             "label": "M",
-            "sublabel": "index 0",
+            "kind": "neutral",
             "shape": "tile",
-            "kind": "data",
-            "status": "active"
+            "pill": "index 0"
           },
           {
             "id": "s1",
-            "x": 4.6,
-            "y": 4.2,
+            "x": 4.5,
+            "y": 2,
             "label": "a",
-            "sublabel": "index 1",
+            "kind": "neutral",
             "shape": "tile",
-            "kind": "data"
+            "pill": "index 1"
           },
           {
             "id": "s2",
-            "x": 7,
-            "y": 4.2,
+            "x": 6.8,
+            "y": 2,
             "label": "y",
-            "sublabel": "index 2",
+            "kind": "neutral",
             "shape": "tile",
-            "kind": "data"
+            "pill": "index 2"
           },
           {
             "id": "s3",
-            "x": 9.4,
-            "y": 4.2,
+            "x": 9.1,
+            "y": 2,
             "label": "a",
-            "sublabel": "index 3",
+            "kind": "neutral",
             "shape": "tile",
-            "kind": "data"
-          }
-        ],
-        "zones": [
-          {
-            "id": "z-str",
-            "x": 0.8,
-            "y": 2.8,
-            "w": 10,
-            "h": 2.8,
-            "label": "\"Maya\", length 4, immutable"
-          }
-        ],
-        "notes": [
-          {
-            "id": "copy",
-            "x": 5.8,
-            "y": 6.6,
-            "text": "toLowerCase() returns a new string",
-            "status": "active"
+            "pill": "index 3"
           }
         ]
       }
@@ -329,60 +361,65 @@
         "type": "tip",
         "text": "You met hashing in system design, where it decides which shard holds a row. Same trick, smaller scale: here it decides which bucket in memory holds a key."
       },
+      "changes": [
+        "− M, a, y, a: back to finding notes",
+        "+ n_83: the key, and hash(): turns it into a number",
+        "+ Bucket 0, Bucket 1, Bucket 2: the storage slots",
+        "~ Notes checked 50,000 → 1"
+      ],
+      "metrics": {
+        "checked": {
+          "value": 1,
+          "tone": "good"
+        }
+      },
       "scene": {
-        "caption": "The key is hashed to a bucket number, so lookup goes straight there.",
+        "caption": "The key goes through hash() and lands in exactly one bucket.",
         "nodes": [
           {
             "id": "key",
-            "x": 1.8,
+            "x": 1,
             "y": 4,
             "label": "n_83",
-            "sublabel": "the key",
             "icon": "key",
-            "kind": "client",
-            "status": "active"
+            "kind": "neutral",
+            "shape": "flag"
           },
           {
             "id": "hash",
-            "x": 5.4,
+            "x": 4.8,
             "y": 4,
             "label": "hash()",
-            "sublabel": "key → number",
             "icon": "function",
             "kind": "server"
           },
           {
             "id": "b0",
-            "x": 9.6,
-            "y": 1.6,
+            "x": 8.6,
+            "y": 1.7,
             "label": "Bucket 0",
             "icon": "box",
-            "shape": "stack",
             "kind": "data",
-            "status": "dim"
+            "shape": "tile"
           },
           {
             "id": "b1",
-            "x": 9.6,
+            "x": 8.6,
             "y": 4,
             "label": "Bucket 1",
             "icon": "box",
-            "shape": "stack",
             "kind": "data",
-            "status": "ok",
-            "tags": [
-              "n_83 → Trip plan"
-            ]
+            "shape": "tile",
+            "status": "active"
           },
           {
             "id": "b2",
-            "x": 9.6,
-            "y": 6.4,
+            "x": 8.6,
+            "y": 6.3,
             "label": "Bucket 2",
             "icon": "box",
-            "shape": "stack",
             "kind": "data",
-            "status": "dim"
+            "shape": "tile"
           }
         ],
         "edges": [
@@ -390,142 +427,147 @@
             "from": "key",
             "to": "hash",
             "packet": {
-              "label": "n_83"
+              "kind": "request"
             }
           },
           {
             "from": "hash",
             "to": "b1",
-            "label": "→ 1",
-            "status": "ok",
             "packet": {
-              "label": "1",
-              "status": "ok"
+              "kind": "request",
+              "direction": "both",
+              "returns": "data"
             }
           }
         ]
       }
     },
     {
-      "title": "Collisions, and why it is \"about\" O(1)",
+      "title": "Collisions, and why it is about O(1)",
       "chapter": "how",
       "body": [
-        "Sometimes two keys hash to the same bucket. That is a <span class=\"term\">collision</span>. The map keeps both in that bucket and checks the few entries there.",
-        "A good hash function spreads keys evenly and the map grows as it fills, so buckets stay tiny: <b>O(1) on average</b>. In theory, if every key landed in one bucket, lookup would fall to O(n). Say \"O(1) average\" in interviews."
+        "Sometimes two keys hash to the same bucket. That is a <span class=\"term\">collision</span>. The map keeps both there and checks the few entries.",
+        "A good hash function spreads keys out, and the map grows as it fills, so buckets stay tiny: <b>O(1) on average</b>. If every key landed in one bucket, lookup would fall to O(n). Say \"O(1) average\"."
       ],
+      "changes": [
+        "+ n_19: another key that lands in the same bucket",
+        "~ Bucket 1: holds two keys now",
+        "~ Notes checked 1 → 2 inside that bucket"
+      ],
+      "metrics": {
+        "checked": {
+          "value": 2,
+          "tone": "good"
+        }
+      },
       "scene": {
         "extends": "previous",
-        "caption": "Two keys share bucket 1. The map checks both, which is still fast.",
+        "caption": "Two keys share Bucket 1. The map checks both, which is still quick.",
         "nodes": [
           {
-            "id": "key",
-            "status": "normal"
-          },
-          {
             "id": "key2",
-            "x": 1.8,
-            "y": 6.4,
+            "x": 1,
+            "y": 0.9,
             "label": "n_19",
-            "sublabel": "another key",
             "icon": "key",
-            "kind": "client",
+            "kind": "neutral",
+            "shape": "flag",
             "status": "active"
           },
           {
             "id": "b1",
             "status": "warn",
-            "tags": [
-              "n_83 → Trip plan",
-              "n_19 → Ideas"
-            ]
+            "pill": "2 keys"
           }
         ],
         "edges": [
           {
-            "id": "key>hash",
-            "packet": false
-          },
-          {
             "from": "key2",
             "to": "hash",
             "packet": {
-              "label": "n_19"
-            }
-          },
-          {
-            "id": "hash>b1",
-            "label": "also → 1",
-            "status": "warn",
-            "packet": {
-              "label": "1",
-              "status": "warn"
+              "kind": "request"
             }
           }
         ]
       }
     },
     {
-      "title": "Map and Set, the JavaScript versions",
+      "title": "Map and Set: build once, look up many",
       "chapter": "how",
       "body": [
         "In JavaScript, use <span class=\"term\">Map</span> for key-value pairs and <code>Set</code> for \"have I seen this?\". Both give O(1) average lookups.",
-        "For Notely: build <code>notesById</code> once, O(n), then every lookup is O(1). Build once, look up many times. That one move fixes a large share of slow code."
+        "For Notely: build <code>notesById</code> once, in one O(n) pass over the list. After that, each of the 200 lookups is O(1). Build once, look up many times: that one move fixes a large share of slow code."
       ],
+      "callout": {
+        "type": "warn",
+        "text": "Avoid a plain object <code>{}</code> as a map for user input. Its keys are always strings, so <code>1</code> and <code>\"1\"</code> collide, and it inherits keys like <code>constructor</code>. Use <code>Map</code>."
+      },
       "code": {
         "language": "ts",
         "code": "const notesById = new Map<string, Note>();\nfor (const note of notes) notesById.set(note.id, note);\n\nnotesById.get(\"n_83\");   // Trip plan, O(1)\nnotesById.has(\"n_99\");   // false\nnotesById.size;          // 50000",
         "caption": "One O(n) pass to build, then O(1) for every lookup after."
       },
+      "changes": [
+        "− n_83, n_19, hash(), Bucket 0, Bucket 1, Bucket 2",
+        "+ notes array and notesById: the list, then a Map of it",
+        "+ App Server: asks the Map, not the list",
+        "~ Notes checked 2 → 1 per lookup"
+      ],
+      "metrics": {
+        "checked": {
+          "value": 1,
+          "tone": "good"
+        }
+      },
       "scene": {
-        "caption": "Build the Map once from the array. Every later lookup skips the walk.",
+        "caption": "Build the Map once from the list. Every lookup after that is one step.",
         "nodes": [
           {
             "id": "arr",
-            "x": 2,
+            "x": 1,
             "y": 4,
-            "label": "notes",
-            "sublabel": "an array, 50,000",
+            "label": "notes array",
             "icon": "list",
-            "kind": "data"
+            "kind": "data",
+            "shape": "stack",
+            "pill": "50,000"
           },
           {
             "id": "map",
-            "x": 6.4,
+            "x": 4.8,
             "y": 4,
             "label": "notesById",
-            "sublabel": "a Map",
-            "icon": "bolt",
+            "icon": "table",
             "kind": "data",
-            "status": "ok",
-            "tags": [
-              "n_83 → Trip plan"
-            ]
+            "status": "active"
           },
           {
-            "id": "ai",
-            "x": 10.4,
+            "id": "app",
+            "x": 8.6,
             "y": 4,
-            "label": "AI summary",
-            "sublabel": "needs note n_83",
-            "icon": "sparkle",
-            "kind": "ai"
+            "label": "App Server",
+            "icon": "server",
+            "kind": "server"
           }
         ],
         "edges": [
           {
             "from": "arr",
             "to": "map",
-            "label": "build once, O(n)",
-            "style": "dashed"
+            "label": "build once",
+            "style": "dashed",
+            "packet": {
+              "kind": "data",
+              "speed": "slow"
+            }
           },
           {
-            "from": "ai",
+            "from": "app",
             "to": "map",
-            "label": "get(), O(1)",
-            "status": "ok",
             "packet": {
-              "label": "n_83",
-              "status": "ok",
+              "kind": "request",
+              "direction": "both",
+              "returns": "data",
               "speed": "fast"
             }
           }
@@ -536,67 +578,85 @@
       "title": "Two Sum: the hash map classic",
       "chapter": "example",
       "body": [
-        "Interview favorite: find two numbers in a list that add up to a target. For Notely: two notes whose token counts fill a summary budget of exactly 1,000.",
-        "Brute force checks every pair: O(n²). Better: walk once, and for each count ask the map, \"have I seen <code>target − count</code>?\" If yes, done. If no, store this count. <b>O(n) time, O(n) space.</b>"
+        "Classic: find two numbers in a list that add up to a target. For Notely: two notes whose <span class=\"term\">token</span> counts fill a summary budget of exactly 1,000.",
+        "Checking every pair is O(n²). Better: walk once, and for each count ask a Map: \"seen <code>1000 − count</code> yet?\" If yes, done. If not, store it. <b>O(n) time, O(n) space.</b>"
       ],
+      "callout": {
+        "type": "claude-code",
+        "text": "Search Claude's code for <code>.find(</code> or <code>.filter(</code> by id inside a loop, and ask for a <code>Map</code> keyed by id instead. Ask it to explain the cost before and after."
+      },
       "code": {
         "language": "ts",
         "code": "function twoSum(counts: number[], target: number) {\n  const seen = new Map<number, number>(); // value → index\n  for (let i = 0; i < counts.length; i++) {\n    const need = target - counts[i];\n    if (seen.has(need)) return [seen.get(need)!, i];\n    seen.set(counts[i], i);\n  }\n  return null; // say this case out loud too\n}"
       },
+      "changes": [
+        "− App Server, notes array, notesById",
+        "+ 300, 1200, 700, 500: token counts of four notes",
+        "+ seen: a Map of the counts met so far",
+        "~ Notes checked 1 → 3: the pair is 300 + 700"
+      ],
+      "metrics": {
+        "checked": {
+          "value": 3,
+          "tone": "good"
+        }
+      },
       "scene": {
-        "caption": "At 700, the map already knows where 300 is. One pass, done.",
+        "caption": "At 700, the Map already holds 300. Pair found after three notes.",
+        "zones": [
+          {
+            "id": "counts",
+            "x": 0.1,
+            "y": 0.8,
+            "w": 9,
+            "h": 2.4,
+            "label": "token counts"
+          }
+        ],
         "nodes": [
           {
             "id": "t0",
-            "x": 1.6,
-            "y": 5.4,
+            "x": 1,
+            "y": 2,
             "label": "300",
-            "sublabel": "index 0",
-            "shape": "tile",
             "kind": "data",
+            "shape": "tile",
             "status": "ok"
           },
           {
             "id": "t1",
-            "x": 3.8,
-            "y": 5.4,
+            "x": 3.3,
+            "y": 2,
             "label": "1200",
-            "sublabel": "index 1",
-            "shape": "tile",
-            "kind": "data"
+            "kind": "data",
+            "shape": "tile"
           },
           {
             "id": "t2",
-            "x": 6,
-            "y": 5.4,
+            "x": 5.6,
+            "y": 2,
             "label": "700",
-            "sublabel": "index 2",
-            "shape": "tile",
             "kind": "data",
+            "shape": "tile",
             "status": "active"
           },
           {
             "id": "t3",
-            "x": 8.2,
-            "y": 5.4,
+            "x": 7.9,
+            "y": 2,
             "label": "500",
-            "sublabel": "not reached",
-            "shape": "tile",
             "kind": "data",
+            "shape": "tile",
             "status": "dim"
           },
           {
             "id": "seen",
-            "x": 9.8,
-            "y": 2,
+            "x": 5.6,
+            "y": 5.8,
             "label": "seen",
-            "sublabel": "value → index",
-            "icon": "bolt",
+            "icon": "table",
             "kind": "data",
-            "tags": [
-              "300 → 0",
-              "1200 → 1"
-            ]
+            "pill": "2 stored"
           }
         ],
         "edges": [
@@ -604,69 +664,9 @@
             "from": "t2",
             "to": "seen",
             "label": "need 300?",
-            "status": "ok",
             "packet": {
-              "label": "300?",
-              "status": "ok"
-            }
-          }
-        ],
-        "notes": [
-          {
-            "id": "math",
-            "x": 4.2,
-            "y": 2,
-            "text": "1000 − 700 = 300, seen at index 0",
-            "status": "ok"
-          }
-        ]
-      }
-    },
-    {
-      "title": "Plain objects make leaky maps",
-      "chapter": "watch-out",
-      "body": [
-        "Using <code>{}</code> as a map works until it doesn't. Its keys are always strings, so the number <code>1</code> and the string <code>\"1\"</code> collide. It also inherits built-in keys like <code>constructor</code>, so <code>\"constructor\" in counts</code> is true on an empty object.",
-        "With user-supplied keys, such as tags Maya types, prefer <code>Map</code>."
-      ],
-      "callout": {
-        "type": "claude-code",
-        "text": "Search Claude's code for <code>.find(</code> or <code>.filter(</code> by id inside a loop, and ask for a <code>Map</code> keyed by id instead. If it builds a dictionary with <code>{}</code> from user input, ask it to use <code>Map</code> or <code>Object.create(null)</code>, and to explain the change."
-      },
-      "scene": {
-        "extends": "previous",
-        "caption": "With a plain object, an empty map already \"has\" some keys.",
-        "remove": [
-          "math"
-        ],
-        "nodes": [
-          {
-            "id": "seen",
-            "label": "counts = {}",
-            "sublabel": "a plain object",
-            "status": "warn",
-            "tags": [
-              "\"1\" and 1: same key",
-              "has constructor"
-            ]
-          },
-          {
-            "id": "t2",
-            "status": "normal"
-          },
-          {
-            "id": "t0",
-            "status": "normal"
-          }
-        ],
-        "edges": [
-          {
-            "id": "t2>seen",
-            "label": "surprise keys",
-            "status": "warn",
-            "packet": {
-              "label": "?",
-              "status": "warn"
+              "kind": "request",
+              "direction": "both"
             }
           }
         ]
@@ -678,7 +678,31 @@
       "body": [
         "Arrays are instant by index and slow by content, and inserting at the front shifts everything. Strings are read-only arrays of characters.",
         "Hash maps hash a key to a bucket for O(1) average lookups. When code searches the same list again and again, build a <code>Map</code> or <code>Set</code> once and look things up."
-      ]
+      ],
+      "changes": [
+        "~ 700 and seen: done, the pair is found"
+      ],
+      "scene": {
+        "extends": "previous",
+        "caption": "One pass, one Map, one answer.",
+        "nodes": [
+          {
+            "id": "t2",
+            "status": "ok"
+          },
+          {
+            "id": "seen",
+            "status": "ok"
+          }
+        ],
+        "edges": [
+          {
+            "id": "t2>seen",
+            "status": "ok",
+            "packet": false
+          }
+        ]
+      }
     }
   ],
   "quiz": [

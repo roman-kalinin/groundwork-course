@@ -20,64 +20,67 @@
     "binary search": "Finding a value in sorted data by checking the middle and throwing away the half that cannot contain it, again and again.",
     "off-by-one": "A bug where a loop or index is one step too far or one step short, like stopping at the last item instead of after it."
   },
+  "metrics": [
+    {
+      "id": "counted",
+      "label": "Notes counted",
+      "icon": "file"
+    },
+    {
+      "id": "checks",
+      "label": "Events checked",
+      "icon": "search"
+    }
+  ],
   "steps": [
     {
-      "title": "How many loops deep is a folder?",
-      "chapter": "problem",
+      "title": "A note count on every folder",
+      "chapter": "setup",
       "body": [
-        "Notely wants a note count next to every folder, including everything inside its subfolders. Last lesson you walked the tree with a stack.",
-        "But think about writing it with plain loops: one loop per level. Maya's folders could be two levels deep or twelve. You cannot know in advance how many loops to nest."
+        "Notely, our notes app, shows a number next to each folder: how many notes are inside it, including everything in its subfolders. Maya's folders form a chain: All notes holds Work, Work holds Clients, Clients holds Acme.",
+        "Each folder also has notes of its own: 3, 4, 1 and 2."
       ],
+      "metrics": {
+        "counted": "?"
+      },
       "scene": {
-        "caption": "Folders inside folders, to a depth nobody knows in advance.",
+        "caption": "Four folders, each inside the one before, each with its own notes.",
         "nodes": [
           {
             "id": "f1",
-            "x": 1.3,
-            "y": 4,
+            "x": 1,
+            "y": 2,
             "label": "All notes",
             "icon": "folder",
-            "shape": "stack",
             "kind": "data",
-            "tags": [
-              "3 notes"
-            ]
+            "pill": "3 notes"
           },
           {
             "id": "f2",
-            "x": 4.1,
-            "y": 4,
+            "x": 4.8,
+            "y": 2,
             "label": "Work",
             "icon": "folder",
-            "shape": "stack",
             "kind": "data",
-            "tags": [
-              "4 notes"
-            ]
+            "pill": "4 notes"
           },
           {
             "id": "f3",
-            "x": 6.9,
-            "y": 4,
+            "x": 8.6,
+            "y": 2,
             "label": "Clients",
             "icon": "folder",
-            "shape": "stack",
             "kind": "data",
-            "tags": [
-              "1 note"
-            ]
+            "pill": "1 note"
           },
           {
             "id": "f4",
-            "x": 9.7,
-            "y": 4,
+            "x": 8.6,
+            "y": 5.8,
             "label": "Acme",
             "icon": "folder",
-            "shape": "stack",
             "kind": "data",
-            "tags": [
-              "2 notes"
-            ]
+            "pill": "2 notes"
           }
         ],
         "edges": [
@@ -93,20 +96,26 @@
             "from": "f3",
             "to": "f4"
           }
-        ],
-        "notes": [
+        ]
+      }
+    },
+    {
+      "title": "How many loops deep is a folder?",
+      "chapter": "problem",
+      "body": [
+        "Last lesson you walked a tree with a stack. Now picture writing the count with plain loops: a loop over the folders inside, a loop inside that for their folders, and so on.",
+        "Maya's folders could be two levels deep or twelve. You cannot know in advance how many loops to nest."
+      ],
+      "changes": [
+        "~ Acme: is it the bottom? Plain loops cannot know"
+      ],
+      "scene": {
+        "extends": "previous",
+        "caption": "There might be more folders below Acme. How many loops do you write?",
+        "nodes": [
           {
-            "id": "deep",
-            "x": 6,
-            "y": 1.8,
-            "text": "How many loops deep? Unknown.",
+            "id": "f4",
             "status": "warn"
-          },
-          {
-            "id": "more",
-            "x": 11.3,
-            "y": 4,
-            "text": "…?"
           }
         ]
       }
@@ -115,56 +124,51 @@
       "title": "Recursion: solve a smaller copy",
       "chapter": "idea",
       "body": [
-        "<span class=\"term\">Recursion</span> flips the question. A folder's count is its own notes plus the count of each subfolder. And \"count of a subfolder\" is the same question, one level smaller. So the function calls itself.",
-        "It needs a <span class=\"term\">base case</span>: a folder with no subfolders returns its own notes. Without that, it never stops."
+        "<span class=\"term\">Recursion</span> flips the question. A folder's count is its own notes plus the count of each subfolder. \"Count of a subfolder\" is the same question, one level smaller, so the function calls itself.",
+        "It needs a <span class=\"term\">base case</span>: a folder with no subfolders returns its own notes. Without one, it never stops."
       ],
-      "code": {
-        "language": "ts",
-        "code": "function countNotes(folder: Folder): number {\n  let total = folder.notes.length;\n  // base case: no children, the loop does nothing\n  for (const child of folder.children) {\n    total += countNotes(child); // same question, smaller\n  }\n  return total;\n}"
-      },
       "callout": {
         "type": "analogy",
         "text": "Russian nesting dolls. To count the dolls, open one and ask the same question about the doll inside. The smallest doll, which does not open, is the base case."
       },
+      "code": {
+        "language": "ts",
+        "code": "function countNotes(folder: Folder): number {\n  let total = folder.notes.length;\n  // base case: no children, the loop does nothing\n  for (const child of folder.children) {\n    total += countNotes(child); // same question, smaller\n  }\n  return total;\n}"
+      },
+      "changes": [
+        "~ Acme: the base case, no subfolders inside",
+        "~ Each folder asks the folder inside it the same question"
+      ],
       "scene": {
         "extends": "previous",
-        "caption": "Each folder asks its child the same question. Acme has no children: the base case.",
-        "remove": [
-          "deep",
-          "more"
-        ],
+        "caption": "Each call asks the next folder down, until Acme, which has nothing inside.",
         "nodes": [
           {
             "id": "f4",
-            "status": "ok",
-            "tags": [
-              "2 notes",
-              "base case"
-            ]
+            "status": "active",
+            "pill": "base case"
           }
         ],
         "edges": [
           {
             "id": "f1>f2",
-            "label": "count?",
             "packet": {
-              "label": "ask"
+              "kind": "request",
+              "speed": "slow"
             }
           },
           {
             "id": "f2>f3",
-            "label": "count?",
             "packet": {
-              "label": "ask"
+              "kind": "request",
+              "speed": "slow"
             }
           },
           {
             "id": "f3>f4",
-            "label": "count?",
-            "status": "ok",
             "packet": {
-              "label": "ask",
-              "status": "ok"
+              "kind": "request",
+              "speed": "slow"
             }
           }
         ]
@@ -174,70 +178,68 @@
       "title": "The call stack keeps every waiting call",
       "chapter": "how",
       "body": [
-        "Each call waits for its children before it can return. The computer keeps those waiting calls on the <span class=\"term\">call stack</span>, the same last-in, first-out stack from lesson 4.",
-        "Acme returns 2 first. Then Clients returns 1 + 2 = 3, Work returns 4 + 3 = 7, and All notes returns 10. Last call in, first call out."
+        "Each call waits for the one below it. The computer keeps those waiting calls on the <span class=\"term\">call stack</span>, the last-in, first-out stack from lesson 4.",
+        "Acme returns 2 first. Then Clients returns 3, Work 7, and All notes 10. Last call in, first call out."
       ],
+      "changes": [
+        "~ Each folder shows its sum as the answers come back up",
+        "~ Notes counted ? → 10"
+      ],
+      "metrics": {
+        "counted": {
+          "value": 10,
+          "tone": "good"
+        }
+      },
       "scene": {
-        "caption": "Calls pile up on the way down and finish in reverse order on the way back.",
-        "zones": [
-          {
-            "id": "z-calls",
-            "x": 1,
-            "y": 0.7,
-            "w": 5,
-            "h": 6.6,
-            "label": "Call stack"
-          }
-        ],
+        "extends": "previous",
+        "caption": "Answers travel back up: 2, then 3, then 7, then 10.",
         "nodes": [
           {
-            "id": "k4",
-            "x": 3.5,
-            "y": 1.2,
-            "label": "count(Acme)",
-            "sublabel": "returns 2",
-            "kind": "server",
-            "status": "ok"
+            "id": "f1",
+            "status": "ok",
+            "pill": "3 + 7 = 10"
           },
           {
-            "id": "k3",
-            "x": 3.5,
-            "y": 3.3,
-            "label": "count(Clients)",
-            "sublabel": "waiting: 1 + ?",
-            "kind": "server",
-            "status": "active"
+            "id": "f2",
+            "status": "ok",
+            "pill": "4 + 3 = 7"
           },
           {
-            "id": "k2",
-            "x": 3.5,
-            "y": 4.6,
-            "label": "count(Work)",
-            "sublabel": "waiting: 4 + ?",
-            "kind": "server"
+            "id": "f3",
+            "status": "ok",
+            "pill": "1 + 2 = 3"
           },
           {
-            "id": "k1",
-            "x": 3.5,
-            "y": 6.3,
-            "label": "count(All)",
-            "sublabel": "waiting: 3 + ?",
-            "kind": "server"
+            "id": "f4",
+            "status": "ok",
+            "pill": "= 2"
           }
         ],
-        "notes": [
+        "edges": [
           {
-            "id": "order",
-            "x": 8.8,
-            "y": 1.8,
-            "text": "Top of the stack finishes first",
-            "status": "ok"
+            "id": "f1>f2",
+            "packet": {
+              "kind": "response",
+              "direction": "backward",
+              "speed": "slow"
+            }
           },
           {
-            "id": "result",
-            "x": 8.8,
-            "y": 6.3,
-            "text": "Finally: 3 + 7 = 10"
+            "id": "f2>f3",
+            "packet": {
+              "kind": "response",
+              "direction": "backward",
+              "speed": "slow"
+            }
+          },
+          {
+            "id": "f3>f4",
+            "packet": {
+              "kind": "response",
+              "direction": "backward",
+              "speed": "slow"
+            }
           }
         ]
       }
@@ -246,65 +248,75 @@
       "title": "Sorting costs O(n log n)",
       "chapter": "how",
       "body": [
-        "You will rarely write a sort at work. The built-in sort is fast and takes <b>O(n log n)</b>, the rung on the Big-O ladder just above O(n). Remember that cost: \"sort first\" is never free.",
-        "But JavaScript has a trap. With no <span class=\"term\">comparator</span>, <code>sort()</code> compares items as <b>text</b>, so <code>10</code> comes before <code>9</code>. It also changes the original array."
+        "You will rarely write a sort at work. The built-in sort is fast and takes <b>O(n log n)</b>, one rung above O(n). Remember that cost: \"sort first\" is never free.",
+        "JavaScript has a trap. With no <span class=\"term\">comparator</span>, <code>sort()</code> compares items as <b>text</b>, so 10 lands before 9. It also changes the original array."
       ],
       "code": {
         "language": "ts",
         "code": "[10, 9, 1].sort();                 // [1, 10, 9]  as text\n[10, 9, 1].sort((a, b) => a - b);  // [1, 9, 10]  numbers\n\n// sort() changes the array; toSorted() returns a copy\nconst byWords = notes.toSorted((a, b) => a.words - b.words);",
         "caption": "Negative means a comes first, positive means b comes first."
       },
+      "changes": [
+        "− All notes, Work, Clients, Acme",
+        "+ Input: three numbers to sort",
+        "+ Plain sort: compares as text, wrong order",
+        "+ With comparator: compares as numbers, right order"
+      ],
       "scene": {
-        "caption": "Same numbers, two results. Without a comparator, JavaScript sorts as text.",
+        "caption": "Same numbers, two results. Only the comparator sorts them as numbers.",
         "nodes": [
           {
-            "id": "unsorted",
-            "x": 2,
-            "y": 4,
-            "label": "[10, 9, 1]",
+            "id": "input",
+            "x": 1,
+            "y": 2,
+            "label": "Input",
             "icon": "list",
-            "kind": "data"
+            "kind": "data",
+            "pill": "10, 9, 1"
           },
           {
             "id": "bad",
-            "x": 9,
+            "x": 4.8,
             "y": 2,
-            "label": "[1, 10, 9]",
-            "sublabel": "compared as text",
+            "label": "Plain sort",
             "icon": "x",
-            "kind": "data",
-            "status": "error"
+            "kind": "neutral",
+            "status": "error",
+            "pill": {
+              "text": "1, 10, 9",
+              "tone": "bad"
+            }
           },
           {
             "id": "good",
-            "x": 9,
-            "y": 6,
-            "label": "[1, 9, 10]",
-            "sublabel": "compared as numbers",
+            "x": 1,
+            "y": 5.8,
+            "label": "With comparator",
             "icon": "check",
-            "kind": "data",
-            "status": "ok"
+            "kind": "neutral",
+            "status": "ok",
+            "pill": {
+              "text": "1, 9, 10",
+              "tone": "good"
+            }
           }
         ],
         "edges": [
           {
-            "from": "unsorted",
+            "from": "input",
             "to": "bad",
-            "label": ".sort()",
+            "label": "as text",
             "status": "error",
             "packet": {
-              "label": "\"10\"<\"9\"",
-              "status": "error"
+              "kind": "data"
             }
           },
           {
-            "from": "unsorted",
+            "from": "input",
             "to": "good",
-            "label": ".sort((a, b) => a - b)",
-            "status": "ok",
+            "label": "as numbers",
             "packet": {
-              "label": "10>9",
-              "status": "ok"
+              "kind": "data"
             }
           }
         ]
@@ -314,112 +326,89 @@
       "title": "Merge sort: recursion that sorts",
       "chapter": "how",
       "body": [
-        "Where does n log n come from? <span class=\"term\">Merge sort</span> shows it. Split the list in half, sort each half the same way, then merge the two sorted halves by repeatedly taking the smaller front item.",
-        "A list of one is already sorted: that is the base case. Halving gives about log n levels, and each level merges all n items. Hence <b>O(n log n)</b>."
+        "<span class=\"term\">Merge sort</span> shows where n log n comes from. Split the list in half, sort each half the same way, then merge the sorted halves by always taking the smaller front item.",
+        "A list of one is already sorted: the base case. Halving gives about log n levels, and each level merges all n items. Hence <b>O(n log n)</b>."
       ],
       "code": {
         "language": "ts",
         "code": "function mergeSort(a: number[]): number[] {\n  if (a.length <= 1) return a; // base case\n  const mid = Math.floor(a.length / 2);\n  const left = mergeSort(a.slice(0, mid));\n  const right = mergeSort(a.slice(mid));\n  const out: number[] = [];\n  let i = 0, j = 0;\n  while (i < left.length && j < right.length) {\n    out.push(left[i] <= right[j] ? left[i++] : right[j++]);\n  }\n  return [...out, ...left.slice(i), ...right.slice(j)];\n}"
       },
+      "changes": [
+        "− Plain sort, With comparator",
+        "~ Input: now 8, 3, 5, 1",
+        "+ Left half, Right half: each sorted the same way",
+        "+ Merged: the two sorted halves, zipped together"
+      ],
       "scene": {
-        "caption": "Split down to tiny sorted pieces, then merge back up in order.",
+        "caption": "Split, sort each half, merge: 8 3 5 1 becomes 1 3 5 8.",
         "nodes": [
           {
-            "id": "ms-all",
-            "x": 6.4,
-            "y": 1,
-            "label": "[8, 3, 5, 1]",
-            "shape": "tile",
-            "kind": "data"
+            "id": "input",
+            "x": 1,
+            "y": 4,
+            "label": "Input",
+            "icon": "list",
+            "kind": "data",
+            "pill": "8, 3, 5, 1"
           },
           {
             "id": "ms-l",
-            "x": 3.4,
-            "y": 3,
-            "label": "[8, 3]",
-            "sublabel": "split",
-            "shape": "tile",
-            "kind": "data"
+            "x": 4.8,
+            "y": 1.8,
+            "label": "Left half",
+            "icon": "list",
+            "kind": "data",
+            "pill": "8 3 → 3 8"
           },
           {
             "id": "ms-r",
-            "x": 9.4,
-            "y": 3,
-            "label": "[5, 1]",
-            "sublabel": "split",
-            "shape": "tile",
-            "kind": "data"
-          },
-          {
-            "id": "ms-ls",
-            "x": 3.4,
-            "y": 5,
-            "label": "[3, 8]",
-            "sublabel": "sorted",
-            "shape": "tile",
+            "x": 4.8,
+            "y": 6.2,
+            "label": "Right half",
+            "icon": "list",
             "kind": "data",
-            "status": "ok"
-          },
-          {
-            "id": "ms-rs",
-            "x": 9.4,
-            "y": 5,
-            "label": "[1, 5]",
-            "sublabel": "sorted",
-            "shape": "tile",
-            "kind": "data",
-            "status": "ok"
+            "pill": "5 1 → 1 5"
           },
           {
             "id": "ms-out",
-            "x": 6.4,
-            "y": 6.2,
-            "label": "[1, 3, 5, 8]",
-            "sublabel": "merged",
-            "shape": "tile",
+            "x": 8.6,
+            "y": 4,
+            "label": "Merged",
+            "icon": "check",
             "kind": "data",
-            "status": "active"
+            "status": "ok",
+            "pill": "1, 3, 5, 8"
           }
         ],
         "edges": [
           {
-            "from": "ms-all",
+            "from": "input",
             "to": "ms-l",
-            "style": "dashed"
-          },
-          {
-            "from": "ms-all",
-            "to": "ms-r",
-            "style": "dashed"
-          },
-          {
-            "from": "ms-l",
-            "to": "ms-ls",
-            "label": "recurse"
-          },
-          {
-            "from": "ms-r",
-            "to": "ms-rs",
-            "label": "recurse"
-          },
-          {
-            "from": "ms-ls",
-            "to": "ms-out",
-            "label": "merge",
-            "status": "active",
+            "label": "split",
             "packet": {
-              "label": "3",
-              "status": "active"
+              "kind": "data"
             }
           },
           {
-            "from": "ms-rs",
+            "from": "input",
+            "to": "ms-r",
+            "packet": {
+              "kind": "data"
+            }
+          },
+          {
+            "from": "ms-l",
             "to": "ms-out",
             "label": "merge",
-            "status": "active",
             "packet": {
-              "label": "1",
-              "status": "active"
+              "kind": "data"
+            }
+          },
+          {
+            "from": "ms-r",
+            "to": "ms-out",
+            "packet": {
+              "kind": "data"
             }
           }
         ]
@@ -429,94 +418,103 @@
       "title": "Binary search: check the middle",
       "chapter": "how",
       "body": [
-        "Now Notely's activity log: millions of events, already sorted by time. Maya asks for everything since 09:00.",
-        "<span class=\"term\">Binary search</span> checks the middle event. Before 09:00? The answer is in the right half. At or after? It is in the left half, maybe the middle itself. Each check halves what is left: about 21 checks for two million events. <b>O(log n)</b>, but only on <b>sorted</b> data."
+        "Notely also keeps an activity log: two million events, sorted by time. Maya asks for everything since 09:00.",
+        "<span class=\"term\">Binary search</span> checks the middle event. Before 09:00? The answer is to its right. At or after? It is to its left, or the middle itself. Each check halves what is left: about 21 checks. <b>O(log n)</b>, on <b>sorted</b> data."
       ],
       "callout": {
         "type": "analogy",
         "text": "Guessing a number from 1 to 100 with \"higher or lower\" hints. Always guess the middle and you never need more than seven guesses."
       },
+      "changes": [
+        "− Input, Left half, Right half, Merged",
+        "+ 08:10, 08:45, 09:02, 09:30, 11:40: events, in time order",
+        "+ Since 09:00: the time Maya asks for",
+        "~ Events checked → 21 of 2,000,000"
+      ],
+      "metrics": {
+        "checks": {
+          "value": 21,
+          "tone": "good"
+        }
+      },
       "scene": {
-        "caption": "The middle is at or after 09:00, so everything to its right can be ignored.",
+        "caption": "Five events stand in for two million. The search starts in the middle.",
+        "zones": [
+          {
+            "id": "log",
+            "x": 0,
+            "y": 0.8,
+            "w": 11,
+            "h": 2.4,
+            "label": "activity log"
+          }
+        ],
         "nodes": [
           {
             "id": "e0",
-            "x": 1.6,
-            "y": 4.4,
+            "x": 0.8,
+            "y": 2,
             "label": "08:10",
-            "sublabel": "index 0",
-            "shape": "tile",
-            "kind": "data"
+            "icon": "clock",
+            "kind": "data",
+            "shape": "tile"
           },
           {
             "id": "e1",
-            "x": 3.8,
-            "y": 4.4,
+            "x": 3.1,
+            "y": 2,
             "label": "08:45",
-            "sublabel": "index 1",
-            "shape": "tile",
-            "kind": "data"
+            "icon": "clock",
+            "kind": "data",
+            "shape": "tile"
           },
           {
             "id": "e2",
-            "x": 6,
-            "y": 4.4,
+            "x": 5.4,
+            "y": 2,
             "label": "09:02",
-            "sublabel": "index 2, mid",
-            "shape": "tile",
+            "icon": "clock",
             "kind": "data",
-            "status": "active"
+            "shape": "tile",
+            "status": "active",
+            "pill": "middle"
           },
           {
             "id": "e3",
-            "x": 8.4,
-            "y": 4.4,
+            "x": 7.7,
+            "y": 2,
             "label": "09:30",
-            "sublabel": "index 3",
-            "shape": "tile",
+            "icon": "clock",
             "kind": "data",
-            "status": "dim"
+            "shape": "tile"
           },
           {
             "id": "e4",
-            "x": 10.4,
-            "y": 4.4,
+            "x": 10,
+            "y": 2,
             "label": "11:40",
-            "sublabel": "index 4",
-            "shape": "tile",
+            "icon": "clock",
             "kind": "data",
-            "status": "dim"
+            "shape": "tile"
           },
           {
             "id": "target",
-            "x": 6,
-            "y": 0.8,
+            "x": 5.4,
+            "y": 5.8,
             "label": "Since 09:00",
-            "sublabel": "first match?",
-            "icon": "clock",
-            "shape": "flag",
-            "kind": "client"
+            "icon": "search",
+            "kind": "neutral",
+            "shape": "flag"
           }
         ],
         "edges": [
           {
             "from": "target",
             "to": "e2",
-            "label": "09:02 ≥ 09:00",
-            "status": "active",
             "packet": {
-              "label": "mid",
-              "status": "active"
+              "kind": "request",
+              "direction": "both"
             }
-          }
-        ],
-        "notes": [
-          {
-            "id": "half",
-            "x": 9.3,
-            "y": 6.4,
-            "text": "Right half: skipped",
-            "status": "active"
           }
         ]
       }
@@ -525,57 +523,49 @@
       "title": "Finding the first event since 09:00",
       "chapter": "example",
       "body": [
-        "Second check: the middle of what is left is 08:45, before 09:00, so the answer is to its right. Now <code>lo</code> and <code>hi</code> meet at index 2: 09:02 is the first match.",
-        "This version is called <em>lower bound</em>. It returns the first index whose value is at or after the target, or the array length if there is none. Learn this one shape and reuse it."
+        "First check: the middle, 09:02, is at or after 09:00, so the answer is there or left of it. Next: 08:45 is too early, so the answer is right of it. Now <code>lo</code> and <code>hi</code> meet at index 2: 09:02.",
+        "This version is called <em>lower bound</em>: the first index at or after the target. Learn this shape and reuse it."
       ],
       "code": {
         "language": "ts",
         "code": "function firstAtOrAfter(times: number[], target: number) {\n  let lo = 0;\n  let hi = times.length; // exclusive: one past the end\n  while (lo < hi) {\n    const mid = Math.floor((lo + hi) / 2);\n    if (times[mid] < target) lo = mid + 1; // answer is right\n    else hi = mid;                          // mid might be it\n  }\n  return lo; // times.length means: no match\n}"
       },
+      "changes": [
+        "~ 09:02: at or after 09:00, it is the first match",
+        "~ 08:45: checked second, too early",
+        "~ 08:10, 09:30, 11:40: ruled out without a look",
+        "~ Since 09:00: answer found at index 2"
+      ],
       "scene": {
         "extends": "previous",
-        "caption": "08:45 is too early, so lo moves past it. lo meets hi at 09:02.",
-        "remove": [
-          "half",
-          "target>e2"
-        ],
+        "caption": "Two checks, and the first event since 09:00 is found.",
         "nodes": [
-          {
-            "id": "e1",
-            "status": "dim",
-            "sublabel": "too early"
-          },
           {
             "id": "e0",
             "status": "dim"
           },
           {
+            "id": "e1",
+            "status": "warn",
+            "pill": "too early"
+          },
+          {
             "id": "e2",
             "status": "ok",
-            "sublabel": "first match"
+            "pill": "first match"
+          },
+          {
+            "id": "e3",
+            "status": "dim"
+          },
+          {
+            "id": "e4",
+            "status": "dim"
           },
           {
             "id": "target",
             "status": "ok",
-            "sublabel": "index 2"
-          }
-        ],
-        "edges": [
-          {
-            "from": "target",
-            "to": "e1",
-            "label": "08:45 < 09:00",
-            "style": "dashed"
-          },
-          {
-            "from": "target",
-            "to": "e2",
-            "label": "answer",
-            "status": "ok",
-            "packet": {
-              "label": "2",
-              "status": "ok"
-            }
+            "pill": "index 2"
           }
         ]
       }
@@ -584,62 +574,48 @@
       "title": "Off by one, or not sorted at all",
       "chapter": "watch-out",
       "body": [
-        "Binary search fails in two classic ways. An <span class=\"term\">off-by-one</span>: write <code>lo = mid</code> instead of <code>mid + 1</code> and the loop can repeat forever. And unsorted input: the search still returns <em>an</em> answer, just a wrong one, with no error.",
-        "Recursion fails one way: no reachable base case. The calls pile up until JavaScript throws a <span class=\"term\">stack overflow</span>: <code>RangeError: Maximum call stack size exceeded</code>."
+        "Binary search fails in two classic ways. An <span class=\"term\">off-by-one</span>: write <code>lo = mid</code> instead of <code>mid + 1</code> and the loop can repeat forever. And unsorted input: the search still returns <em>an</em> answer, a wrong one, with no error.",
+        "Recursion fails one way: no reachable base case. Calls pile up until JavaScript throws a <span class=\"term\">stack overflow</span> error."
       ],
       "callout": {
         "type": "claude-code",
-        "text": "When Claude Code writes a binary search, ask: \"Where is this array sorted, and by the same key?\" Then test it on an empty array, one item, a target before all items and one after all items. For any <code>.sort()</code> on numbers or dates, check that a comparator is passed."
+        "text": "When Claude Code writes a binary search, ask: \"Where is this array sorted, and by the same key?\" Test it on an empty array, one item, and targets before and after all items. For any <code>.sort()</code> on numbers or dates, check for a comparator."
       },
+      "changes": [
+        "~ 08:45 → 09:05 and 09:02 → 08:50: the log is out of order",
+        "~ 09:05: the real first match, never checked",
+        "~ Since 09:00: wrong answer, index 3"
+      ],
       "scene": {
         "extends": "previous",
-        "caption": "Two events out of order: the search skips 09:05 and confidently returns 09:30.",
-        "remove": [
-          "target>e1",
-          "target>e2"
-        ],
+        "caption": "On unsorted data the search happily returns 09:30 and misses 09:05.",
         "nodes": [
           {
             "id": "e1",
             "label": "09:05",
-            "sublabel": "missed",
-            "status": "error"
+            "status": "error",
+            "pill": "missed"
           },
           {
             "id": "e2",
             "label": "08:50",
-            "sublabel": "out of order",
-            "status": "warn"
+            "status": "warn",
+            "pill": "out of order"
           },
           {
             "id": "e3",
-            "status": "warn",
-            "sublabel": "returned"
+            "status": "normal",
+            "pill": "returned"
           },
           {
             "id": "target",
-            "status": "warn",
-            "sublabel": "says index 3"
+            "status": "error",
+            "pill": "says 3"
           }
         ],
         "edges": [
           {
-            "from": "target",
-            "to": "e3",
-            "label": "\"first\" match?",
-            "status": "warn",
-            "packet": {
-              "label": "3?",
-              "status": "warn"
-            }
-          }
-        ],
-        "notes": [
-          {
-            "id": "silent",
-            "x": 9.3,
-            "y": 6.4,
-            "text": "No error. Just wrong.",
+            "id": "target>e2",
             "status": "error"
           }
         ]
@@ -651,7 +627,45 @@
       "body": [
         "Recursion solves a smaller copy of the same problem and needs a base case to stop. Calls wait on the call stack.",
         "Sorting costs O(n log n), and in JavaScript needs a comparator for numbers. Binary search finds things in O(log n), but only in sorted data, and only if you get the bounds exactly right."
-      ]
+      ],
+      "changes": [
+        "~ Log sorted again: 08:45 and 09:02 back in place",
+        "~ Since 09:00: index 2, the right answer"
+      ],
+      "scene": {
+        "extends": "previous",
+        "caption": "Sorted data, careful bounds, the right answer.",
+        "nodes": [
+          {
+            "id": "e1",
+            "label": "08:45",
+            "status": "dim",
+            "pill": null
+          },
+          {
+            "id": "e2",
+            "label": "09:02",
+            "status": "ok",
+            "pill": "first match"
+          },
+          {
+            "id": "e3",
+            "status": "dim",
+            "pill": null
+          },
+          {
+            "id": "target",
+            "status": "ok",
+            "pill": "index 2"
+          }
+        ],
+        "edges": [
+          {
+            "id": "target>e2",
+            "status": "ok"
+          }
+        ]
+      }
     }
   ],
   "quiz": [

@@ -15,92 +15,114 @@
     "spaced repetition": "Reviewing something again after growing gaps, like one day, one week, one month, which makes it stick far longer.",
     "practice log": "A short record per problem: its pattern, whether you needed help, the key idea, and when to re-solve it.",
     "mock interview": "A timed practice round run like the real one, with someone (or something) playing the interviewer and giving feedback.",
-    "practical round": "An interview round where you build a small working feature, often with a real API, instead of solving a puzzle."
+    "practical round": "An interview round where you build a small working feature, often with a real API, instead of solving a puzzle.",
+    "problem site": "A website with a large collection of small coding problems, each with tests that check your answer."
   },
   "steps": [
     {
-      "title": "Three hundred problems, little to show",
-      "chapter": "problem",
+      "title": "Six weeks until the interviews",
+      "chapter": "setup",
       "body": [
-        "The usual plan: open a problem site, solve whatever comes next, repeat for months. Some days you solve it, some days you read the answer and nod.",
-        "A month later, most of it is gone. The problems were random, so nothing connected. And you practiced in silence, which is the one thing the real round will not allow."
+        "You have an AI engineer interview loop coming up in about six weeks. You have this module's lessons, a <span class=\"term\">problem site</span> with about 2,000 practice problems, Claude, and about an hour a day.",
+        "This lesson turns that into a plan that sticks."
       ],
       "scene": {
-        "caption": "Random problems in, very little retained.",
+        "caption": "You, a pile of practice problems, and Claude on the side.",
         "nodes": [
           {
-            "id": "r1",
-            "x": 2,
-            "y": 1.6,
-            "label": "Problem 37",
-            "icon": "file",
-            "kind": "neutral"
-          },
-          {
-            "id": "r2",
-            "x": 2,
-            "y": 4,
-            "label": "Problem 112",
-            "icon": "file",
-            "kind": "neutral"
-          },
-          {
-            "id": "r3",
-            "x": 2,
-            "y": 6.4,
-            "label": "Problem 260",
-            "icon": "file",
-            "kind": "neutral"
-          },
-          {
             "id": "you",
-            "x": 6.4,
-            "y": 4,
+            "x": 1,
+            "y": 2.2,
             "label": "You",
-            "sublabel": "solving in silence",
             "icon": "laptop",
-            "kind": "person",
-            "status": "warn"
+            "kind": "person"
           },
           {
-            "id": "gone",
-            "x": 10.4,
-            "y": 4,
-            "label": "A month later",
-            "sublabel": "mostly forgotten",
-            "icon": "trash",
+            "id": "pile",
+            "x": 4.8,
+            "y": 2.2,
+            "label": "2,000 problems",
+            "icon": "list",
             "kind": "neutral",
-            "status": "error"
+            "shape": "stack"
+          },
+          {
+            "id": "claude",
+            "x": 1,
+            "y": 6,
+            "label": "Claude",
+            "icon": "sparkle",
+            "kind": "ai"
           }
         ],
         "edges": [
           {
-            "from": "r1",
-            "to": "you",
-            "style": "dotted"
-          },
-          {
-            "from": "r2",
-            "to": "you",
-            "style": "dotted",
+            "from": "you",
+            "to": "pile",
             "packet": {
-              "speed": "fast"
+              "kind": "request",
+              "speed": "slow"
             }
-          },
-          {
-            "from": "r3",
-            "to": "you",
-            "style": "dotted"
           },
           {
             "from": "you",
-            "to": "gone",
+            "to": "claude",
+            "style": "dotted",
+            "arrow": "none"
+          }
+        ]
+      }
+    },
+    {
+      "title": "Three hundred problems, little to show",
+      "chapter": "problem",
+      "body": [
+        "The usual plan: open the problem site, solve whatever comes next, repeat for months. Some days you solve it, some days you read the answer and nod.",
+        "A month later, most of it is gone. The problems were random, so nothing connected. And you practiced in silence, which is the one thing the real round will not allow."
+      ],
+      "changes": [
+        "~ 2,000 problems: 300 done, picked at random",
+        "~ You: practicing in silence, Claude unused",
+        "+ Month later: most of it forgotten"
+      ],
+      "scene": {
+        "extends": "previous",
+        "caption": "Hundreds of random problems in, very little still there a month later.",
+        "nodes": [
+          {
+            "id": "you",
+            "status": "warn",
+            "pill": "silent"
+          },
+          {
+            "id": "pile",
+            "pill": "300 done"
+          },
+          {
+            "id": "claude",
+            "status": "dim"
+          },
+          {
+            "id": "later",
+            "x": 8.6,
+            "y": 2.2,
+            "label": "Month later",
+            "icon": "calendar",
+            "kind": "neutral",
             "status": "error",
-            "packet": {
-              "label": "fades",
-              "status": "error",
-              "speed": "slow"
-            }
+            "pill": "mostly gone"
+          }
+        ],
+        "edges": [
+          {
+            "id": "you>claude",
+            "status": "dim"
+          },
+          {
+            "from": "pile",
+            "to": "later",
+            "style": "dashed",
+            "status": "error"
           }
         ]
       }
@@ -116,43 +138,43 @@
         "type": "analogy",
         "text": "Like learning a design tool. Clicking around for months teaches less than drilling one technique, using it on a real screen, then using it again next week without the tutorial."
       },
+      "changes": [
+        "− You, 2,000 problems, Month later, Claude",
+        "+ Learn pattern, Solve 2–3: one pattern, a few problems",
+        "+ Review, Re-solve: note what tripped you, try again later"
+      ],
       "scene": {
-        "caption": "A loop: learn, solve, review, re-solve, then the next pattern.",
+        "caption": "A small loop, repeated: learn, solve, review, re-solve.",
         "nodes": [
           {
             "id": "learn",
-            "x": 2.4,
+            "x": 1,
             "y": 2,
-            "label": "Learn a pattern",
-            "sublabel": "one lesson",
-            "icon": "brain",
-            "kind": "person",
-            "status": "active"
+            "label": "Learn pattern",
+            "icon": "graduation-cap",
+            "kind": "neutral"
           },
           {
             "id": "solve",
-            "x": 9.6,
+            "x": 4.8,
             "y": 2,
-            "label": "Solve 2 or 3",
-            "sublabel": "out loud, timed",
+            "label": "Solve 2–3",
             "icon": "code",
             "kind": "client"
           },
           {
             "id": "review",
-            "x": 9.6,
-            "y": 6,
-            "label": "Review + log",
-            "sublabel": "what tripped you",
-            "icon": "pencil",
-            "kind": "data"
+            "x": 4.8,
+            "y": 5.8,
+            "label": "Review",
+            "icon": "list",
+            "kind": "neutral"
           },
           {
             "id": "resolve",
-            "x": 2.4,
-            "y": 6,
-            "label": "Re-solve later",
-            "sublabel": "blank editor",
+            "x": 1,
+            "y": 5.8,
+            "label": "Re-solve",
             "icon": "refresh",
             "kind": "neutral"
           }
@@ -161,23 +183,147 @@
           {
             "from": "learn",
             "to": "solve",
-            "packet": true
+            "packet": {
+              "kind": "request",
+              "speed": "slow"
+            }
           },
           {
             "from": "solve",
             "to": "review",
-            "packet": true
+            "packet": {
+              "kind": "request",
+              "speed": "slow"
+            }
           },
           {
             "from": "review",
             "to": "resolve",
-            "packet": true
+            "packet": {
+              "kind": "request",
+              "speed": "slow"
+            }
           },
           {
             "from": "resolve",
             "to": "learn",
-            "style": "dashed",
-            "label": "next pattern"
+            "style": "dashed"
+          }
+        ]
+      }
+    },
+    {
+      "title": "The 25-minute rule",
+      "chapter": "how",
+      "body": [
+        "Give each problem 25 focused minutes, out loud, using the six moves from lesson 1. Stuck at 25? Read one hint and try again. Still stuck? Read the solution until you can explain <em>why</em> it works.",
+        "Then close it and write it again from a blank editor. Reading a solution is not the same as being able to produce it."
+      ],
+      "changes": [
+        "~ Solve 2–3: in focus, 25 minutes per problem",
+        "~ Learn pattern, Review, Re-solve: out of focus"
+      ],
+      "scene": {
+        "extends": "previous",
+        "caption": "Solving gets a timer: 25 minutes, out loud, then a hint.",
+        "nodes": [
+          {
+            "id": "solve",
+            "status": "active",
+            "pill": {
+              "text": "25 min",
+              "icon": "clock"
+            }
+          },
+          {
+            "id": "learn",
+            "status": "dim"
+          },
+          {
+            "id": "review",
+            "status": "dim"
+          },
+          {
+            "id": "resolve",
+            "status": "dim"
+          }
+        ],
+        "edges": [
+          {
+            "id": "learn>solve",
+            "status": "dim",
+            "packet": false
+          },
+          {
+            "id": "solve>review",
+            "packet": false
+          },
+          {
+            "id": "review>resolve",
+            "status": "dim",
+            "packet": false
+          },
+          {
+            "id": "resolve>learn",
+            "status": "dim"
+          }
+        ]
+      }
+    },
+    {
+      "title": "Log it, then re-solve on a schedule",
+      "chapter": "how",
+      "body": [
+        "After each problem, add an entry to your <span class=\"term\">practice log</span>: the pattern, whether you needed help, the key idea, and when to re-solve it.",
+        "Memory fades unless you use it. <span class=\"term\">Spaced repetition</span> fights that: re-solve each problem after about a day, a week and a month, from scratch, out loud. If a re-solve fails, the gap resets."
+      ],
+      "callout": {
+        "type": "tip",
+        "text": "Put re-solve dates straight into your calendar when you log a problem. A practice plan you have to remember to follow is a plan you will skip."
+      },
+      "code": {
+        "language": "yaml",
+        "filename": "practice-log.yaml",
+        "code": "- problem: Two Sum\n  pattern: hash map\n  date: 2026-11-25\n  result: hint   # solved | hint | read solution\n  key idea: look up target - x before storing x\n  re-solve: [2026-11-26, 2026-12-02, 2026-12-25]",
+        "caption": "One entry per problem. The key idea is one line you could say out loud."
+      },
+      "changes": [
+        "~ Solve 2–3: done",
+        "~ Review: each problem goes in the log",
+        "~ Re-solve: after a day, a week and a month"
+      ],
+      "scene": {
+        "extends": "previous",
+        "caption": "Every solved problem gets a log entry and three dates to come back.",
+        "nodes": [
+          {
+            "id": "solve",
+            "status": "ok",
+            "pill": null
+          },
+          {
+            "id": "review",
+            "status": "active",
+            "pill": "logged"
+          },
+          {
+            "id": "resolve",
+            "status": "active",
+            "pill": "1d · 1w · 1m"
+          }
+        ],
+        "edges": [
+          {
+            "id": "solve>review",
+            "status": "ok"
+          },
+          {
+            "id": "review>resolve",
+            "status": "active",
+            "packet": {
+              "kind": "job",
+              "speed": "slow"
+            }
           }
         ]
       }
@@ -189,64 +335,72 @@
         "Follow this module's order, about an hour a day, five days a week. Weeks 1 to 5 each cover one or two lessons. Week 6 mixes everything, with extra mock interviews.",
         "Pick problems from a list grouped by pattern, such as the well-known Blind 75 or NeetCode lists, starting with the easy ones. Two solved deeply beat five skimmed."
       ],
+      "callout": {
+        "type": "tip",
+        "text": "Not in this module: heaps (priority queues), for \"top k\" questions such as the k most similar notes, and dynamic programming. If your target companies ask harder questions, add a week for each after week 5."
+      },
+      "changes": [
+        "− Learn pattern, Solve 2–3, Review, Re-solve",
+        "+ Week 1, Week 2, Week 3: the building blocks",
+        "+ Week 4, Week 5, Week 6: recursion, patterns, mocks"
+      ],
       "scene": {
-        "caption": "One topic per week, then a mixed week with mocks.",
+        "caption": "Six weeks, following the lessons of this module in order.",
         "nodes": [
           {
             "id": "wk1",
-            "x": 2,
+            "x": 1,
             "y": 2,
             "label": "Week 1",
-            "sublabel": "Big-O, arrays, maps",
             "icon": "calendar",
             "kind": "neutral",
-            "status": "active"
+            "pill": "Big-O, maps"
           },
           {
             "id": "wk2",
-            "x": 6.2,
+            "x": 4.8,
             "y": 2,
             "label": "Week 2",
-            "sublabel": "stacks, queues, lists",
             "icon": "calendar",
-            "kind": "neutral"
+            "kind": "neutral",
+            "pill": "stacks"
           },
           {
             "id": "wk3",
-            "x": 10.2,
+            "x": 8.6,
             "y": 2,
             "label": "Week 3",
-            "sublabel": "trees and graphs",
             "icon": "calendar",
-            "kind": "neutral"
+            "kind": "neutral",
+            "pill": "trees"
           },
           {
             "id": "wk4",
-            "x": 10.2,
+            "x": 8.6,
             "y": 5.8,
             "label": "Week 4",
-            "sublabel": "recursion, search",
             "icon": "calendar",
-            "kind": "neutral"
+            "kind": "neutral",
+            "pill": "recursion"
           },
           {
             "id": "wk5",
-            "x": 6.2,
+            "x": 4.8,
             "y": 5.8,
             "label": "Week 5",
-            "sublabel": "the three patterns",
             "icon": "calendar",
-            "kind": "neutral"
+            "kind": "neutral",
+            "pill": "patterns"
           },
           {
             "id": "wk6",
-            "x": 2,
+            "x": 1,
             "y": 5.8,
             "label": "Week 6",
-            "sublabel": "mixed + mocks",
             "icon": "calendar",
-            "kind": "person",
-            "status": "ok"
+            "kind": "neutral",
+            "status": "active",
+            "pill": "mocks"
           }
         ],
         "edges": [
@@ -268,150 +422,7 @@
           },
           {
             "from": "wk5",
-            "to": "wk6",
-            "packet": true
-          }
-        ]
-      },
-      "callout": {
-        "type": "tip",
-        "title": "Two topics this module skips",
-        "text": "Heaps (priority queues), for \"top k\" questions such as the k most similar notes, and dynamic programming. If your target companies ask harder questions, add a week for each after week 5."
-      }
-    },
-    {
-      "title": "The 25-minute rule",
-      "chapter": "how",
-      "body": [
-        "Give each problem 25 focused minutes, out loud, using the six moves from lesson 1. Stuck at 25? Read one hint and try again. Still stuck? Read the solution until you can explain <em>why</em> it works.",
-        "Then close it and write it again from a blank editor. Record the result in a <span class=\"term\">practice log</span>. Reading a solution is not the same as being able to produce it."
-      ],
-      "code": {
-        "language": "yaml",
-        "filename": "practice-log.yaml",
-        "code": "- problem: Two Sum\n  pattern: hash map\n  date: 2026-11-25\n  result: hint   # solved | hint | read solution\n  key idea: look up target - x before storing x\n  re-solve: [2026-11-26, 2026-12-02, 2026-12-25]",
-        "caption": "One entry per problem. The key idea is one line you could say out loud."
-      },
-      "scene": {
-        "extends": "previous",
-        "caption": "Week 1, day 1: one problem, 25 minutes, then a log entry.",
-        "nodes": [
-          {
-            "id": "wk1",
-            "tags": [
-              "25 min, out loud",
-              "then: log it"
-            ]
-          },
-          {
-            "id": "wk6",
-            "status": "dim"
-          },
-          {
-            "id": "wk2",
-            "status": "dim"
-          },
-          {
-            "id": "wk3",
-            "status": "dim"
-          },
-          {
-            "id": "wk4",
-            "status": "dim"
-          },
-          {
-            "id": "wk5",
-            "status": "dim"
-          }
-        ],
-        "edges": [
-          {
-            "id": "wk5>wk6",
-            "packet": false
-          }
-        ]
-      }
-    },
-    {
-      "title": "Re-solve on a schedule",
-      "chapter": "how",
-      "body": [
-        "Memory fades fast unless you retrieve it. <span class=\"term\">Spaced repetition</span> fights that: re-solve each problem after about one day, one week and one month, from scratch, out loud.",
-        "If a re-solve fails, the gap resets. Problems you could only read the answer to get re-solved first. That log is your study plan for week 6."
-      ],
-      "callout": {
-        "type": "tip",
-        "text": "Put re-solve dates straight into your calendar when you log a problem. A practice plan you have to remember to follow is a plan you will skip."
-      },
-      "scene": {
-        "caption": "Every logged problem comes back after one day, one week, one month.",
-        "nodes": [
-          {
-            "id": "log",
-            "x": 2,
-            "y": 4,
-            "label": "Practice log",
-            "sublabel": "pattern + key idea",
-            "icon": "list",
-            "kind": "data",
-            "status": "active"
-          },
-          {
-            "id": "d1",
-            "x": 7.6,
-            "y": 1.6,
-            "label": "+1 day",
-            "sublabel": "re-solve",
-            "icon": "calendar",
-            "kind": "neutral",
-            "status": "ok"
-          },
-          {
-            "id": "d7",
-            "x": 7.6,
-            "y": 4,
-            "label": "+1 week",
-            "sublabel": "re-solve",
-            "icon": "calendar",
-            "kind": "neutral",
-            "status": "ok"
-          },
-          {
-            "id": "d30",
-            "x": 7.6,
-            "y": 6.4,
-            "label": "+1 month",
-            "sublabel": "failed? reset",
-            "icon": "calendar",
-            "kind": "neutral",
-            "status": "warn"
-          }
-        ],
-        "edges": [
-          {
-            "from": "log",
-            "to": "d1",
-            "packet": {
-              "label": "Two Sum"
-            }
-          },
-          {
-            "from": "log",
-            "to": "d7",
-            "style": "dashed"
-          },
-          {
-            "from": "log",
-            "to": "d30",
-            "style": "dashed"
-          },
-          {
-            "from": "d30",
-            "to": "d1",
-            "label": "reset",
-            "status": "warn",
-            "style": "dotted",
-            "bend": 1.4
+            "to": "wk6"
           }
         ]
       }
@@ -420,72 +431,61 @@
       "title": "Mock interviews, out loud and timed",
       "chapter": "how",
       "body": [
-        "From week 3, run one <span class=\"term\">mock interview</span> a week: 45 minutes, a new problem, talking the whole time. A friend who codes is ideal. Recording yourself works too, and watching it back is uncomfortable and very useful.",
+        "From week 3, run one <span class=\"term\">mock interview</span> a week: 45 minutes, a new problem, talking the whole time. A friend who codes is ideal. Recording yourself works too; watching it back is uncomfortable and very useful.",
         "Claude makes a patient interviewer, as long as you set the rules first."
       ],
       "callout": {
         "type": "claude-code",
-        "text": "Good uses: \"Play interviewer, no code, hints only on request.\" \"Here is my solution: what is its time and space complexity, and which edge case breaks it?\" \"Give me a variation of this problem I solved last week.\" Bad use: pasting a fresh problem and asking for the answer."
+        "text": "Good uses: \"Play interviewer, no code, hints only on request.\" \"Here is my solution: what is its time and space complexity, and which edge case breaks it?\" \"Give me a variation of a problem I solved last week.\" Bad use: asking it for the answer."
       },
+      "changes": [
+        "− Week 1, Week 2, Week 3, Week 4, Week 5, Week 6",
+        "+ You: 45 minutes, talking the whole time",
+        "+ Interviewer: a friend, or Claude with rules",
+        "+ Scorecard: what to fix next week"
+      ],
       "scene": {
-        "caption": "A timed round with an interviewer who asks questions back and scores you.",
+        "caption": "A weekly mock: you talk, the interviewer probes, the scorecard says what to fix.",
         "nodes": [
           {
             "id": "you",
-            "x": 2,
-            "y": 4,
+            "x": 1,
+            "y": 2.2,
             "label": "You",
-            "sublabel": "45 min, out loud",
             "icon": "laptop",
             "kind": "person",
-            "status": "active"
+            "status": "active",
+            "pill": "45 min"
           },
           {
             "id": "mock",
-            "x": 10,
-            "y": 4,
+            "x": 4.8,
+            "y": 2.2,
             "label": "Interviewer",
-            "sublabel": "a friend or Claude",
-            "icon": "users",
+            "icon": "user",
             "kind": "person"
           },
           {
             "id": "card",
-            "x": 10,
-            "y": 1.9,
+            "x": 8.6,
+            "y": 2.2,
             "label": "Scorecard",
-            "sublabel": "what to fix next",
             "icon": "list",
-            "kind": "neutral",
-            "tags": [
-              "communication",
-              "approach",
-              "testing"
-            ]
+            "kind": "neutral"
           }
         ],
         "edges": [
           {
             "from": "you",
             "to": "mock",
-            "label": "my plan is…",
             "packet": {
-              "label": "plan",
-              "status": "active"
-            }
-          },
-          {
-            "from": "mock",
-            "to": "you",
-            "label": "and if it's empty?",
-            "packet": {
-              "label": "question"
+              "kind": "request",
+              "direction": "both"
             }
           },
           {
             "from": "mock",
             "to": "card",
-            "label": "scores",
             "style": "dashed"
           }
         ]
@@ -495,91 +495,74 @@
       "title": "Rehearse the practical AI build",
       "chapter": "example",
       "body": [
-        "AI engineer loops often include a <span class=\"term\">practical round</span>: build a small feature that calls a model, in an hour or so. It tests different muscles: reading API docs fast, handling bad output, errors and timeouts.",
-        "Practice it like a puzzle round. Give yourself a spec, a timer and the same tools the real round allows (ask the recruiter). Then compare your result with what Claude Code would have produced."
+        "AI engineer loops often include a <span class=\"term\">practical round</span>: in about an hour, build a small feature on an app server that calls the Claude API (Anthropic's AI model). It tests reading docs fast and handling bad output, errors and timeouts.",
+        "Practice it like a puzzle round: a spec, a timer, and the tools the real round allows."
       ],
-      "code": {
-        "language": "text",
-        "filename": "practice-spec.txt",
-        "code": "Build in 60 minutes, with the round's tools:\nPOST /api/summary  { noteId }\n- load the note; 404 if missing or not the user's\n- API key from env, never sent to the browser\n- ask the model for JSON: { summary, tags[] }\n- validate the shape; retry once if invalid\n- give up after a timeout, return a clear error\n- write two tests: happy path, invalid model output"
-      },
       "callout": {
         "type": "tip",
         "text": "Talk through trade-offs as you build, as in the coding round: \"I retry once, not forever, because each call costs money and time.\""
       },
+      "code": {
+        "language": "text",
+        "filename": "practice-spec.txt",
+        "code": "Build in 60 minutes, with the round's tools:\nPOST /api/summary  { noteId }\n- load the note; 404 if missing or not the user's\n- API key from env, never sent to the browser\n- ask the model for JSON: { summary, tags[] }\n- validate the shape; retry once if invalid\n- give up after a timeout, return a clear error\n- write two tests: happy path, invalid model output",
+        "caption": "Afterwards, compare your result with what Claude Code would have built."
+      },
+      "changes": [
+        "− Interviewer, Scorecard",
+        "~ You: 60 minutes on the clock",
+        "+ App Server: runs your /api/summary route",
+        "+ Claude API: the AI model your route calls"
+      ],
       "scene": {
-        "caption": "A small, real feature: a route, a model call, and a check on what comes back.",
+        "extends": "previous",
+        "caption": "A timed build: your route on the app server calls the Claude API and checks its answer.",
+        "remove": [
+          "mock",
+          "card"
+        ],
         "nodes": [
           {
             "id": "you",
-            "x": 2,
-            "y": 4,
-            "label": "You",
-            "sublabel": "timer: 60 min",
-            "icon": "laptop",
-            "kind": "person",
-            "status": "active"
+            "pill": {
+              "text": "60 min",
+              "icon": "clock"
+            }
           },
           {
-            "id": "route",
-            "x": 6.2,
-            "y": 4,
-            "label": "/api/summary",
-            "sublabel": "your code",
-            "icon": "function",
-            "kind": "server"
+            "id": "app",
+            "x": 4.8,
+            "y": 2.2,
+            "label": "App Server",
+            "icon": "server",
+            "kind": "server",
+            "pill": "/api/summary"
           },
           {
             "id": "llm",
-            "x": 10.2,
-            "y": 4,
+            "x": 8.6,
+            "y": 2.2,
             "label": "Claude API",
-            "sublabel": "returns JSON",
             "icon": "sparkle",
             "kind": "ai"
-          },
-          {
-            "id": "check",
-            "x": 6.2,
-            "y": 6.6,
-            "label": "Validate",
-            "sublabel": "retry once if bad",
-            "icon": "shield",
-            "kind": "server",
-            "status": "warn"
           }
         ],
         "edges": [
           {
             "from": "you",
-            "to": "route",
-            "label": "build",
+            "to": "app",
             "packet": {
-              "label": "code"
+              "kind": "request",
+              "direction": "both"
             }
           },
           {
-            "from": "route",
+            "from": "app",
             "to": "llm",
-            "label": "prompt",
             "packet": {
-              "label": "note"
+              "kind": "request",
+              "direction": "both"
             }
-          },
-          {
-            "from": "llm",
-            "to": "route",
-            "label": "JSON?",
-            "status": "warn",
-            "packet": {
-              "label": "output",
-              "status": "warn"
-            }
-          },
-          {
-            "from": "route",
-            "to": "check",
-            "style": "dashed"
           }
         ]
       }
@@ -588,70 +571,65 @@
       "title": "Practice traps that feel productive",
       "chapter": "watch-out",
       "body": [
-        "Watch for practice that feels like progress but is not: reading solutions without rewriting them, skipping easy problems because they feel beneath you, practicing only in silence, and letting AI solve the problem \"to see how it goes\".",
-        "Also ask the recruiter early which language, editor and rounds to expect. Practice in that language, without autocomplete if the round has none."
+        "Watch for practice that feels like progress but is not: reading solutions without rewriting them, skipping easy problems, practicing only in silence, and letting AI solve the problem \"to see how it goes\".",
+        "Ask the recruiter early which language, editor and rounds to expect. Practice in that language, without autocomplete if the round has none."
       ],
       "callout": {
         "type": "warn",
         "text": "Asking an AI to solve practice problems trains you to recognize good answers, not to produce them. In a round without AI, that gap shows in the first five minutes."
       },
+      "changes": [
+        "− App Server, Claude API",
+        "+ New problem: a fresh practice problem",
+        "+ Claude: solving it for you",
+        "~ You: reading along and nodding"
+      ],
       "scene": {
-        "caption": "When AI does the solving, the answer is right, but you learned to read, not to solve.",
+        "caption": "Claude does the thinking, you watch. It feels like practice, and is not.",
         "nodes": [
           {
             "id": "prob",
-            "x": 2,
-            "y": 4,
+            "x": 1,
+            "y": 2.2,
             "label": "New problem",
             "icon": "file",
             "kind": "neutral"
           },
           {
-            "id": "llm",
-            "x": 6.4,
-            "y": 4,
+            "id": "claude",
+            "x": 4.8,
+            "y": 2.2,
             "label": "Claude",
-            "sublabel": "solves it for you",
             "icon": "sparkle",
             "kind": "ai",
             "status": "warn"
           },
           {
             "id": "you",
-            "x": 10.4,
-            "y": 4,
+            "x": 8.6,
+            "y": 2.2,
             "label": "You",
-            "sublabel": "reading, nodding",
             "icon": "laptop",
             "kind": "person",
-            "status": "dim"
+            "status": "warn",
+            "pill": "nodding"
           }
         ],
         "edges": [
           {
             "from": "prob",
-            "to": "llm",
-            "label": "paste",
-            "status": "warn"
+            "to": "claude",
+            "packet": {
+              "kind": "request"
+            }
           },
           {
-            "from": "llm",
+            "from": "claude",
             "to": "you",
-            "label": "full answer",
             "status": "warn",
             "packet": {
-              "label": "answer",
-              "status": "warn"
+              "kind": "response"
             }
-          }
-        ],
-        "notes": [
-          {
-            "id": "felt",
-            "x": 7,
-            "y": 1.8,
-            "text": "Felt productive. Learned little.",
-            "status": "error"
           }
         ]
       }
@@ -663,45 +641,45 @@
         "Practice by pattern, not at random. Give each problem 25 minutes out loud, rewrite solutions from a blank editor, log them, and re-solve after a day, a week and a month.",
         "Add weekly mock interviews and a practical AI build. Use Claude as interviewer and reviewer, never as the one solving."
       ],
+      "changes": [
+        "− New problem, Claude, You",
+        "+ Learn pattern, Solve 2–3, Review, Re-solve: the loop"
+      ],
       "scene": {
-        "caption": "The loop that builds skill: learn, solve, review, re-solve.",
+        "caption": "The whole plan is this loop, run every week.",
         "nodes": [
           {
             "id": "learn",
-            "x": 2.4,
+            "x": 1,
             "y": 2,
-            "label": "Learn a pattern",
-            "sublabel": "one lesson",
-            "icon": "brain",
-            "kind": "person",
+            "label": "Learn pattern",
+            "icon": "graduation-cap",
+            "kind": "neutral",
             "status": "ok"
           },
           {
             "id": "solve",
-            "x": 9.6,
+            "x": 4.8,
             "y": 2,
-            "label": "Solve 2 or 3",
-            "sublabel": "out loud, timed",
+            "label": "Solve 2–3",
             "icon": "code",
             "kind": "client",
             "status": "ok"
           },
           {
             "id": "review",
-            "x": 9.6,
-            "y": 6,
-            "label": "Review + log",
-            "sublabel": "what tripped you",
-            "icon": "pencil",
-            "kind": "data",
+            "x": 4.8,
+            "y": 5.8,
+            "label": "Review",
+            "icon": "list",
+            "kind": "neutral",
             "status": "ok"
           },
           {
             "id": "resolve",
-            "x": 2.4,
-            "y": 6,
-            "label": "Re-solve later",
-            "sublabel": "blank editor",
+            "x": 1,
+            "y": 5.8,
+            "label": "Re-solve",
             "icon": "refresh",
             "kind": "neutral",
             "status": "ok"
@@ -711,26 +689,31 @@
           {
             "from": "learn",
             "to": "solve",
-            "status": "ok",
-            "packet": true
+            "packet": {
+              "kind": "request",
+              "speed": "slow"
+            }
           },
           {
             "from": "solve",
             "to": "review",
-            "status": "ok",
-            "packet": true
+            "packet": {
+              "kind": "request",
+              "speed": "slow"
+            }
           },
           {
             "from": "review",
             "to": "resolve",
-            "status": "ok",
-            "packet": true
+            "packet": {
+              "kind": "request",
+              "speed": "slow"
+            }
           },
           {
             "from": "resolve",
             "to": "learn",
-            "style": "dashed",
-            "label": "next pattern"
+            "style": "dashed"
           }
         ]
       }

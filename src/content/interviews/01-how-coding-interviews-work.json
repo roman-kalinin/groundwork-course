@@ -17,59 +17,128 @@
     "scorecard": "The form an interviewer fills in after the round, rating skills like communication, problem solving and code quality.",
     "brute force": "The simplest solution that is clearly correct, even if it is slow. You find it first, then improve it.",
     "edge case": "An unusual input that often breaks code: an empty list, one item, duplicates, negative numbers, huge input.",
-    "constraints": "The limits of the problem: how big the input can be, what values are allowed, how fast the answer must be."
+    "constraints": "The limits of the problem: how big the input can be, what values are allowed, how fast the answer must be.",
+    "shared editor": "A web page where you and the interviewer see and edit the same code at the same time."
   },
+  "metrics": [
+    {
+      "id": "silent",
+      "label": "Silent minutes",
+      "icon": "clock"
+    },
+    {
+      "id": "notes",
+      "label": "Scorecard notes",
+      "icon": "list"
+    }
+  ],
   "steps": [
     {
-      "title": "Twenty silent minutes is a failing grade",
-      "chapter": "problem",
+      "title": "You, an interviewer and a shared editor",
+      "chapter": "setup",
       "body": [
-        "You get a problem in a shared editor. You go quiet, think hard, and type for twenty minutes. The code even works.",
-        "You still get a no. The interviewer saw nothing of <em>how</em> you got there, so they had nothing to write down. A <span class=\"term\">live coding</span> round grades your thinking, and silent thinking is invisible."
+        "You have built Notely, a notes app with an AI Summarize button, using Claude Code. Now you are applying for AI engineer jobs.",
+        "Most hiring processes include a <span class=\"term\">live coding</span> round. You solve a small problem in a <span class=\"term\">shared editor</span>, a web page where you both see the same code, while an interviewer watches and talks with you."
       ],
-      "callout": {
-        "type": "analogy",
-        "text": "A design crit where you show only the final screen. No problem framing, no rejected options, no reasons. Even a good screen gets a weak review, because nobody can judge your judgment."
+      "metrics": {
+        "silent": 0,
+        "notes": 0
       },
       "scene": {
-        "caption": "The candidate codes in silence. The interviewer has nothing to evaluate.",
+        "caption": "You type into the shared editor. The interviewer watches the same screen.",
         "nodes": [
           {
             "id": "you",
-            "x": 2,
-            "y": 4,
+            "x": 1,
+            "y": 2.2,
             "label": "You",
-            "sublabel": "the candidate",
             "icon": "laptop",
-            "kind": "person",
-            "status": "warn"
+            "kind": "person"
           },
           {
             "id": "interviewer",
-            "x": 9.8,
-            "y": 4,
+            "x": 5,
+            "y": 2.2,
             "label": "Interviewer",
-            "sublabel": "taking notes",
             "icon": "user",
             "kind": "person"
+          },
+          {
+            "id": "editor",
+            "x": 1,
+            "y": 6,
+            "label": "Shared editor",
+            "icon": "code",
+            "kind": "client"
           }
         ],
         "edges": [
           {
             "from": "you",
+            "to": "editor",
+            "packet": {
+              "kind": "request",
+              "speed": "slow"
+            }
+          },
+          {
+            "from": "editor",
             "to": "interviewer",
-            "label": "silence",
             "style": "dotted",
+            "packet": {
+              "kind": "data",
+              "speed": "slow"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "title": "Twenty silent minutes is a failing grade",
+      "chapter": "problem",
+      "body": [
+        "You read the problem, go quiet, and type for twenty minutes. The code even works.",
+        "You still get a no. The interviewer saw nothing of <em>how</em> you got there, so they had nothing to write down. A live coding round grades your thinking, and silent thinking is invisible."
+      ],
+      "callout": {
+        "type": "analogy",
+        "text": "A design crit where you show only the final screen. No problem framing, no rejected options, no reasons. Even a good screen gets a weak review, because nobody can judge your judgment."
+      },
+      "changes": [
+        "~ Silent minutes 0 → 20",
+        "~ Scorecard notes stay at 0: nothing to write down",
+        "~ You and Interviewer: both uneasy"
+      ],
+      "metrics": {
+        "silent": {
+          "value": 20,
+          "tone": "bad"
+        },
+        "notes": {
+          "value": 0,
+          "tone": "bad"
+        }
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Lots of typing, no talking. The interviewer has nothing to grade.",
+        "nodes": [
+          {
+            "id": "you",
+            "status": "warn"
+          },
+          {
+            "id": "interviewer",
             "status": "warn"
           }
         ],
-        "notes": [
+        "edges": [
           {
-            "id": "what",
-            "x": 6,
-            "y": 2.2,
-            "text": "What are they thinking?",
-            "status": "warn"
+            "id": "you>editor",
+            "packet": {
+              "kind": "request",
+              "speed": "fast"
+            }
           }
         ]
       }
@@ -78,15 +147,28 @@
       "title": "They grade the process, not only the answer",
       "chapter": "idea",
       "body": [
-        "After the round, the interviewer fills in a <span class=\"term\">scorecard</span>. It usually rates four things: how you communicate, how you break the problem down, how clean your code is, and how you test it.",
-        "A correct answer covers only part of that. Talking through your thinking fills in the rest, and it lets the interviewer give you hints."
+        "After the round, the interviewer fills in a <span class=\"term\">scorecard</span>: a form that rates how you communicate, how you break the problem down, how clean your code is, and how you test it.",
+        "A correct answer covers only part of that. Saying your thinking out loud fills in the rest, and lets the interviewer give you hints."
       ],
+      "changes": [
+        "+ Scorecard: the form the interviewer fills in after",
+        "+ A line from You to Interviewer: you think out loud",
+        "~ Silent minutes 20 → 0",
+        "~ Scorecard notes 0 → 4, one per skill"
+      ],
+      "metrics": {
+        "silent": {
+          "value": 0,
+          "tone": "good"
+        },
+        "notes": {
+          "value": 4,
+          "tone": "good"
+        }
+      },
       "scene": {
         "extends": "previous",
         "caption": "Thinking out loud turns invisible work into notes on the scorecard.",
-        "remove": [
-          "what"
-        ],
         "nodes": [
           {
             "id": "you",
@@ -98,34 +180,33 @@
           },
           {
             "id": "card",
-            "x": 10.6,
-            "y": 1.5,
+            "x": 9,
+            "y": 2.2,
             "label": "Scorecard",
-            "sublabel": "filled in after",
             "icon": "list",
-            "kind": "neutral",
-            "tags": [
-              "communication",
-              "problem solving",
-              "code + tests"
-            ]
+            "kind": "neutral"
           }
         ],
         "edges": [
           {
-            "id": "you>interviewer",
-            "label": "thinking out loud",
-            "style": "solid",
+            "id": "you>editor",
+            "packet": {
+              "kind": "request",
+              "speed": "slow"
+            }
+          },
+          {
+            "from": "you",
+            "to": "interviewer",
+            "label": "out loud",
             "status": "active",
             "packet": {
-              "label": "idea",
-              "status": "active"
+              "kind": "request"
             }
           },
           {
             "from": "interviewer",
             "to": "card",
-            "label": "writes",
             "style": "dashed"
           }
         ]
@@ -135,70 +216,69 @@
       "title": "The rounds of an AI engineer loop",
       "chapter": "how",
       "body": [
-        "An <span class=\"term\">interview loop</span> usually mixes several rounds: a recruiter call, <b>live coding</b> or a <span class=\"term\">take-home</span>, system design, a practical AI build (call a model, handle its output), and a behavioral talk about past work.",
-        "Formats differ a lot between companies. Ask the recruiter which rounds you will get and whether AI tools are allowed in each."
+        "An <span class=\"term\">interview loop</span> is every round for one job. It often mixes a recruiter call, live coding or a <span class=\"term\">take-home</span> project, system design, a practical AI build (call a model, handle its answer) and a behavioral talk about past work.",
+        "Formats vary. Ask the recruiter which rounds you will get, and whether AI tools are allowed in each."
       ],
       "callout": {
         "type": "tip",
         "text": "Your system design course covers that round. This module covers the coding round: the data structures and patterns interviewers still expect you to reason about without help."
       },
+      "changes": [
+        "− You, Shared editor, Interviewer, Scorecard: we zoom out",
+        "+ Recruiter call, Live coding, Take-home: the early rounds",
+        "+ System design, AI build, Behavioral: the later rounds"
+      ],
       "scene": {
-        "caption": "A typical loop. This module prepares the coding round.",
+        "caption": "A typical loop. This module prepares you for the coding round.",
         "nodes": [
           {
             "id": "r-screen",
-            "x": 2,
+            "x": 1,
             "y": 2,
             "label": "Recruiter call",
-            "sublabel": "30 min",
             "icon": "phone",
             "kind": "person"
           },
           {
             "id": "r-code",
-            "x": 6,
+            "x": 4.8,
             "y": 2,
             "label": "Live coding",
-            "sublabel": "45 to 60 min",
             "icon": "code",
             "kind": "client",
             "status": "active"
           },
           {
             "id": "r-home",
-            "x": 10,
+            "x": 8.6,
             "y": 2,
-            "label": "or take-home",
-            "sublabel": "a small project",
+            "label": "Take-home",
             "icon": "folder",
             "kind": "client",
             "status": "active"
           },
           {
             "id": "r-design",
-            "x": 10,
-            "y": 5.6,
+            "x": 8.6,
+            "y": 5.8,
             "label": "System design",
-            "sublabel": "your other course",
             "icon": "layers",
             "kind": "server",
             "status": "dim"
           },
           {
             "id": "r-ai",
-            "x": 6,
-            "y": 5.6,
+            "x": 4.8,
+            "y": 5.8,
             "label": "AI build",
-            "sublabel": "call a model, ship it",
             "icon": "sparkle",
             "kind": "ai"
           },
           {
             "id": "r-talk",
-            "x": 2,
-            "y": 5.6,
+            "x": 1,
+            "y": 5.8,
             "label": "Behavioral",
-            "sublabel": "past projects",
             "icon": "chat",
             "kind": "person"
           }
@@ -212,15 +292,18 @@
             "from": "r-code",
             "to": "r-home",
             "style": "dotted",
-            "arrow": "none"
+            "arrow": "none",
+            "label": "or"
           },
           {
             "from": "r-home",
-            "to": "r-design"
+            "to": "r-design",
+            "status": "dim"
           },
           {
             "from": "r-design",
-            "to": "r-ai"
+            "to": "r-ai",
+            "status": "dim"
           },
           {
             "from": "r-ai",
@@ -233,63 +316,63 @@
       "title": "One routine for every problem",
       "chapter": "how",
       "body": [
-        "Use the same six moves every time, and say each one out loud: <b>clarify</b> the problem, walk through <b>examples</b>, state a <span class=\"term\">brute force</span> idea, <b>code</b> it, <b>test</b> it by hand, then <b>improve</b> it.",
+        "In the coding round, use the same six moves every time, and say each one out loud: <b>clarify</b> the problem, walk through <b>examples</b>, state a <span class=\"term\">brute force</span> idea (slow but surely correct), <b>code</b> it, <b>test</b> it by hand, then <b>improve</b> it.",
         "A fixed routine keeps you calm. When your mind goes blank, you still know the next move."
+      ],
+      "changes": [
+        "− Recruiter call, Live coding, Take-home",
+        "− System design, AI build, Behavioral: we zoom into coding",
+        "+ Clarify, Examples, Brute force: the first three moves",
+        "+ Code, Test, Improve: the last three moves"
       ],
       "scene": {
         "caption": "Six moves in a loop. Each one is a sentence you say out loud.",
         "nodes": [
           {
             "id": "m-clarify",
-            "x": 2,
+            "x": 1,
             "y": 2,
             "label": "Clarify",
-            "sublabel": "ask questions",
             "icon": "search",
             "kind": "neutral"
           },
           {
             "id": "m-examples",
-            "x": 6,
+            "x": 4.8,
             "y": 2,
             "label": "Examples",
-            "sublabel": "small, by hand",
             "icon": "list",
             "kind": "neutral"
           },
           {
             "id": "m-brute",
-            "x": 10,
+            "x": 8.6,
             "y": 2,
             "label": "Brute force",
-            "sublabel": "slow but correct",
             "icon": "box",
             "kind": "neutral"
           },
           {
             "id": "m-code",
-            "x": 10.2,
-            "y": 5.6,
+            "x": 8.6,
+            "y": 5.8,
             "label": "Code",
-            "sublabel": "clean names",
             "icon": "code",
             "kind": "client"
           },
           {
             "id": "m-test",
-            "x": 6,
-            "y": 5.6,
+            "x": 4.8,
+            "y": 5.8,
             "label": "Test",
-            "sublabel": "trace one example",
             "icon": "check",
             "kind": "neutral"
           },
           {
             "id": "m-improve",
-            "x": 2,
-            "y": 5.6,
+            "x": 1,
+            "y": 5.8,
             "label": "Improve",
-            "sublabel": "faster, if time",
             "icon": "rocket",
             "kind": "neutral"
           }
@@ -298,7 +381,9 @@
           {
             "from": "m-clarify",
             "to": "m-examples",
-            "packet": true
+            "packet": {
+              "kind": "request"
+            }
           },
           {
             "from": "m-examples",
@@ -330,7 +415,7 @@
       "chapter": "how",
       "body": [
         "Problems are left vague on purpose. Asking good questions is part of the test, exactly like a client brief.",
-        "Ask about the <span class=\"term\">constraints</span> (how big can the input get?) and the <span class=\"term\" data-term=\"edge case\">edge cases</span> (empty input, duplicates, ties). Then write your assumptions as a comment at the top, so both of you can see them."
+        "Ask about the <span class=\"term\">constraints</span> (how big can the input get?) and the <span class=\"term\" data-term=\"edge case\">edge cases</span> (empty input, duplicates, ties). Then write your assumptions as a comment at the top, so you both see them."
       ],
       "code": {
         "language": "ts",
@@ -338,18 +423,18 @@
         "code": "// Problem: return Maya's most used tag.\n// Assumptions (confirmed with interviewer):\n// - tags is an array of strings, can be empty\n// - empty input: return null\n// - a tie: return any of the top tags\n// - up to ~100,000 tags, so one pass is ideal\nfunction topTag(tags: string[]): string | null {\n  // ...\n}",
         "caption": "Assumptions written down are assumptions the interviewer can correct early."
       },
+      "changes": [
+        "~ Clarify: in focus, with three questions to ask",
+        "~ The other five moves fade for now"
+      ],
       "scene": {
         "extends": "previous",
-        "caption": "Clarifying comes first, and it is the cheapest place to catch a misunderstanding.",
+        "caption": "Clarifying comes first. It is the cheapest place to catch a misunderstanding.",
         "nodes": [
           {
             "id": "m-clarify",
             "status": "active",
-            "tags": [
-              "size?",
-              "empty?",
-              "ties?"
-            ]
+            "pill": "3 questions"
           },
           {
             "id": "m-examples",
@@ -375,7 +460,28 @@
         "edges": [
           {
             "id": "m-clarify>m-examples",
-            "packet": false
+            "packet": false,
+            "status": "dim"
+          },
+          {
+            "id": "m-examples>m-brute",
+            "status": "dim"
+          },
+          {
+            "id": "m-brute>m-code",
+            "status": "dim"
+          },
+          {
+            "id": "m-code>m-test",
+            "status": "dim"
+          },
+          {
+            "id": "m-test>m-improve",
+            "status": "dim"
+          },
+          {
+            "id": "m-improve>m-clarify",
+            "status": "dim"
           }
         ]
       }
@@ -385,42 +491,46 @@
       "chapter": "example",
       "body": [
         "Narrate decisions, not keystrokes. Say what you are about to do and why, then do it.",
-        "A good script: \"The simple way is to count each tag by scanning the list again, but that repeats work. I'll keep a count per tag in a map instead, one pass. Let me check it with <code>['ai', 'work', 'ai']</code>: I expect <code>'ai'</code>.\""
+        "For example: \"Rescanning the list for every tag repeats work. I'll keep a count per tag in a map instead, in one pass. Let me check with <code>['ai', 'work', 'ai']</code>: I expect <code>'ai'</code>.\""
       ],
       "callout": {
         "type": "tip",
         "text": "Useful phrases: \"My first idea is…\", \"The cost of that is…\", \"I'm assuming…, is that okay?\", \"Let me trace a small example.\" Each one gives the interviewer something to write down."
       },
+      "changes": [
+        "~ Clarify: done",
+        "~ Examples: done, with one list of three tags",
+        "~ Brute force: in focus, said out loud"
+      ],
       "scene": {
         "extends": "previous",
-        "caption": "Examples, then a brute force idea, then a better one: each move said out loud.",
+        "caption": "Questions, then a small example, then a first idea: each move said out loud.",
         "nodes": [
           {
             "id": "m-clarify",
             "status": "ok",
-            "tags": null
+            "pill": null
           },
           {
             "id": "m-examples",
             "status": "ok",
-            "tags": [
-              "['ai','work','ai']"
-            ]
+            "pill": "3 tags"
           },
           {
             "id": "m-brute",
-            "status": "active",
-            "tags": [
-              "count by rescanning"
-            ]
+            "status": "active"
           }
         ],
         "edges": [
           {
+            "id": "m-clarify>m-examples",
+            "status": "ok"
+          },
+          {
             "id": "m-examples>m-brute",
+            "status": "active",
             "packet": {
-              "label": "idea",
-              "status": "active"
+              "kind": "request"
             }
           }
         ]
@@ -431,47 +541,54 @@
       "chapter": "watch-out",
       "body": [
         "The classic mistake is to freeze, or to fake progress by typing random code. Both look worse than an honest \"I'm stuck\".",
-        "Instead, say what you know, then solve a tiny version by hand: two items, then three. Patterns show up in small examples. If the interviewer offers a hint, take it gladly. Using a hint well scores better than refusing it."
+        "Say what you know, then solve a tiny version by hand: two items, then three. Patterns show up in small examples. If the interviewer offers a hint, take it. Using a hint well scores better than refusing it."
       ],
       "callout": {
         "type": "warn",
         "text": "Do not stay silent for more than a minute or so. Even \"I'm considering a map here, give me a moment to check it works\" keeps the interviewer with you."
       },
+      "changes": [
+        "~ Brute force: done",
+        "~ Code: stuck",
+        "+ A dashed line from Code back to Examples: 2 items"
+      ],
       "scene": {
         "extends": "previous",
-        "caption": "Stuck in the code step? Go back to a small example out loud.",
+        "caption": "Stuck while coding? Go back to a tiny example, out loud.",
         "nodes": [
           {
-            "id": "m-brute",
-            "status": "ok",
-            "tags": null
+            "id": "m-examples",
+            "status": "normal",
+            "pill": null
           },
           {
-            "id": "m-examples",
-            "tags": null
+            "id": "m-brute",
+            "status": "ok"
           },
           {
             "id": "m-code",
             "status": "warn",
-            "tags": [
-              "stuck"
-            ]
+            "pill": "stuck"
           }
         ],
         "edges": [
           {
-            "id": "m-brute>m-code",
+            "id": "m-examples>m-brute",
+            "status": "ok",
             "packet": false
+          },
+          {
+            "id": "m-brute>m-code",
+            "status": "normal"
           },
           {
             "from": "m-code",
             "to": "m-examples",
-            "label": "try 2 items by hand",
+            "label": "2 items",
             "style": "dashed",
             "status": "warn",
             "packet": {
-              "label": "back",
-              "status": "warn"
+              "kind": "request"
             }
           }
         ]
@@ -481,12 +598,12 @@
       "title": "Practice with Claude as the interviewer",
       "chapter": "how",
       "body": [
-        "You already work with Claude Code every day. For practice, flip its role: ask it to play the interviewer, not to solve.",
-        "Paste a problem, explain your plan out loud in text, and let it question you. Some companies now allow AI tools in certain rounds. There, they grade how well you guide and <b>check</b> the AI, so the same reasoning skills apply."
+        "You already work with Claude. For practice, flip its role: ask it to play the interviewer, not to solve the problem.",
+        "Paste a problem, type out your plan, and let it question you. Some companies now allow AI tools in certain rounds. There, they grade how well you guide and <b>check</b> the AI, so the same reasoning skills apply."
       ],
       "callout": {
         "type": "claude-code",
-        "text": "Prompt it like this: \"Act as a coding interviewer. Do not show me code. Ask me clarifying questions back, give one small hint only when I ask, and at the end score my communication, approach and testing.\" If it starts writing the solution, stop it and restate the rule."
+        "text": "Set the rules first: no code from Claude, questions back, one small hint only when you ask, and a score at the end. If it starts writing the solution, stop it and restate the rules."
       },
       "code": {
         "language": "text",
@@ -494,65 +611,53 @@
         "code": "You are my interviewer for a 45-minute coding round.\nProblem: return the most used tag in a list of tags.\nRules: no code from you. Ask about my plan and its cost.\nHint only if I type HINT. At the end, grade me on:\ncommunication, problem solving, code, testing.",
         "caption": "Save this as a snippet and reuse it with every practice problem."
       },
+      "changes": [
+        "− Clarify, Examples, Brute force, Code, Test, Improve",
+        "+ You: practicing at home",
+        "+ Claude: plays the interviewer and asks questions back",
+        "+ Scorecard: Claude's feedback at the end"
+      ],
       "scene": {
         "caption": "In practice, Claude asks the questions. You do the thinking.",
         "nodes": [
           {
             "id": "you",
-            "x": 2,
-            "y": 4,
+            "x": 1,
+            "y": 2.2,
             "label": "You",
-            "sublabel": "explaining a plan",
             "icon": "laptop",
             "kind": "person",
             "status": "active"
           },
           {
             "id": "claude",
-            "x": 10,
-            "y": 4,
+            "x": 5,
+            "y": 2.2,
             "label": "Claude",
-            "sublabel": "playing interviewer",
             "icon": "sparkle",
             "kind": "ai"
           },
           {
             "id": "card",
-            "x": 10.6,
-            "y": 1.5,
+            "x": 9,
+            "y": 2.2,
             "label": "Scorecard",
-            "sublabel": "feedback at the end",
             "icon": "list",
-            "kind": "neutral",
-            "tags": [
-              "communication",
-              "problem solving",
-              "code + tests"
-            ]
+            "kind": "neutral"
           }
         ],
         "edges": [
           {
             "from": "you",
             "to": "claude",
-            "label": "my plan is…",
             "packet": {
-              "label": "plan",
-              "status": "active"
-            }
-          },
-          {
-            "from": "claude",
-            "to": "you",
-            "label": "what if it's empty?",
-            "packet": {
-              "label": "question"
+              "kind": "request",
+              "direction": "both"
             }
           },
           {
             "from": "claude",
             "to": "card",
-            "label": "grades",
             "style": "dashed"
           }
         ]
@@ -564,6 +669,9 @@
       "body": [
         "A coding round grades your process. Run the same six moves every time: clarify, examples, brute force, code, test, improve, and say each one out loud.",
         "Stuck is normal: say so and shrink the problem. Practice with Claude as the interviewer, never as the answer key."
+      ],
+      "changes": [
+        "~ You and Scorecard turn green: the routine works"
       ],
       "scene": {
         "extends": "previous",
