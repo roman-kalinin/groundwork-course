@@ -86,12 +86,8 @@
       "chapter": "problem",
       "body": [
         "A common plan: solve hundreds of problems and hope the interview repeats one. Then the interviewer changes a detail, and the memorized answer no longer fits.",
-        "The way out: most array and string problems are variations on a few <span class=\"term\" data-term=\"pattern\">patterns</span>. Learn to recognize the pattern, and a new problem becomes a familiar one."
+        "Problems solved keeps rising, but nothing carries over. Each new problem feels like the first one."
       ],
-      "callout": {
-        "type": "analogy",
-        "text": "Like UI patterns. You do not memorize every settings page ever made. You recognize \"this is a list with detail\" or \"this is a wizard\" and reach for the right structure."
-      },
       "changes": [
         "~ Problems solved 0 → 200",
         "~ Patterns known: still 0",
@@ -140,11 +136,11 @@
       }
     },
     {
-      "title": "Read the signal words",
+      "title": "Patterns, and the words that signal them",
       "chapter": "idea",
       "body": [
-        "Problems drop hints. \"How many\", \"most common\", \"duplicate\": count things. \"Sorted\" plus \"pair\": two pointers. \"Subarray\", \"substring\", \"in a row\", \"longest stretch\": sliding window.",
-        "Say the match out loud: \"This asks for a stretch of neighbors, so I'm thinking sliding window.\" It shows the structure of your thinking before any code."
+        "Most array and string problems are variations on a few <span class=\"term\" data-term=\"pattern\">patterns</span>. Each one is announced by <b>signal words</b> in the problem.",
+        "\"How many\", \"most common\", \"duplicate\": count things. \"Sorted\" plus \"pair\": two pointers. \"In a row\", \"longest stretch\": sliding window. Say the match out loud before any code."
       ],
       "changes": [
         "− You, 2,000 problems, Problem 201",
@@ -226,6 +222,10 @@
             }
           }
         ]
+      },
+      "callout": {
+        "type": "analogy",
+        "text": "Like UI patterns. You do not memorize every settings page ever made. You recognize \"this is a list with detail\" or \"this is a wizard\" and reach for the right structure."
       }
     },
     {
@@ -299,8 +299,8 @@
       "title": "Two pointers: squeeze from both ends",
       "chapter": "how",
       "body": [
-        "Find two of four <b>sorted</b> note sizes that fill a 1,000-token summary budget exactly. Lesson 3 used a Map. Sorted data allows <span class=\"term\">two pointers</span>, which need no extra memory.",
-        "Point one at the smallest size, one at the largest, and add. 100 + 750 = 850: too small. Only moving the left pointer up can make the sum bigger."
+        "Find two of four <b>sorted</b> note sizes that fill a 1,000-token summary budget exactly. Sorted data allows <span class=\"term\">two pointers</span>: two positions that walk toward each other, with no extra memory.",
+        "Point one at the smallest size, one at the largest, and add. 100 + 750 = 850: too small. Only moving the left pointer up raises the sum."
       ],
       "changes": [
         "− Count it, Sorted pair, Longest run",
@@ -459,7 +459,7 @@
       ],
       "callout": {
         "type": "tip",
-        "text": "Windows return in AI apps: splitting a long document into overlapping chunks before creating embeddings is a window sliding over the text. The sliding-window rate limiter from system design is the same idea, over time."
+        "text": "Windows return in AI apps: splitting a long document into overlapping chunks for AI search is a window sliding over the text. The sliding-window rate limiter from system design is the same idea, over time."
       },
       "code": {
         "language": "ts",

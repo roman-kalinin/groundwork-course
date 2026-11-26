@@ -39,8 +39,8 @@
       "title": "Maya's notes, held in a list",
       "chapter": "setup",
       "body": [
-        "When Maya opens Notely, our notes app, the <span class=\"term\">app server</span> (the computer running Notely's code) loads her notes and holds them in a list, in order: Groceries, Pitch deck, Trip plan, Ideas.",
-        "Code asks this list two kinds of questions all day: \"show the third note\" and \"find the note with id <code>n_83</code>\"."
+        "When Maya opens Notely, our notes app, the <span class=\"term\">app server</span> (the computer running Notely's code) loads her notes into a list, in order: Groceries, Pitch deck, Trip plan, Ideas.",
+        "Each note has an id, a unique label like <code>n_83</code>. Code asks the list two questions all day: \"show the third note\" and \"find the note with id <code>n_83</code>\"."
       ],
       "metrics": {
         "checked": 0,
@@ -111,7 +111,7 @@
       "chapter": "problem",
       "body": [
         "\"Show the third note\" is instant. \"Find the note with id <code>n_83</code>\" is not: the code checks Groceries, then Pitch deck, then Trip plan, until the id matches.",
-        "With four notes nobody notices. Maya has 50,000, and one summary request may run that search 200 times. The checks add up."
+        "With four notes nobody notices. Maya has 50,000, and summarizing a folder of 200 notes runs that search 200 times, once per note. The checks add up."
       ],
       "changes": [
         "~ Groceries and Pitch deck: checked, not a match",

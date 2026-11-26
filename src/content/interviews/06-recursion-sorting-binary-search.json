@@ -242,14 +242,18 @@
             }
           }
         ]
+      },
+      "callout": {
+        "type": "warn",
+        "text": "A recursion with no reachable base case never stops calling. The waiting calls pile up until JavaScript throws a <span class=\"term\">stack overflow</span> error. A folder moved inside its own subfolder does exactly that."
       }
     },
     {
       "title": "Sorting costs O(n log n)",
       "chapter": "how",
       "body": [
-        "You will rarely write a sort at work. The built-in sort is fast and takes <b>O(n log n)</b>, one rung above O(n). Remember that cost: \"sort first\" is never free.",
-        "JavaScript has a trap. With no <span class=\"term\">comparator</span>, <code>sort()</code> compares items as <b>text</b>, so 10 lands before 9. It also changes the original array."
+        "You will rarely write a sort at work. The built-in sort takes <b>O(n log n)</b>, one rung above O(n). \"Sort first\" is never free.",
+        "JavaScript has a trap. Without a <span class=\"term\">comparator</span> (a small function saying which of two items goes first), <code>sort()</code> compares items as <b>text</b>, so 10 lands before 9. It also changes the original array."
       ],
       "code": {
         "language": "ts",
@@ -418,8 +422,8 @@
       "title": "Binary search: check the middle",
       "chapter": "how",
       "body": [
-        "Notely also keeps an activity log: two million events, sorted by time. Maya asks for everything since 09:00.",
-        "<span class=\"term\">Binary search</span> checks the middle event. Before 09:00? The answer is to its right. At or after? It is to its left, or the middle itself. Each check halves what is left: about 21 checks. <b>O(log n)</b>, on <b>sorted</b> data."
+        "Notely also keeps an activity log of every action: two million events, sorted by time. Maya asks for everything since 09:00.",
+        "<span class=\"term\">Binary search</span> checks the middle event. Before 09:00? The answer is to its right. At or after? It is the middle or to its left. Each check halves the rest: 21 checks. <b>O(log n)</b>, on <b>sorted</b> data."
       ],
       "callout": {
         "type": "analogy",
@@ -429,7 +433,7 @@
         "− Input, Left half, Right half, Merged",
         "+ 08:10, 08:45, 09:02, 09:30, 11:40: events, in time order",
         "+ Since 09:00: the time Maya asks for",
-        "~ Events checked → 21 of 2,000,000"
+        "~ Events checked: 21 of 2,000,000"
       ],
       "metrics": {
         "checks": {
@@ -523,8 +527,8 @@
       "title": "Finding the first event since 09:00",
       "chapter": "example",
       "body": [
-        "First check: the middle, 09:02, is at or after 09:00, so the answer is there or left of it. Next: 08:45 is too early, so the answer is right of it. Now <code>lo</code> and <code>hi</code> meet at index 2: 09:02.",
-        "This version is called <em>lower bound</em>: the first index at or after the target. Learn this shape and reuse it."
+        "<code>lo</code> and <code>hi</code> mark the range still possible. The middle, 09:02, is at or after 09:00: the answer is there or left of it. 08:45 is too early: the answer is right of it. Now <code>lo</code> and <code>hi</code> meet at index 2: 09:02.",
+        "This version is called <em>lower bound</em>: the first index at or after the target. Reuse this shape."
       ],
       "code": {
         "language": "ts",
@@ -574,8 +578,8 @@
       "title": "Off by one, or not sorted at all",
       "chapter": "watch-out",
       "body": [
-        "Binary search fails in two classic ways. An <span class=\"term\">off-by-one</span>: write <code>lo = mid</code> instead of <code>mid + 1</code> and the loop can repeat forever. And unsorted input: the search still returns <em>an</em> answer, a wrong one, with no error.",
-        "Recursion fails one way: no reachable base case. Calls pile up until JavaScript throws a <span class=\"term\">stack overflow</span> error."
+        "Binary search fails in two classic ways. An <span class=\"term\">off-by-one</span>: write <code>lo = mid</code> instead of <code>mid + 1</code> and the loop can repeat forever.",
+        "And unsorted input: the search still returns <em>an</em> answer, a wrong one, with no error. That is what happened here."
       ],
       "callout": {
         "type": "claude-code",
@@ -584,7 +588,8 @@
       "changes": [
         "~ 08:45 → 09:05 and 09:02 → 08:50: the log is out of order",
         "~ 09:05: the real first match, never checked",
-        "~ Since 09:00: wrong answer, index 3"
+        "~ Since 09:00: wrong answer, index 3",
+        "~ 09:30: returned, though 09:05 comes first"
       ],
       "scene": {
         "extends": "previous",

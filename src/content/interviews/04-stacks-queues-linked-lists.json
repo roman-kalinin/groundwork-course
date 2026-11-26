@@ -29,7 +29,7 @@
       "title": "Notely remembers every edit",
       "chapter": "setup",
       "body": [
-        "Maya is editing a note in Notely, our notes app. She types a title, bolds a word, then deletes a line. The editor keeps each edit in a list, newest on top, so it can undo them later.",
+        "Maya is editing a note in Notely, our notes app. She types a title, bolds a word, then deletes a line. Notely's editor (the screen she types in) keeps each edit in a list, newest on top, so it can undo them later.",
         "Now Maya presses Cmd+Z, the undo shortcut. Which edit should come back first?"
       ],
       "scene": {
@@ -41,7 +41,7 @@
             "y": 0.3,
             "w": 2.6,
             "h": 7.4,
-            "label": "undo stack"
+            "label": "edit history"
           }
         ],
         "nodes": [
@@ -107,7 +107,8 @@
       },
       "changes": [
         "~ Deleted line: popped off the top and undone",
-        "~ Bold word: now on top, next in line for undo"
+        "~ Bold word: now on top, next in line for undo",
+        "~ edit history: now called the undo stack"
       ],
       "scene": {
         "extends": "previous",
@@ -133,6 +134,12 @@
               "kind": "request"
             }
           }
+        ],
+        "zones": [
+          {
+            "id": "stack",
+            "label": "undo stack"
+          }
         ]
       }
     },
@@ -141,11 +148,11 @@
       "chapter": "how",
       "body": [
         "A classic problem: is <code>{[()]}</code> balanced? Walk the string. Push every opening bracket. On a closing bracket, pop the top and check that it is the matching opener.",
-        "Any mismatch, or anything left on the stack at the end, means unbalanced. One pass: <b>O(n)</b>. Your program's call stack works the same way: the newest function call finishes first."
+        "Any mismatch, or anything left on the stack at the end, means unbalanced. One pass: <b>O(n)</b>."
       ],
       "callout": {
         "type": "tip",
-        "text": "Tools that parse streamed JSON from a model use the same idea: a stack of the braces and brackets still open tells them what has not closed yet."
+        "text": "When a model streams its answer in pieces, tools that read the half-finished JSON (text full of nested braces) keep a stack of the braces still open, so they know what has not closed yet."
       },
       "code": {
         "language": "ts",
@@ -222,8 +229,8 @@
       "title": "Queues: first in, first out",
       "chapter": "how",
       "body": [
-        "The opposite rule: many people click Summarize at once. Each click becomes a job, and a <b>worker</b> (a program that runs one job at a time) should handle them in arrival order.",
-        "That is a <span class=\"term\">queue</span>: add at the back, take from the front. The rule is called <span class=\"term\">FIFO</span>. Breadth-first search, in the next lesson, depends on it."
+        "The opposite rule: many people click Summarize at once. Each click becomes a job, and a <b>worker</b> (a program that runs one job at a time) handles them in arrival order.",
+        "That is a <span class=\"term\">queue</span>: add at the back (<em>enqueue</em>), take from the front (<em>dequeue</em>). The rule is called <span class=\"term\">FIFO</span>. The next lesson relies on it."
       ],
       "callout": {
         "type": "analogy",
@@ -374,8 +381,8 @@
       "title": "Linked lists: a chain of pointers",
       "chapter": "how",
       "body": [
-        "A <span class=\"term\">linked list</span> skips the numbered boxes. Each item holds its value and a <span class=\"term\">pointer</span>, an arrow to the next item. You keep only the first one, the <span class=\"term\">head</span>.",
-        "Adding at the head is <b>O(1)</b>: point the new item at the old head. Reaching item 500 means following 500 pointers: <b>O(n)</b>. Interviews love them."
+        "In a <span class=\"term\">linked list</span>, each item holds its value and a <span class=\"term\">pointer</span>, an arrow to the next item. The last points to nothing: <code>null</code>. You keep only the first item, the <span class=\"term\">head</span>.",
+        "Adding at the head is <b>O(1)</b>: point the new item at the old head. Reaching item 500 means following 500 pointers: <b>O(n)</b>."
       ],
       "code": {
         "language": "ts",
@@ -516,6 +523,10 @@
             }
           }
         ]
+      },
+      "callout": {
+        "type": "tip",
+        "text": "Draw boxes and arrows on paper before you change any pointer. Most linked list bugs are pointer order: overwriting <code>next</code> before saving it, or reading <code>.next</code> on <code>null</code>."
       }
     },
     {
@@ -616,15 +627,15 @@
       }
     },
     {
-      "title": "Lost pointers and lost queues",
+      "title": "A queue in memory can vanish",
       "chapter": "watch-out",
       "body": [
-        "Linked list bugs are nearly always pointer order: overwriting <code>next</code> before saving it, or reading <code>.next</code> on <code>null</code>. Draw boxes and arrows before coding.",
-        "In real apps the bigger trap is a job queue kept in an array in memory. A <span class=\"term\">serverless function</span> can be stopped at any moment, and the queued jobs vanish with it."
+        "Real apps have a bigger trap than pointers: a job queue kept in an array, in the app server's memory.",
+        "Notely's app server runs on Vercel as a <span class=\"term\">serverless function</span>: code that starts for a request and can be stopped at any moment. When it stops, every queued job vanishes with it."
       ],
       "callout": {
         "type": "claude-code",
-        "text": "If Claude Code keeps pending work in an array (<code>jobs.push(…)</code>) inside an API route, ask: \"What happens to these jobs if the function restarts?\" Real background work needs a durable queue or a jobs table. Also grep for <code>shift()</code> in big loops."
+        "text": "If Claude Code keeps pending work in an array (<code>jobs.push(…)</code>) inside an API route, ask: \"What happens to these jobs if the function restarts?\" Real background work needs a queue service that saves jobs, or a jobs table in the database."
       },
       "changes": [
         "− Msg 1, Msg 2, Msg 3, Msg 4, Claude API",
@@ -705,7 +716,7 @@
       "title": "Recap in one breath",
       "chapter": "recap",
       "body": [
-        "A stack is last in, first out: undo, bracket matching, the call stack. A queue is first in, first out: jobs in order, chat history trimming, breadth-first search.",
+        "A stack is last in, first out: undo and bracket matching. A queue is first in, first out: jobs in order, chat history trimming, breadth-first search.",
         "A linked list is a chain of pointers: O(1) to add at the head, O(n) to reach anything. Save <code>next</code> before you change it."
       ],
       "changes": [

@@ -37,8 +37,8 @@
       "title": "You, an interviewer and a shared editor",
       "chapter": "setup",
       "body": [
-        "You have built Notely, a notes app with an AI Summarize button, using Claude Code. Now you are applying for AI engineer jobs.",
-        "Most hiring processes include a <span class=\"term\">live coding</span> round. You solve a small problem in a <span class=\"term\">shared editor</span>, a web page where you both see the same code, while an interviewer watches and talks with you."
+        "You built Notely, a notes app with an AI Summarize button, using Claude Code. Now you are applying for AI engineer jobs.",
+        "Most hiring processes include a <span class=\"term\">live coding</span> round: you solve a small problem in a <span class=\"term\">shared editor</span>, a web page where you both see the same code. An interviewer watches, talks and takes notes."
       ],
       "metrics": {
         "silent": 0,
@@ -224,7 +224,7 @@
         "text": "Your system design course covers that round. This module covers the coding round: the data structures and patterns interviewers still expect you to reason about without help."
       },
       "changes": [
-        "− You, Shared editor, Interviewer, Scorecard: we zoom out",
+        "− You, Shared editor, Interviewer, Scorecard: we step back",
         "+ Recruiter call, Live coding, Take-home: the early rounds",
         "+ System design, AI build, Behavioral: the later rounds"
       ],
@@ -491,7 +491,7 @@
       "chapter": "example",
       "body": [
         "Narrate decisions, not keystrokes. Say what you are about to do and why, then do it.",
-        "For example: \"Rescanning the list for every tag repeats work. I'll keep a count per tag in a map instead, in one pass. Let me check with <code>['ai', 'work', 'ai']</code>: I expect <code>'ai'</code>.\""
+        "For example: \"My first idea: for each tag, count how often it appears in the whole list. Slow, since it rescans the list every time, but surely correct. Let me check with <code>['ai', 'work', 'ai']</code>: I expect <code>'ai'</code>.\""
       ],
       "callout": {
         "type": "tip",
@@ -550,7 +550,8 @@
       "changes": [
         "~ Brute force: done",
         "~ Code: stuck",
-        "+ A dashed line from Code back to Examples: 2 items"
+        "~ Examples: back to a tiny one, 2 items",
+        "+ A dashed line from Code back to Examples"
       ],
       "scene": {
         "extends": "previous",
@@ -558,8 +559,8 @@
         "nodes": [
           {
             "id": "m-examples",
-            "status": "normal",
-            "pill": null
+            "status": "active",
+            "pill": "2 items"
           },
           {
             "id": "m-brute",
@@ -584,7 +585,6 @@
           {
             "from": "m-code",
             "to": "m-examples",
-            "label": "2 items",
             "style": "dashed",
             "status": "warn",
             "packet": {

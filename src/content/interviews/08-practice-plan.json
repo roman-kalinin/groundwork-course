@@ -337,7 +337,7 @@
       ],
       "callout": {
         "type": "tip",
-        "text": "Not in this module: heaps (priority queues), for \"top k\" questions such as the k most similar notes, and dynamic programming. If your target companies ask harder questions, add a week for each after week 5."
+        "text": "Not in this module: heaps, for \"top k\" questions such as the 5 most similar notes, and dynamic programming, for problems built from overlapping smaller ones. If your target companies ask them, add a week for each after week 5."
       },
       "changes": [
         "− Learn pattern, Solve 2–3, Review, Re-solve",
@@ -495,8 +495,8 @@
       "title": "Rehearse the practical AI build",
       "chapter": "example",
       "body": [
-        "AI engineer loops often include a <span class=\"term\">practical round</span>: in about an hour, build a small feature on an app server that calls the Claude API (Anthropic's AI model). It tests reading docs fast and handling bad output, errors and timeouts.",
-        "Practice it like a puzzle round: a spec, a timer, and the tools the real round allows."
+        "AI engineer loops often include a <span class=\"term\">practical round</span>: in about an hour, build a small feature, such as a route (a URL the app server answers) calling the Claude API, Anthropic's AI model.",
+        "It tests reading docs fast and handling bad output, errors and timeouts. Practice it with a spec, a timer, and the tools the real round allows."
       ],
       "callout": {
         "type": "tip",
@@ -505,7 +505,7 @@
       "code": {
         "language": "text",
         "filename": "practice-spec.txt",
-        "code": "Build in 60 minutes, with the round's tools:\nPOST /api/summary  { noteId }\n- load the note; 404 if missing or not the user's\n- API key from env, never sent to the browser\n- ask the model for JSON: { summary, tags[] }\n- validate the shape; retry once if invalid\n- give up after a timeout, return a clear error\n- write two tests: happy path, invalid model output",
+        "code": "Build in 60 minutes, with the round's tools:\nA route /api/summary that receives a noteId\n- load the note; answer 404 (not found) if it\n  is missing or not the user's\n- read the API key from env vars (server-only\n  settings), never send it to the browser\n- ask the model for JSON (structured text):\n  { summary, tags[] }\n- check that shape; retry once if it is wrong\n- give up after a timeout, return a clear error\n- write two tests: happy path, bad model output",
         "caption": "Afterwards, compare your result with what Claude Code would have built."
       },
       "changes": [

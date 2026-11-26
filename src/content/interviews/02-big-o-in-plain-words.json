@@ -164,7 +164,7 @@
       "changes": [
         "− Maya, App Server, Database: we zoom into the code",
         "+ Linear: one loop over the notes, O(n)",
-        "~ Steps → 100,000 for one pass over 100,000 notes"
+        "~ Steps 5,000,000,000 → 100,000: now for the block in focus"
       ],
       "metrics": {
         "steps": {
@@ -192,8 +192,8 @@
       "title": "O(1): the same work at any size",
       "chapter": "how",
       "body": [
-        "Some operations do not care how big the data is. Reading <code>notes[5]</code> from a list, or looking up a key in a map, takes about one step for ten notes or ten million.",
-        "That is <span class=\"term\">constant time</span>, written <b>O(1)</b>. It is the best you can get, and the reason hash maps show up in so many interview answers."
+        "Some operations ignore the data's size. Reading <code>notes[5]</code> from a list, or looking up a key in a hash map (a lookup table, next lesson), takes one step for ten notes or ten million.",
+        "That is <span class=\"term\">constant time</span>, written <b>O(1)</b>: the best you can get, and why hash maps show up in so many interview answers."
       ],
       "callout": {
         "type": "tip",
@@ -434,7 +434,7 @@
       "title": "Hidden loops hide in one-liners",
       "chapter": "watch-out",
       "body": [
-        "Not every loop looks like one. <code>.includes()</code>, <code>.indexOf()</code> and <code>.find()</code> each scan a whole list. Put one inside <code>.filter()</code> and one tidy line does n × m steps, where m is the length of the scanned list.",
+        "Not every loop looks like one. <code>.includes()</code>, <code>.indexOf()</code> and <code>.find()</code> each scan a whole list. Say we mark Maya's pinned notes: for each of 100,000 notes, <code>.includes()</code> scans a list of 1,000 pinned ids. One tidy line, 100 million steps.",
         "The same trap exists one level up: a database query inside a loop sends one query per note."
       ],
       "callout": {

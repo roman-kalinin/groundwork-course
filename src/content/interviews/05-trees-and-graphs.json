@@ -183,7 +183,7 @@
       "chapter": "idea",
       "body": [
         "This shape is a <span class=\"term\">tree</span>. The item at the top is the <span class=\"term\">root</span>. Every other item has exactly one parent. Items with no children are <span class=\"term\" data-term=\"leaf\">leaves</span>.",
-        "With one parent each, there are no loops. Start at the root, walk down, and you reach every item exactly once. File systems, web pages and JSON are all trees."
+        "With one parent each, there are no loops. Walk down from the root and you reach every item exactly once. File systems and web pages are trees too."
       ],
       "callout": {
         "type": "analogy",
@@ -258,7 +258,7 @@
       ],
       "code": {
         "language": "ts",
-        "code": "function findNote(root: Folder, title: string) {\n  const stack = [root];\n  while (stack.length > 0) {\n    const folder = stack.pop()!;\n    const hit = folder.notes.find((n) => n.title === title);\n    if (hit) return hit;\n    stack.push(...folder.children);\n  }\n  return null;\n}",
+        "code": "function findNote(root: Folder, title: string) {\n  const stack = [root];\n  while (stack.length > 0) {\n    const folder = stack.pop()!;\n    const hit = folder.notes.find((n) => n.title === title);\n    if (hit) return hit;\n    // reversed, so the first child is popped first\n    stack.push(...[...folder.children].reverse());\n  }\n  return null;\n}",
         "caption": "pop() takes the last child first, so it may try Personal before Work. Still DFS. Swap the stack for a queue and it becomes BFS."
       },
       "changes": [
@@ -683,7 +683,7 @@
       "chapter": "watch-out",
       "body": [
         "Forget the visited check on a graph with a loop and the search circles forever: pitch, brief, call, budget, pitch… until time or memory runs out.",
-        "Trees can become graphs by accident, too. If Maya drags a folder into its own subfolder and the app allows it, a \"tree\" walk now loops. Guard against it in code and SQL."
+        "Trees can loop by accident too: Maya drags a folder into its own subfolder. In Postgres, a <code>with recursive</code> query walks folders in one go; write <code>union</code>, which drops repeats, so a loop ends."
       ],
       "callout": {
         "type": "claude-code",
@@ -775,7 +775,7 @@
       "chapter": "recap",
       "body": [
         "A tree has one root and no loops. A graph is connections that may loop. DFS goes deep with a stack; BFS goes level by level with a queue and finds the fewest steps.",
-        "Every graph walk needs a visited set. Both walks visit each item once: O(n) for a tree, O(nodes + edges) for a graph."
+        "Every graph walk needs a visited set. Both walks visit each item once: O(n) for a tree, O(notes + links) for a graph."
       ],
       "changes": [
         "~ Visited set back in: every note is seen once",
