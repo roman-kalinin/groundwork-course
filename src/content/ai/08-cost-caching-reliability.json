@@ -6,42 +6,82 @@
   "level": "intermediate",
   "youWillLearn": [
     "Where an AI bill really comes from, and how to measure it per feature",
-    "How <b>prompt caching</b> and your own result cache cut cost and latency",
+    "How <b>prompt caching</b> and your own result cache cut cost and waiting",
     "What <b>rate limits</b> and overload errors look like, and how to retry safely",
     "How to fall back gracefully instead of showing an error"
   ],
   "glossary": {
+    "app server": "A computer, somewhere else, that runs the app's own code. Notely's runs on Vercel.",
+    "Claude API": "Anthropic's AI, reached over the internet: you send it text, it sends text back. Each call costs a little money.",
+    "database": "A program built to store data safely and find it again fast. Notely's is Postgres, run by Supabase.",
+    "429": "The HTTP status code that means: too many requests, slow down and try again later.",
     "prompt caching": "A provider feature that stores the processed start of a prompt, so later requests that begin with the exact same content are cheaper and faster.",
     "cache hit": "A request that found what it needed in a cache, instead of doing the full work again.",
     "rate limit": "A cap on how many requests or tokens you may use per minute. Go over it and requests are refused for a while.",
-    "429": "The HTTP status code that means: too many requests, slow down and try again later.",
     "exponential backoff": "Waiting longer after each failed try, for example 1, 2, then 4 seconds, so a struggling service gets room to recover.",
     "jitter": "A small random extra wait added to each retry, so thousands of clients do not all retry at the same instant.",
     "fallback": "A plan B when the main path fails: a different model, a cached answer, or a polite \"we will finish this soon\".",
     "batch API": "A way to send many requests at once for processing within hours instead of seconds, usually at a lower price."
   },
+  "metrics": [
+    { "id": "cost", "label": "AI cost", "icon": "money", "unit": "$/day" },
+    { "id": "err", "label": "Failed clicks", "icon": "alert", "unit": "%" },
+    { "id": "hits", "label": "Cache hits", "icon": "bolt", "unit": "%" }
+  ],
   "steps": [
     {
-      "title": "Featured on a newsletter, then the bill",
+      "title": "Notely's Summarize, at a calm size",
+      "chapter": "setup",
+      "body": [
+        "Notely, our notes app, has about 1,000 users. Each <b>Summarize</b> click goes to the <span class=\"term\">app server</span> (the computer running Notely's code), which calls the <span class=\"term\">Claude API</span>, Anthropic's AI.",
+        "Every call costs a little. Today the AI bill is about $5 a day, and clicks almost never fail."
+      ],
+      "metrics": {
+        "cost": { "value": 5, "tone": "good" },
+        "err": { "value": 0, "tone": "good" },
+        "hits": { "value": 0, "tone": "neutral" }
+      },
+      "scene": {
+        "caption": "A thousand users, one app server, one AI provider.",
+        "nodes": [
+          { "id": "users", "x": 0.8, "y": 3.6, "label": "1,000 users", "icon": "users", "shape": "crowd", "kind": "person" },
+          { "id": "app", "x": 4.6, "y": 3.6, "label": "App Server", "icon": "server", "kind": "server" },
+          { "id": "llm", "x": 8.8, "y": 3.6, "label": "Claude API", "icon": "sparkle", "kind": "ai" }
+        ],
+        "edges": [
+          { "from": "users", "to": "app", "packet": { "kind": "request", "direction": "both" } },
+          { "from": "app", "to": "llm", "packet": { "kind": "request", "direction": "both" } }
+        ]
+      }
+    },
+    {
+      "title": "Featured in a newsletter, then the bill",
       "chapter": "problem",
       "body": [
         "A newsletter features Notely. Traffic jumps twentyfold overnight. Good news, until two things happen.",
-        "The AI bill grows faster than the user count. And at peak hours, some summaries fail: the API answers <span class=\"term\">429</span> (too many requests) or says it is overloaded. Users see a red error box on the feature the newsletter praised."
+        "The AI bill grows faster than the user count. And at peak hours, some clicks fail: the API answers <span class=\"term\">429</span> (too many requests) or says it is overloaded. Users see a red error on the feature the newsletter praised."
       ],
+      "changes": [
+        "~ 1,000 users → 20,000 users",
+        "~ AI cost $5 → $180 a day",
+        "~ Failed clicks 0 → 8%",
+        "~ Claude API pushes back; App Server shows errors"
+      ],
+      "metrics": {
+        "cost": { "value": 180, "tone": "bad" },
+        "err": { "value": 8, "tone": "bad" }
+      },
       "scene": {
-        "caption": "More users, a bigger bill, and errors when the API pushes back.",
+        "extends": "previous",
+        "caption": "Twenty times the users, a bigger bill, and errors when the API pushes back.",
         "nodes": [
-          { "id": "users", "x": 2, "y": 4, "label": "Lots of users", "sublabel": "20x yesterday", "icon": "users", "kind": "person", "status": "active" },
-          { "id": "route", "x": 6.4, "y": 4, "label": "Summary route", "sublabel": "Notely server", "icon": "function", "kind": "server", "status": "error", "tags": ["red error box"] },
-          { "id": "llm", "x": 10.4, "y": 4, "label": "Claude API", "sublabel": "pushing back", "icon": "sparkle", "kind": "ai", "status": "warn" }
+          { "id": "users", "label": "20,000 users", "status": "active" },
+          { "id": "app", "status": "error" },
+          { "id": "llm", "status": "warn", "pill": { "text": "429", "tone": "bad" } }
         ],
         "edges": [
-          { "from": "users", "to": "route", "packet": { "label": "x20", "speed": "fast" } },
-          { "from": "route", "to": "llm", "packet": { "speed": "fast" } },
-          { "from": "llm", "to": "route", "label": "429 / overloaded", "status": "error", "packet": { "label": "429", "status": "error" } }
-        ],
-        "notes": [
-          { "id": "bill", "x": 10.4, "y": 6.2, "text": "Bill: up more than traffic", "status": "error" }
+          { "id": "users>app", "packet": { "kind": "request", "direction": "both", "speed": "fast" } },
+          { "id": "app>llm", "status": "error", "packet": { "kind": "request", "direction": "both", "returns": "error", "speed": "fast" } }
         ]
       }
     },
@@ -49,26 +89,32 @@
       "title": "Measure where the tokens go",
       "chapter": "idea",
       "body": [
-        "Cost is roughly tokens times price times requests. Before optimizing, find out which part is big.",
-        "Log the <code>usage</code> object of every call with the feature name. Usually one surprise dominates: a long system prompt and examples re-sent on every call, a chat history that grows forever, or a retry loop. Fix the biggest line first."
+        "Cost is roughly tokens times price times requests. First find the big part: log the token counts of every call, with the feature name, in the <span class=\"term\">database</span> (where Notely keeps its data).",
+        "Usually one surprise dominates. Here, 70% of the tokens are the long system prompt and examples, re-sent on every call. Fix the biggest line first."
       ],
       "code": {
         "language": "ts",
         "code": "await db.from(\"ai_usage\").insert({\n  feature: \"summary\",\n  user_id: user.id,\n  input_tokens: res.usage.input_tokens,\n  output_tokens: res.usage.output_tokens,\n});",
-        "caption": "One row per call. A GROUP BY on feature answers \"what costs what\"."
+        "caption": "One row per call. Grouping by feature answers \"what costs what\"."
       },
+      "changes": [
+        "+ Database: logs the tokens of every call",
+        "~ App Server and users step back",
+        "~ 70% of tokens: the same instructions every time"
+      ],
       "scene": {
         "extends": "previous",
-        "caption": "Usage logged per feature shows which part of the prompt costs the most.",
-        "remove": ["bill"],
+        "caption": "Logged usage shows which part of the prompt costs the most.",
         "nodes": [
-          { "id": "route", "status": "active", "tags": ["logs usage"] },
-          { "id": "llm", "status": "normal" },
-          { "id": "usage", "x": 6.4, "y": 6.6, "label": "ai_usage table", "sublabel": "tokens per feature", "icon": "chart", "kind": "data", "tags": ["system prompt: 70%"] }
+          { "id": "users", "status": "dim" },
+          { "id": "app", "status": "normal" },
+          { "id": "llm", "status": "normal", "pill": null },
+          { "id": "db", "x": 4.6, "y": 7.2, "label": "Database", "icon": "database", "kind": "data", "status": "active", "pill": { "text": "prompt 70%", "icon": "chart", "gauge": 70, "tone": "bad" } }
         ],
         "edges": [
-          { "id": "llm>route", "label": "answer + usage", "status": "normal", "packet": { "label": "usage" } },
-          { "from": "route", "to": "usage", "label": "insert", "style": "dashed" }
+          { "id": "users>app", "status": "dim", "packet": false },
+          { "id": "app>llm", "status": "normal", "packet": { "kind": "request", "direction": "both" } },
+          { "from": "app", "to": "db", "packet": { "kind": "data", "speed": "slow" } }
         ]
       }
     },
@@ -76,24 +122,32 @@
       "title": "Prompt caching: pay once for the same start",
       "chapter": "how",
       "body": [
-        "Most of Notely's prompt is identical on every call: system prompt, examples, tool definitions. With <span class=\"term\">prompt caching</span>, the provider keeps that processed start for a few minutes. Requests that begin with exactly the same content read it from cache, cheaper and faster.",
-        "Rule: stable content first, changing content last. One changed character early in the prompt, like a timestamp, breaks the match for everything after it."
+        "Most of Notely's prompt is identical on every call. With <span class=\"term\">prompt caching</span>, the provider keeps that processed start for a few minutes; requests that begin with exactly the same content read it from cache, cheaper and faster.",
+        "Rule: stable content first, changing content last. One changed character early on, like a timestamp, breaks the match for everything after it."
       ],
       "code": {
         "language": "ts",
         "code": "const res = await anthropic.messages.create({\n  model: process.env.SUMMARY_MODEL!,\n  max_tokens: 1024,\n  system: [{\n    type: \"text\",\n    text: SUMMARY_SYSTEM_PROMPT, // long and identical every time\n    cache_control: { type: \"ephemeral\" },\n  }],\n  messages: [{ role: \"user\", content: noteContent }],\n});\nconsole.log(res.usage.cache_read_input_tokens); // > 0 on a hit",
-        "caption": "The call that writes the cache costs a little extra; hits cost far less. Prompts under a minimum length are not cached, so check usage to confirm hits."
+        "caption": "Writing the cache costs a little extra; hits cost far less. Very short prompts are not cached, so check usage to confirm hits."
+      },
+      "changes": [
+        "~ Claude API: reads the stable start from its cache",
+        "~ Cache hits 0 → 92%",
+        "~ AI cost $180 → $90 a day"
+      ],
+      "metrics": {
+        "hits": { "value": 92, "tone": "good" },
+        "cost": { "value": 90, "tone": "warn" }
       },
       "scene": {
         "extends": "previous",
-        "caption": "The stable start of the prompt is read from the provider's cache.",
+        "caption": "The long, unchanging start of the prompt is processed once and reused.",
         "nodes": [
-          { "id": "route", "status": "normal", "tags": null },
-          { "id": "pcache", "x": 10.4, "y": 1.6, "label": "Prompt cache", "sublabel": "same start → hit", "icon": "bolt", "kind": "ai", "status": "ok" },
-          { "id": "usage", "tags": ["cache hits: 92%"] }
+          { "id": "db", "status": "normal", "pill": null },
+          { "id": "llm", "status": "ok", "pill": { "text": "cache hit", "icon": "bolt", "tone": "good" } }
         ],
         "edges": [
-          { "from": "pcache", "to": "llm", "label": "system + examples", "status": "ok", "style": "dashed" }
+          { "id": "app>db", "status": "dim", "packet": false }
         ]
       }
     },
@@ -101,23 +155,31 @@
       "title": "Your own cache: do not ask twice",
       "chapter": "how",
       "body": [
-        "Prompt caching cuts the cost of a call. Better still is no call. Maya opens the same unchanged note ten times; the summary would not change.",
-        "Save it with a key built from the note's content, the prompt version and the model. Same key is a <span class=\"term\">cache hit</span>: return the stored summary. Anything changed: generate anew. You met caching in system design; here the slow backend is the model."
+        "Better than a cheaper call is no call. Maya opens the same unchanged note ten times.",
+        "The app server saves each summary in the database, keyed by note text, prompt version and model. Same key is a <span class=\"term\">cache hit</span>: return the stored summary, zero tokens. It is system design caching, with the model as the slow backend."
       ],
       "code": {
         "language": "ts",
         "code": "const key = sha256(`${PROMPT_VERSION}:${model}:${note.body}`);\nconst { data } = await db.from(\"summaries\")\n  .select(\"text\").eq(\"cache_key\", key).maybeSingle();\nif (data) return data.text; // cache hit: zero tokens",
         "caption": "Putting the prompt version in the key means a prompt change refreshes everything."
       },
+      "changes": [
+        "~ Database: keeps finished summaries, checked first",
+        "~ AI cost $90 → $60 a day"
+      ],
+      "metrics": {
+        "cost": { "value": 60, "tone": "good" }
+      },
       "scene": {
         "extends": "previous",
         "caption": "An unchanged note never reaches the model twice.",
         "nodes": [
-          { "id": "rcache", "x": 6.4, "y": 1.6, "label": "summaries table", "sublabel": "keyed by content", "icon": "bolt", "kind": "data", "status": "ok" }
+          { "id": "llm", "status": "normal", "pill": null },
+          { "id": "db", "status": "ok", "pill": { "text": "seen it", "icon": "bolt", "tone": "good" } }
         ],
         "edges": [
-          { "from": "route", "to": "rcache", "label": "seen it?", "status": "ok", "packet": { "label": "hit", "status": "ok" } },
-          { "id": "route>llm", "status": "dim", "packet": false, "label": "skipped on a hit" }
+          { "id": "app>db", "status": "ok", "packet": { "kind": "data", "direction": "both", "returns": "data" } },
+          { "id": "app>llm", "status": "dim", "packet": false }
         ]
       }
     },
@@ -125,25 +187,27 @@
       "title": "Rate limits: the API's turnstile",
       "chapter": "how",
       "body": [
-        "Providers cap how much each account can use per minute: requests, input tokens and output tokens. That is a <span class=\"term\">rate limit</span>. Go over it and you get <code>429</code>, often with a <code>retry-after</code> header saying how long to wait.",
-        "Separately, a busy provider can answer that it is overloaded. The Claude API uses <code>529</code> for that. Both mean the same thing for you: not now, try again shortly."
+        "Providers cap how much each account may use per minute: requests, input tokens, output tokens. That is a <span class=\"term\">rate limit</span>. Go over it and you get <code>429</code>, often with a <code>retry-after</code> header saying how long to wait.",
+        "Separately, a busy provider can say it is overloaded; the Claude API uses <code>529</code>. Both mean: not now, try shortly."
       ],
       "callout": {
         "type": "tip",
         "text": "Limits usually rise as your account's usage history grows. Check your current limits in the provider console before a launch, not during one."
       },
+      "changes": [
+        "~ Claude API: refuses calls past the per-minute limit",
+        "~ Database steps back"
+      ],
       "scene": {
         "extends": "previous",
         "caption": "Past the per-minute limit, the API refuses requests for a short while.",
-        "remove": ["pcache", "rcache"],
         "nodes": [
-          { "id": "llm", "status": "warn", "tags": ["limit per minute"] },
-          { "id": "usage", "status": "dim" }
+          { "id": "db", "status": "dim", "pill": null },
+          { "id": "llm", "status": "warn", "pill": { "text": "429", "icon": "ban", "tone": "bad" } }
         ],
         "edges": [
-          { "id": "route>llm", "status": "normal", "label": null, "packet": { "speed": "fast" } },
-          { "id": "llm>route", "label": "429, retry-after: 10", "status": "error", "packet": { "label": "429", "status": "error" } },
-          { "id": "route>usage", "status": "dim" }
+          { "id": "app>db", "status": "dim", "packet": false },
+          { "id": "app>llm", "status": "error", "packet": { "kind": "request", "direction": "both", "returns": "error", "speed": "fast" } }
         ]
       }
     },
@@ -151,8 +215,8 @@
       "title": "Retry with backoff and jitter",
       "chapter": "how",
       "body": [
-        "Retry only what can succeed later: <code>429</code>, overloaded and other 5xx errors, network drops. Never retry a <code>400</code>; the request itself is wrong and will fail forever.",
-        "Wait longer each time (<span class=\"term\">exponential backoff</span>), add a little randomness (<span class=\"term\">jitter</span>), honor <code>retry-after</code>, and stop after a few tries. The official SDKs do this for you; you mostly set the numbers."
+        "Retry only what can succeed later: <code>429</code>, overloaded and other 5xx server errors, network drops. Never retry a <code>400</code>: the request itself is wrong and will fail forever.",
+        "Wait longer each time (<span class=\"term\">exponential backoff</span>), add a little randomness (<span class=\"term\">jitter</span>), honor <code>retry-after</code>, and stop after a few tries. The official SDKs do this; you set the numbers."
       ],
       "code": {
         "language": "ts",
@@ -160,14 +224,23 @@
         "code": "export const anthropic = new Anthropic({\n  maxRetries: 3,   // 429, 5xx, network errors; with backoff\n  timeout: 60_000, // ms per attempt\n});",
         "caption": "Worst case wait is roughly timeout times attempts. Make sure that fits inside your route's limit."
       },
+      "changes": [
+        "~ App Server: waits 1, 2, 4 seconds between tries",
+        "~ Claude API: answers on the second try",
+        "~ Failed clicks 8 → 1%"
+      ],
+      "metrics": {
+        "err": { "value": 1, "tone": "warn" }
+      },
       "scene": {
         "extends": "previous",
-        "caption": "Each retry waits a bit longer, with a random offset.",
+        "caption": "Each retry waits a bit longer, and most succeed.",
         "nodes": [
-          { "id": "route", "status": "active", "tags": ["wait 1s, 2s, 4s"] }
+          { "id": "app", "status": "active", "pill": { "text": "wait 1-2-4 s", "icon": "clock" } },
+          { "id": "llm", "status": "ok", "pill": null }
         ],
         "edges": [
-          { "id": "llm>route", "label": "ok on try 2", "status": "ok", "packet": { "label": "answer", "status": "ok" } }
+          { "id": "app>llm", "status": "normal", "packet": { "kind": "request", "direction": "both", "speed": "slow" } }
         ]
       }
     },
@@ -175,21 +248,28 @@
       "title": "When retries run out: fall back",
       "chapter": "how",
       "body": [
-        "Sometimes every retry fails. Plan the <span class=\"term\">fallback</span> before it happens. Options: try another model or provider; serve a cached result; or queue the job and tell Maya \"Your summary will appear in a minute\" instead of a red error.",
+        "Sometimes every retry fails. Plan the <span class=\"term\">fallback</span> before it happens: a backup model (another size or provider), a cached result, or a queued job and \"Your summary will appear in a minute\" instead of a red error.",
         "Work nobody waits for, like the weekly digest, can go through a <span class=\"term\">batch API</span>: slower, and usually cheaper."
       ],
+      "changes": [
+        "+ Backup Model: plan B when Claude stays overloaded",
+        "~ Claude API: overloaded, three tries failed",
+        "~ Failed clicks 1 → 0%"
+      ],
+      "metrics": {
+        "err": { "value": 0, "tone": "good" }
+      },
       "scene": {
         "extends": "previous",
-        "caption": "Main model down? Another model, a cached answer, or a friendly \"coming soon\".",
+        "caption": "Main model down? The app server switches to plan B instead of showing an error.",
         "nodes": [
-          { "id": "llm", "status": "error", "tags": null, "sublabel": "still overloaded" },
-          { "id": "route", "status": "ok", "tags": ["fallback plan"] },
-          { "id": "alt", "x": 10.4, "y": 7.6, "label": "Fallback model", "sublabel": "other size or provider", "icon": "sparkle", "kind": "ai", "status": "ok" },
-          { "id": "usage", "status": "dim" }
+          { "id": "app", "status": "ok", "pill": "plan B" },
+          { "id": "llm", "status": "error", "pill": { "text": "overloaded", "tone": "bad" } },
+          { "id": "alt", "x": 8.8, "y": 7.2, "label": "Backup Model", "icon": "sparkle", "kind": "ai", "status": "active" }
         ],
         "edges": [
-          { "id": "llm>route", "label": "failed 3 times", "status": "error", "packet": false },
-          { "from": "route", "to": "alt", "label": "plan B", "status": "ok", "packet": { "label": "retry", "status": "ok" } }
+          { "id": "app>llm", "status": "error", "packet": false },
+          { "from": "app", "to": "alt", "route": "mid", "packet": { "kind": "request", "direction": "both" } }
         ]
       }
     },
@@ -197,26 +277,36 @@
       "title": "Retry storms and runaway bills",
       "chapter": "watch-out",
       "body": [
-        "Retries add load exactly when the API is struggling. Retrying in the browser <em>and</em> the route <em>and</em> the SDK multiplies attempts. Retry in one place.",
-        "Then cap the damage: a per-user limit on AI calls in your own app, a monthly spend limit and alerts in the provider console, and a daily check of the <code>ai_usage</code> table."
+        "Retries add load exactly when the API struggles. If the browser, the app server and the SDK each retry three times, one click becomes dozens of calls. Retry in one place.",
+        "Then cap the damage: a per-user limit on AI calls, a monthly spend limit and alerts in the provider console, and a daily look at the usage log."
       ],
       "callout": {
         "type": "claude-code",
-        "text": "Ask: where do retries happen, and how many layers retry? Does the code retry <code>400</code> errors? Is <code>usage</code> logged per feature? Is the long, stable part of the prompt first, with anything that changes per request after it? What does the user see when every retry fails?"
+        "text": "Ask: where do retries happen, and how many layers retry? Does the code retry <code>400</code> errors? Is <code>usage</code> logged per feature? Is the stable part of the prompt first? What does the user see when every retry fails?"
+      },
+      "changes": [
+        "~ Users and App Server each retry three times",
+        "~ Claude API: buried under repeated calls",
+        "~ Failed clicks 0 → 15%",
+        "~ AI cost $60 → $140 a day; Backup Model steps back"
+      ],
+      "metrics": {
+        "err": { "value": 15, "tone": "bad" },
+        "cost": { "value": 140, "tone": "bad" }
       },
       "scene": {
-        "caption": "Three layers each retrying three times can mean many calls for one click.",
+        "extends": "previous",
+        "caption": "Retries stacked in three layers turn one click into a flood.",
         "nodes": [
-          { "id": "users", "x": 2, "y": 4, "label": "Browser", "sublabel": "retries x3", "icon": "browser", "kind": "client", "status": "warn" },
-          { "id": "route", "x": 6.4, "y": 4, "label": "Summary route", "sublabel": "retries x3", "icon": "function", "kind": "server", "status": "warn", "tags": ["+ SDK retries"] },
-          { "id": "llm", "x": 10.4, "y": 4, "label": "Claude API", "sublabel": "already overloaded", "icon": "sparkle", "kind": "ai", "status": "error" }
+          { "id": "users", "status": "warn", "pill": { "text": "retry x3", "icon": "refresh", "tone": "warn" } },
+          { "id": "app", "status": "warn", "pill": { "text": "retry x3", "icon": "refresh", "tone": "warn" } },
+          { "id": "llm", "status": "error", "pill": { "text": "overloaded", "tone": "bad" } },
+          { "id": "alt", "status": "dim" }
         ],
         "edges": [
-          { "from": "users", "to": "route", "label": "x3", "status": "warn", "packet": { "speed": "fast", "status": "warn" } },
-          { "from": "route", "to": "llm", "label": "x3 each, x4 SDK", "status": "error", "packet": { "label": "36?", "status": "error", "speed": "fast" } }
-        ],
-        "notes": [
-          { "id": "one", "x": 6.4, "y": 6.4, "text": "Fix: retry in one place", "status": "ok" }
+          { "id": "users>app", "status": "warn", "packet": { "kind": "request", "direction": "both", "speed": "fast" } },
+          { "id": "app>llm", "status": "error", "packet": { "kind": "error", "speed": "fast" } },
+          { "id": "app>alt", "status": "dim", "packet": false }
         ]
       }
     },
@@ -225,8 +315,34 @@
       "chapter": "recap",
       "body": [
         "Measure tokens per feature before optimizing. Put the stable part of the prompt first so prompt caching can hit, and store results so the same request never reaches the model twice.",
-        "Expect <code>429</code> and overload errors. Retry those, in one place, with backoff and jitter. When retries run out, fall back gracefully, and cap spend per user and per month."
-      ]
+        "Expect <code>429</code> and overload errors. Retry those in one place, with backoff and jitter. When retries run out, fall back gracefully, and cap spend per user and per month."
+      ],
+      "changes": [
+        "~ Retries in one place only; caches and plan B in view",
+        "~ Failed clicks 15 → 0%",
+        "~ AI cost $140 → $60 a day"
+      ],
+      "metrics": {
+        "err": { "value": 0, "tone": "good" },
+        "cost": { "value": 60, "tone": "good" }
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Measured, cached, retried once, with a plan B: calm at 20,000 users.",
+        "nodes": [
+          { "id": "users", "status": "normal", "pill": null },
+          { "id": "app", "status": "ok", "pill": null },
+          { "id": "llm", "status": "ok", "pill": { "text": "cache hit", "icon": "bolt", "tone": "good" } },
+          { "id": "db", "status": "normal", "pill": { "text": "seen it", "icon": "bolt", "tone": "good" } },
+          { "id": "alt", "status": "normal" }
+        ],
+        "edges": [
+          { "id": "users>app", "status": "normal", "packet": { "kind": "request", "direction": "both" } },
+          { "id": "app>llm", "status": "normal", "packet": { "kind": "request", "direction": "both" } },
+          { "id": "app>db", "status": "normal", "packet": { "kind": "data", "direction": "both", "returns": "data" } },
+          { "id": "app>alt", "status": "normal", "style": "dashed" }
+        ]
+      }
     }
   ],
   "quiz": [
@@ -235,7 +351,7 @@
       "options": [
         { "text": "The timestamp changes every request, so the cached start never matches.", "correct": true, "why": "Caching matches the exact start of the prompt. A changing value at the top breaks the match for everything after it. Move it to the end." },
         { "text": "Caching only works for responses, not prompts.", "why": "Prompt caching is exactly about the input. It caches the processed start of the prompt." },
-        { "text": "The cache needs a bigger model to work.", "why": "Model size is not the issue. The prompt's first bytes differ on every call." }
+        { "text": "The cache needs a bigger model to work.", "why": "Model size is not the issue. The prompt's first characters differ on every call." }
       ]
     },
     {

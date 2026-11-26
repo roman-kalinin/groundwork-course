@@ -1,16 +1,18 @@
 {
   "id": "how-llm-apis-work",
   "title": "How LLM APIs work",
-  "summary": "What really happens when Notely's AI summary button calls the Claude API: tokens, messages, the context window, output limits and picking a model.",
+  "summary": "What really happens when Notely's Summarize button calls the Claude API: tokens, messages, the context window, output limits and picking a model.",
   "minutes": 12,
   "level": "beginner",
   "youWillLearn": [
     "What a <b>token</b> is, and why it is the unit of cost, speed and limits",
-    "Why the API has no memory, and what the <code>messages</code> array is for",
+    "Why the API has no memory, and what the <code>messages</code> list is for",
     "What the <b>context window</b> and <code>max_tokens</code> limit, and how to spot a cut-off answer",
     "How to choose a model per feature, and where the API key must live"
   ],
   "glossary": {
+    "app server": "A computer, somewhere else, that runs the app's own code. Notely's runs on Vercel.",
+    "Claude API": "Anthropic's AI, reached over the internet: you send it text, it sends text back. Each call costs a little money.",
     "LLM": "Large language model: a program trained on huge amounts of text that continues a piece of text by predicting what comes next.",
     "token": "A small chunk of text, often a short word or part of a word. Models read, write and bill in tokens.",
     "system prompt": "Standing instructions sent with every request, separate from the conversation, that set the model's role and rules.",
@@ -19,29 +21,64 @@
     "max_tokens": "A request setting that caps how many tokens the model may write in its answer. When it is hit, the answer stops mid-sentence.",
     "stop_reason": "A field in the API response that says why the model stopped: it finished, it hit max_tokens, it wants to use a tool, and so on.",
     "temperature": "A setting on many LLM APIs that controls how random the word choices are. Low is more predictable, high is more varied.",
+    "env var": "Environment variable: a named setting kept outside the code, like a model id or a secret key, that the server reads when it runs.",
     "API key": "A secret string that proves a request comes from your account. Anyone holding it can spend your money."
   },
+  "metrics": [
+    { "id": "tin", "label": "Tokens in", "icon": "upload" },
+    { "id": "tout", "label": "Tokens out", "icon": "download" },
+    { "id": "stop", "label": "Stop reason", "icon": "alert" }
+  ],
   "steps": [
     {
-      "title": "The summary button is a black box",
-      "chapter": "problem",
+      "title": "Notely's Summarize button",
+      "chapter": "setup",
       "body": [
-        "Maya opens a long note in Notely and clicks <b>AI summary</b>. A few seconds later, three tidy bullet points appear.",
-        "You built that with Claude Code, and it works. But if a client asks why it costs what it costs, or why long notes fail, you cannot answer yet. Everything in this module starts with what happens inside that one call."
+        "Notely is our course's notes app. Maya, one of its users, opens a long note in her <b>browser</b> and clicks <b>Summarize</b>.",
+        "The browser sends the click to the <span class=\"term\">app server</span> (the computer running Notely's code). The app server sends the note's text to the <span class=\"term\">Claude API</span>, Anthropic's AI. Seconds later, three short lines come back."
       ],
+      "metrics": {
+        "tin": { "value": 800, "tone": "good" },
+        "tout": { "value": 60, "tone": "good" },
+        "stop": { "value": "end_turn", "tone": "good" }
+      },
       "scene": {
-        "caption": "The browser asks Notely's server for a summary. The server asks the Claude API. The middle of the story is unknown.",
+        "caption": "Maya's click travels through the app server to the Claude API and back.",
         "nodes": [
-          { "id": "browser", "x": 2, "y": 4, "label": "Browser", "sublabel": "Maya's laptop", "icon": "browser", "kind": "client" },
-          { "id": "route", "x": 6.4, "y": 4, "label": "Summary route", "sublabel": "Next.js on Vercel", "icon": "function", "kind": "server" },
-          { "id": "llm", "x": 10.8, "y": 4, "label": "Claude API", "sublabel": "Anthropic", "icon": "sparkle", "kind": "ai", "status": "warn" }
+          { "id": "maya", "x": 0.8, "y": 3.2, "label": "Maya", "icon": "user", "kind": "person" },
+          { "id": "browser", "x": 4.1, "y": 3.2, "label": "Browser", "icon": "browser", "kind": "client" },
+          { "id": "app", "x": 7.5, "y": 3.2, "label": "App Server", "icon": "server", "kind": "server" },
+          { "id": "llm", "x": 11.2, "y": 3.2, "label": "Claude API", "icon": "sparkle", "kind": "ai" }
         ],
         "edges": [
-          { "from": "browser", "to": "route", "label": "POST /summary", "packet": { "label": "note" } },
-          { "from": "route", "to": "llm", "label": "?", "packet": true }
+          { "from": "maya", "to": "browser" },
+          { "from": "browser", "to": "app", "packet": { "kind": "request", "direction": "both" } },
+          { "from": "app", "to": "llm", "packet": { "kind": "request", "direction": "both", "speed": "slow" } }
+        ]
+      }
+    },
+    {
+      "title": "The last step is a black box",
+      "chapter": "problem",
+      "body": [
+        "You built this with Claude Code, and it works. But a client asks: why does it cost what it costs? Why do very long notes fail? Why did one summary stop mid-sentence?",
+        "You cannot answer yet, because the answers all live inside that one call from the app server to the Claude API. This lesson opens it up."
+      ],
+      "changes": [
+        "~ Maya and Browser step back",
+        "~ Claude API in focus: what happens inside it?"
+      ],
+      "scene": {
+        "extends": "previous",
+        "caption": "Everything this lesson explains happens on the last arrow.",
+        "nodes": [
+          { "id": "maya", "status": "dim" },
+          { "id": "browser", "status": "dim" },
+          { "id": "llm", "status": "active" }
         ],
-        "notes": [
-          { "id": "what", "x": 11.6, "y": 2.4, "text": "What happens in here?", "status": "warn" }
+        "edges": [
+          { "id": "maya>browser", "status": "dim" },
+          { "id": "browser>app", "status": "dim", "packet": false }
         ]
       }
     },
@@ -49,26 +86,24 @@
       "title": "A model guesses the next piece of text",
       "chapter": "idea",
       "body": [
-        "An <span class=\"term\">LLM</span> does one thing: given some text, it predicts the next small piece. Then it adds that piece and predicts again, until it decides to stop.",
-        "Those pieces are <span class=\"term\" data-term=\"token\">tokens</span>. A token is often a short word or part of a longer one. Your prompt goes in as tokens, and the answer comes back as tokens, one at a time."
+        "Behind the Claude API is an <span class=\"term\">LLM</span>. Given some text, it predicts the next small piece, adds it, and predicts again, until it decides to stop.",
+        "Those pieces are <span class=\"term\" data-term=\"token\">tokens</span>, often a short word or part of a longer one. Your note goes in as tokens. The summary comes back as tokens, one at a time."
       ],
       "callout": {
-        "type": "analogy",
-        "text": "Your phone's autocomplete, scaled up enormously. It has read so much text that \"what comes next\" turns into summaries, code and answers."
+        "type": "warn",
+        "text": "The model samples its next token, so the same note can get different wording twice. Many APIs have a <span class=\"term\">temperature</span> knob for this; newer Claude models reject it. Never build a feature that needs identical words every time."
       },
+      "changes": [
+        "~ Claude API: writes the answer one token at a time"
+      ],
       "scene": {
         "extends": "previous",
-        "caption": "The prompt goes in. The answer comes out one token at a time.",
-        "remove": ["what"],
+        "caption": "The answer comes back one token after another.",
         "nodes": [
-          { "id": "llm", "status": "active" }
+          { "id": "llm", "pill": { "text": "next token", "icon": "sparkle" } }
         ],
         "edges": [
-          { "id": "route>llm", "label": "prompt tokens", "packet": { "label": "prompt" } },
-          { "from": "llm", "to": "route", "label": "one token at a time", "status": "ok", "packet": { "label": "token", "status": "ok", "speed": "fast" } }
-        ],
-        "notes": [
-          { "id": "loop", "x": 10.4, "y": 6, "text": "Predict, append, repeat", "status": "active" }
+          { "id": "app>llm", "packet": { "kind": "request", "direction": "both", "speed": "fast" } }
         ]
       }
     },
@@ -77,19 +112,24 @@
       "chapter": "how",
       "body": [
         "Providers bill per token, with separate prices for <b>input</b> (what you send) and <b>output</b> (what the model writes). Output tokens usually cost several times more.",
-        "Tokens also measure speed, because the model writes one at a time, and limits, because every model has a token ceiling. So a 40-page note costs more and takes longer than a shopping list, every single click."
+        "Tokens also set speed, because the model writes one at a time, and limits, because every model has a ceiling. So Maya's 40-page note costs more and takes longer than a shopping list."
       ],
       "callout": {
         "type": "tip",
         "text": "Every API response includes a <code>usage</code> object with input and output token counts. Log it from day one. It is the only honest answer to \"what does this feature cost?\""
       },
+      "changes": [
+        "~ Tokens in 800 → 30,000: a 40-page note",
+        "~ Claude API pill: next token → 30,000 in"
+      ],
+      "metrics": {
+        "tin": { "value": 30000, "tone": "warn" }
+      },
       "scene": {
         "extends": "previous",
-        "caption": "Every request is measured in input tokens and output tokens.",
-        "remove": ["loop"],
+        "caption": "A bigger note means more tokens in: more cost, more time.",
         "nodes": [
-          { "id": "llm", "tags": ["input tokens", "output tokens"], "status": "normal" },
-          { "id": "route", "tags": ["logs usage"] }
+          { "id": "llm", "pill": { "text": "30,000 in", "tone": "warn" } }
         ]
       }
     },
@@ -97,25 +137,28 @@
       "title": "The API has no memory",
       "chapter": "how",
       "body": [
-        "Each call starts from zero, like HTTP itself. The model does not remember Maya's last request.",
-        "So you send everything, every time: a <span class=\"term\">system prompt</span> with standing rules, plus a list of <span class=\"term\">messages</span>. For a chat, that list holds the whole conversation so far, and it grows with each turn. That is why long chats get slower and more expensive."
+        "Each call starts from zero. The model does not remember Maya's last request. So the app server sends everything, every time: a <span class=\"term\">system prompt</span> with standing rules, plus a list of <span class=\"term\">messages</span>.",
+        "In a chat, that list holds the whole conversation so far and grows each turn. That is why long chats get slower and more expensive."
       ],
       "code": {
         "language": "ts",
         "filename": "app/api/summary/route.ts",
         "code": "const response = await anthropic.messages.create({\n  model: process.env.SUMMARY_MODEL!,\n  max_tokens: 1024,\n  system: \"You summarize notes in 3 short bullets.\",\n  messages: [\n    { role: \"user\", content: note.body },\n  ],\n});",
-        "caption": "One request: instructions, the conversation, and a cap on the answer's length."
+        "caption": "One request: standing rules, the conversation, and a cap on the answer's length."
       },
+      "changes": [
+        "+ Messages: the rules and full conversation, sent every call",
+        "~ Claude API pill removed"
+      ],
       "scene": {
         "extends": "previous",
-        "caption": "The server re-sends the instructions and the whole conversation on every call.",
+        "caption": "The app server packs the whole conversation into every request.",
         "nodes": [
-          { "id": "history", "x": 6.4, "y": 1.6, "label": "system + messages", "sublabel": "sent every time", "icon": "list", "kind": "data" },
-          { "id": "llm", "tags": ["no memory"] },
-          { "id": "route", "tags": null }
+          { "id": "llm", "status": "normal", "pill": null },
+          { "id": "msgs", "x": 7.5, "y": 7.0, "label": "Messages", "icon": "chat", "shape": "stack", "kind": "data", "status": "active" }
         ],
         "edges": [
-          { "from": "history", "to": "route", "label": "whole chat", "style": "dashed" }
+          { "from": "msgs", "to": "app", "packet": { "kind": "data", "speed": "slow" } }
         ]
       }
     },
@@ -124,24 +167,29 @@
       "chapter": "how",
       "body": [
         "The <span class=\"term\">context window</span> is the most the model can look at in one request: system prompt, messages, documents <em>and</em> its own answer, all counted in tokens.",
-        "It is a hard limit. Send more and the API rejects the request. Even below the limit, a cluttered desk hurts: stuffing in everything \"just in case\" costs more and can make answers worse."
+        "It is a hard limit. Maya uploads a 300-page PDF, and the API rejects the request. Even below the limit, stuffing in everything \"just in case\" costs more and can make answers worse."
       ],
       "callout": {
         "type": "analogy",
         "text": "A desk holds only what fits on it right now. Your database is the shelf. Lesson 5 is about fetching the right pages from the shelf instead of dumping all of them on the desk."
       },
+      "changes": [
+        "~ Messages: now holds a 300-page PDF",
+        "~ Tokens in 30,000 → 400,000: over the window",
+        "~ Claude API rejects the request"
+      ],
+      "metrics": {
+        "tin": { "value": 400000, "tone": "bad" }
+      },
       "scene": {
         "extends": "previous",
-        "caption": "Everything must fit inside the context window, the answer included.",
-        "zones": [
-          { "id": "window", "x": 8.4, "y": 2.6, "w": 3.6, "h": 2.9, "label": "Context window", "status": "warn" }
-        ],
+        "caption": "Too many tokens: the request never reaches the model.",
         "nodes": [
-          { "id": "llm", "tags": null, "status": "warn" },
-          { "id": "big", "x": 6.4, "y": 6.6, "label": "Huge note", "sublabel": "a 300-page PDF", "icon": "file", "kind": "data", "status": "warn" }
+          { "id": "msgs", "status": "warn", "pill": { "text": "300 pages", "tone": "bad" } },
+          { "id": "llm", "status": "error", "pill": { "text": "too big", "tone": "bad" } }
         ],
         "edges": [
-          { "from": "big", "to": "route", "label": "too much?", "status": "warn" }
+          { "id": "app>llm", "status": "error", "packet": { "kind": "error" } }
         ]
       }
     },
@@ -150,52 +198,34 @@
       "chapter": "how",
       "body": [
         "You also set <span class=\"term\">max_tokens</span>: the most the model may write. Hit it, and the answer stops mid-sentence, with no error.",
-        "Each response tells you why it ended in <span class=\"term\">stop_reason</span>. <code>end_turn</code> means it finished. <code>max_tokens</code> means it was cut off. Check it before you save the summary, or Notely will store half a bullet and look broken."
+        "Each response says why it ended in <span class=\"term\">stop_reason</span>: <code>end_turn</code> means it finished, <code>max_tokens</code> means it was cut off. Check it before saving, or Notely stores half a bullet and looks broken."
       ],
-      "callout": {
-        "type": "tip",
-        "text": "On models that reason before they answer, that hidden thinking also counts toward <code>max_tokens</code>. A tight cap can cut the answer off early, so leave generous room."
-      },
       "code": {
         "language": "ts",
         "code": "if (response.stop_reason === \"max_tokens\") {\n  // retry with a higher cap, or tell the user\n  throw new Error(\"Summary was cut off\");\n}",
-        "caption": "A cut-off answer still arrives with status 200. Only stop_reason tells you."
+        "caption": "A cut-off answer still arrives as a normal success. Only stop_reason tells you."
       },
-      "scene": {
-        "extends": "previous",
-        "caption": "The answer hit max_tokens and stopped halfway. The response still says 200 OK.",
-        "remove": ["big", "window"],
-        "nodes": [
-          { "id": "llm", "status": "normal" },
-          { "id": "route", "status": "warn", "tags": ["stop_reason?"] }
-        ],
-        "edges": [
-          { "id": "llm>route", "label": "cut off at max_tokens", "status": "warn", "packet": { "label": "half", "status": "warn" } }
-        ]
-      }
-    },
-    {
-      "title": "Temperature: how adventurous the words are",
-      "chapter": "how",
-      "body": [
-        "The model does not pick the single likeliest token every time. It samples. <span class=\"term\">Temperature</span> is the classic knob for that: low means predictable, high means more varied.",
-        "Many APIs still expose it. Newer Claude models have dropped it and reject requests that set it, so you steer them with clear prompts instead. Check the docs for the exact model you use before copying old snippets."
+      "changes": [
+        "~ Tokens in 400,000 → 2,000: a normal note again",
+        "~ Tokens out 60 → 1,024: the answer hit the cap",
+        "~ Stop reason end_turn → max_tokens",
+        "~ Messages back to normal; Claude API answers, cut short"
       ],
-      "callout": {
-        "type": "warn",
-        "text": "Even with the most predictable settings, the same prompt can give different answers. Never build a feature that needs the exact same words twice. Lesson 7 shows how to test features that vary."
+      "metrics": {
+        "tin": { "value": 2000, "tone": "good" },
+        "tout": { "value": 1024, "tone": "bad" },
+        "stop": { "value": "max_tokens", "tone": "bad" }
       },
       "scene": {
         "extends": "previous",
-        "caption": "Same note, two clicks, two slightly different summaries.",
+        "caption": "The answer arrives without an error, but it was cut off.",
         "nodes": [
-          { "id": "route", "status": "normal", "tags": null }
+          { "id": "msgs", "status": "dim", "pill": null },
+          { "id": "llm", "status": "warn", "pill": { "text": "cut off", "tone": "warn" } }
         ],
         "edges": [
-          { "id": "llm>route", "label": "a different wording", "status": "normal", "packet": { "label": "token", "speed": "fast" } }
-        ],
-        "notes": [
-          { "id": "vary", "x": 10.4, "y": 6, "text": "Same prompt, new wording", "status": "active" }
+          { "id": "msgs>app", "status": "dim", "packet": false },
+          { "id": "app>llm", "status": "normal", "packet": { "kind": "request", "direction": "both" } }
         ]
       }
     },
@@ -203,25 +233,33 @@
       "title": "Pick a model per feature",
       "chapter": "example",
       "body": [
-        "Providers sell model families in sizes. Small models are fast and cheap. Large ones reason better but are slower and cost more.",
-        "Choose per feature, not per app. Notely's one-paragraph summary runs fine on a small model. A \"plan my week from 200 notes\" feature may need a large one. Keep the model id in an env var, so you can switch without a code change."
+        "Models come in sizes. Small ones are fast and cheap; large ones reason better but are slower and pricier. Choose per feature.",
+        "Notely's summary runs fine on a small model; \"plan my week from 200 notes\" may need a large one. Keep each model id in an <span class=\"term\">env var</span> (a setting outside the code) to switch easily."
       ],
       "callout": {
         "type": "claude-code",
-        "text": "Ask: which model is each feature using, and why? Is the model id in an env var or hard-coded in five files? Is <code>max_tokens</code> set and <code>stop_reason</code> checked? Is <code>usage</code> logged? Model names change often, so ask Claude Code to check the provider's current model list."
+        "text": "Ask: which model does each feature use, and why? Is the model id in an env var or hard-coded in five files? Is <code>max_tokens</code> set and <code>stop_reason</code> checked? Model names change often: ask it to check the current list."
+      },
+      "changes": [
+        "− Claude API and Messages: we look at the model choice",
+        "+ Small Model: fast and cheap, for summaries",
+        "+ Large Model: slower, for hard planning",
+        "~ Stop reason max_tokens → end_turn: cap raised"
+      ],
+      "metrics": {
+        "stop": { "value": "end_turn", "tone": "good" }
       },
       "scene": {
-        "caption": "One app, several models: pick the smallest one that does each job well.",
+        "extends": "previous",
+        "remove": ["llm", "msgs"],
+        "caption": "The app server sends each feature to the model that fits it.",
         "nodes": [
-          { "id": "route", "x": 2.4, "y": 4, "label": "Notely server", "sublabel": "routes by feature", "icon": "server", "kind": "server" },
-          { "id": "small", "x": 8.6, "y": 1.6, "label": "Small model", "sublabel": "summaries, tags", "icon": "bolt", "kind": "ai", "status": "ok", "tags": ["fast", "cheap"] },
-          { "id": "mid", "x": 8.6, "y": 4.2, "label": "Mid model", "sublabel": "chat, extraction", "icon": "sparkle", "kind": "ai" },
-          { "id": "large", "x": 8.6, "y": 6.6, "label": "Large model", "sublabel": "plans, hard reasoning", "icon": "brain", "kind": "ai", "tags": ["slower", "pricier"] }
+          { "id": "small", "x": 11.2, "y": 1.4, "label": "Small Model", "icon": "bolt", "kind": "ai", "status": "active", "pill": "summaries" },
+          { "id": "large", "x": 11.2, "y": 5.4, "label": "Large Model", "icon": "brain", "kind": "ai", "pill": "planning" }
         ],
         "edges": [
-          { "from": "route", "to": "small", "label": "summary", "packet": { "label": "note" } },
-          { "from": "route", "to": "mid", "label": "chat", "style": "dashed" },
-          { "from": "route", "to": "large", "label": "plan my week", "style": "dashed" }
+          { "from": "app", "to": "small", "packet": { "kind": "request", "direction": "both", "speed": "fast" } },
+          { "from": "app", "to": "large", "style": "dashed" }
         ]
       }
     },
@@ -229,25 +267,33 @@
       "title": "The API key stays on the server",
       "chapter": "watch-out",
       "body": [
-        "The <span class=\"term\">API key</span> pays for every token. If it reaches the browser, anyone can copy it from the JavaScript bundle and run their own app on your bill.",
-        "The classic slip: an env var named <code>NEXT_PUBLIC_ANTHROPIC_API_KEY</code>. That prefix tells Next.js to ship the value to every visitor. The browser should call <em>your</em> route, and only your route calls the model."
+        "The <span class=\"term\">API key</span> pays for every token. If it reaches the browser, anyone can copy it and run their own app on your bill.",
+        "The classic slip: an env var named <code>NEXT_PUBLIC_ANTHROPIC_API_KEY</code>. That prefix tells Next.js, the toolkit Notely is built with, to ship the value to every visitor. Only the app server should hold the key."
       ],
       "callout": {
         "type": "warn",
-        "text": "Leaked keys get found by bots within hours of a public push. If one leaks, rotate it in the provider console right away, then check the usage page."
+        "text": "Bots find leaked keys within hours of a public push. If one leaks, rotate it in the provider console right away, then check the usage page."
       },
+      "changes": [
+        "− Small Model and Large Model",
+        "+ Claude API: back, holding the bill",
+        "+ Someone Else: a stranger who copied the leaked key",
+        "~ Browser now carries the key: a mistake"
+      ],
       "scene": {
-        "caption": "A key in browser code is a key for everyone. Keep it in a server-only env var.",
+        "extends": "previous",
+        "remove": ["small", "large"],
+        "caption": "A key in the browser lets a stranger call Claude on Notely's bill.",
         "nodes": [
-          { "id": "browser", "x": 2, "y": 2, "label": "Browser", "sublabel": "Maya's laptop", "icon": "browser", "kind": "client" },
-          { "id": "route", "x": 6.4, "y": 2, "label": "Summary route", "sublabel": "Next.js on Vercel", "icon": "function", "kind": "server", "status": "ok", "tags": ["ANTHROPIC_API_KEY"] },
-          { "id": "llm", "x": 10.8, "y": 4, "label": "Claude API", "sublabel": "Anthropic", "icon": "sparkle", "kind": "ai" },
-          { "id": "thief", "x": 2, "y": 6, "label": "Someone else", "sublabel": "found a leaked key", "icon": "incognito", "kind": "threat", "status": "error" }
+          { "id": "browser", "status": "error", "pill": { "text": "has the key", "icon": "key", "tone": "bad" } },
+          { "id": "app", "status": "normal" },
+          { "id": "llm", "x": 11.2, "y": 3.2, "label": "Claude API", "icon": "sparkle", "kind": "ai" },
+          { "id": "thief", "x": 4.1, "y": 7.0, "label": "Someone Else", "icon": "incognito", "kind": "threat", "status": "active" }
         ],
         "edges": [
-          { "from": "browser", "to": "route", "label": "POST /summary", "packet": { "label": "note" } },
-          { "from": "route", "to": "llm", "label": "with key", "status": "ok", "packet": true },
-          { "from": "thief", "to": "llm", "label": "your key, their app", "status": "error", "packet": { "label": "$$$", "status": "error", "speed": "fast" } }
+          { "id": "browser>app", "status": "normal", "packet": { "kind": "request", "direction": "both" } },
+          { "from": "browser", "to": "thief", "status": "error", "packet": { "kind": "secret" } },
+          { "from": "app", "to": "llm" }
         ]
       }
     },
@@ -255,9 +301,32 @@
       "title": "Recap in one breath",
       "chapter": "recap",
       "body": [
-        "An LLM predicts the next token, over and over. Tokens are what you pay for, wait for, and run out of.",
-        "The API remembers nothing, so every call carries the system prompt and the full message list, and all of it must fit in the context window. Cap the answer with <code>max_tokens</code>, check <code>stop_reason</code>, pick the smallest model that works, and keep the key on the server."
-      ]
+        "An LLM predicts the next token, over and over: tokens are what you pay for, wait for and run out of. The API remembers nothing, so every call carries the rules and all messages, and it must fit in the context window.",
+        "Cap answers with <code>max_tokens</code>, check <code>stop_reason</code>, use the smallest model that works, keep the key on the server."
+      ],
+      "changes": [
+        "− Someone Else: the key lives only on the app server",
+        "~ Browser safe again; every part working",
+        "~ Tokens out 1,024 → 60"
+      ],
+      "metrics": {
+        "tout": { "value": 60, "tone": "good" }
+      },
+      "scene": {
+        "extends": "previous",
+        "remove": ["thief"],
+        "caption": "One click, one call, the key safely on the server.",
+        "nodes": [
+          { "id": "maya", "status": "normal" },
+          { "id": "browser", "status": "ok", "pill": null },
+          { "id": "app", "status": "ok", "pill": { "text": "holds key", "icon": "key", "tone": "good" } },
+          { "id": "llm", "status": "ok" }
+        ],
+        "edges": [
+          { "id": "maya>browser", "status": "normal" },
+          { "id": "app>llm", "packet": { "kind": "request", "direction": "both" } }
+        ]
+      }
     }
   ],
   "quiz": [
@@ -265,24 +334,24 @@
       "question": "Notely's chat feature gets slower and more expensive the longer Maya chats. Why?",
       "options": [
         { "text": "The model gets tired after many messages.", "why": "Models have no state between calls. Nothing about the model changes during a chat." },
-        { "text": "Each request re-sends the whole conversation, so input tokens grow every turn.", "correct": true, "why": "The API has no memory. The messages array carries the full history, so every turn adds tokens to every later call." },
+        { "text": "Each request re-sends the whole conversation, so input tokens grow every turn.", "correct": true, "why": "The API has no memory. The messages list carries the full history, so every turn adds tokens to every later call." },
         { "text": "The provider charges a fee per message, rising over time.", "why": "Billing is per token, not per message. The cost grows because the token count grows." }
       ]
     },
     {
-      "question": "Some saved summaries end mid-sentence, but the logs show only <code>200 OK</code> responses. What is the most likely cause?",
+      "question": "Some saved summaries end mid-sentence, but the logs show only successful responses. What is the most likely cause?",
       "options": [
         { "text": "The database column is too short.", "why": "Possible in theory, but the classic cause is the model's cap. Check the response before blaming storage." },
-        { "text": "The network dropped the end of the response.", "why": "A dropped connection usually shows up as an error, not as a clean 200 with a shorter body." },
-        { "text": "The answer hit <code>max_tokens</code>; <code>stop_reason</code> would say so.", "correct": true, "why": "Hitting the output cap is not an error. The response is a normal 200, and only <code>stop_reason: \"max_tokens\"</code> reveals the cut." }
+        { "text": "The answer hit <code>max_tokens</code>; <code>stop_reason</code> would say so.", "correct": true, "why": "Hitting the output cap is not an error. The response looks like a normal success, and only <code>stop_reason: \"max_tokens\"</code> reveals the cut." },
+        { "text": "The network dropped the end of the response.", "why": "A dropped connection usually shows up as an error, not as a clean success with a shorter answer." }
       ]
     },
     {
-      "question": "Claude Code put <code>NEXT_PUBLIC_ANTHROPIC_API_KEY</code> in <code>.env</code> so a React component can call the Claude API directly. What do you ask for?",
+      "question": "Claude Code put <code>NEXT_PUBLIC_ANTHROPIC_API_KEY</code> in <code>.env</code> so a page can call the Claude API directly. What do you ask for?",
       "options": [
-        { "text": "Rename it without the prefix and move the call into a server route the component calls.", "correct": true, "why": "The <code>NEXT_PUBLIC_</code> prefix bundles the value into browser code. Server-only env vars plus your own route keep the key secret." },
         { "text": "Keep it, but minify the JavaScript so the key is hard to find.", "why": "Minifying does not hide strings. Anyone can open dev tools and find the key in seconds." },
-        { "text": "Keep it, since the repository is private.", "why": "The repo being private does not matter. The key ships to every visitor's browser at runtime." }
+        { "text": "Keep it, since the repository is private.", "why": "The repo being private does not matter. The key ships to every visitor's browser when the page loads." },
+        { "text": "Rename it without the prefix and move the call into a server route the page calls.", "correct": true, "why": "The <code>NEXT_PUBLIC_</code> prefix bundles the value into browser code. A server-only env var plus your own route keeps the key secret." }
       ]
     }
   ],
@@ -290,7 +359,7 @@
     "An LLM writes one <b>token</b> at a time. Tokens are the unit of cost, speed and limits.",
     "The API has <b>no memory</b>: every call sends the system prompt and the full <code>messages</code> list.",
     "Everything, including the answer, must fit in the <b>context window</b>. More context is not always better.",
-    "Set <code>max_tokens</code> and check <code>stop_reason</code>: a cut-off answer still returns <code>200</code>.",
-    "Pick the smallest model that does each job well, keep its id in an env var, and keep the <b>API key</b> server-side."
+    "Set <code>max_tokens</code> and check <code>stop_reason</code>: a cut-off answer still arrives as a success.",
+    "Pick the smallest model that does each job well, keep its id in an env var, and keep the <b>API key</b> on the server."
   ]
 }

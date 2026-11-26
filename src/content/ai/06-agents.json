@@ -11,6 +11,9 @@
     "How to decide between an agent and a simple <b>workflow</b>"
   ],
   "glossary": {
+    "app server": "A computer, somewhere else, that runs the app's own code. Notely's runs on Vercel.",
+    "Claude API": "Anthropic's AI, reached over the internet: you send it text, it sends text back. Each call costs a little money.",
+    "tool use": "You describe functions to the model, and it can reply with a request to call one. Your code runs it and sends back the result.",
     "agent": "A program where a model decides its own next step, calls tools, reads the results, and repeats until the task is done.",
     "agent loop": "The code that keeps calling the model, running the tools it asks for, and sending back the results, until it stops asking.",
     "workflow": "A fixed sequence of steps written in code, where the model fills in specific steps but does not choose what happens next.",
@@ -18,28 +21,57 @@
     "MCP server": "A small program that offers tools (and sometimes data) over MCP, such as \"search notes\" or \"create issue\".",
     "side effect": "A change in the outside world caused by a tool, such as sending an email, deleting a row or charging a card."
   },
+  "metrics": [
+    { "id": "calls", "label": "Model calls", "icon": "sparkle" },
+    { "id": "wait", "label": "Wait time", "icon": "clock", "unit": "s" }
+  ],
   "steps": [
+    {
+      "title": "Notely's chat can look things up",
+      "chapter": "setup",
+      "body": [
+        "Maya chats with Notely, our notes app. The <span class=\"term\">app server</span> (the computer running Notely's code) passes her question to the <span class=\"term\">Claude API</span>, Anthropic's AI.",
+        "Thanks to <span class=\"term\">tool use</span> (lesson 4), Claude can ask the app server to search her notes in the <b>database</b>, then answer. One question: two model calls, about three seconds."
+      ],
+      "metrics": {
+        "calls": { "value": 2, "tone": "good" },
+        "wait": { "value": 3, "tone": "good" }
+      },
+      "scene": {
+        "caption": "Claude asks for a search, the app server runs it, Claude answers.",
+        "nodes": [
+          { "id": "maya", "x": 0.8, "y": 3.8, "label": "Maya", "icon": "user", "kind": "person" },
+          { "id": "app", "x": 4.6, "y": 3.8, "label": "App Server", "icon": "server", "kind": "server" },
+          { "id": "llm", "x": 8.8, "y": 3.8, "label": "Claude API", "icon": "sparkle", "kind": "ai" },
+          { "id": "db", "x": 4.6, "y": 7.3, "label": "Database", "icon": "database", "kind": "data" }
+        ],
+        "edges": [
+          { "from": "maya", "to": "app", "packet": { "kind": "request", "direction": "both", "speed": "slow" } },
+          { "from": "app", "to": "llm", "packet": { "kind": "request", "direction": "both" } },
+          { "from": "app", "to": "db", "packet": { "kind": "data", "direction": "both", "returns": "data" } }
+        ]
+      }
+    },
     {
       "title": "\"Plan my week from my notes\"",
       "chapter": "problem",
       "body": [
-        "Maya asks Notely: \"Plan my week from my notes and my calendar.\" One model call cannot do it. It must look up recent notes, check the calendar, maybe search for a deadline it just spotted, then write the plan.",
-        "Worse, you cannot list those steps in advance. What to look up second depends on what it found first."
+        "Maya asks: \"Plan my week from my notes and my calendar.\" Her <b>calendar</b> is a separate service, outside Notely. Claude must read recent notes, check the calendar, maybe search for a deadline it just spotted, then write the plan.",
+        "You cannot list those steps in advance. What to look up second depends on what it found first."
+      ],
+      "changes": [
+        "+ Calendar: Maya's calendar, a service outside Notely",
+        "~ Claude API: does not know which step comes next"
       ],
       "scene": {
-        "caption": "A task whose steps depend on what each previous step finds.",
+        "extends": "previous",
+        "caption": "Two places to look, and no fixed order to look in.",
         "nodes": [
-          { "id": "user", "x": 2, "y": 4, "label": "Maya", "sublabel": "\"plan my week\"", "icon": "user", "kind": "person" },
-          { "id": "loop", "x": 4.6, "y": 4, "label": "Planner route", "sublabel": "Notely server", "icon": "function", "kind": "server", "status": "warn" },
-          { "id": "llm", "x": 10.2, "y": 1.6, "label": "Claude API", "icon": "sparkle", "kind": "ai" },
-          { "id": "search", "x": 10.2, "y": 3.8, "label": "search_notes", "sublabel": "tool", "icon": "search", "kind": "server", "status": "dim" },
-          { "id": "cal", "x": 10.2, "y": 6.6, "label": "read_calendar", "sublabel": "tool", "icon": "calendar", "kind": "external", "status": "dim" }
+          { "id": "llm", "status": "warn", "pill": { "text": "which next?", "tone": "warn" } },
+          { "id": "cal", "x": 8.8, "y": 7.3, "label": "Calendar", "icon": "calendar", "kind": "external", "status": "active" }
         ],
         "edges": [
-          { "from": "user", "to": "loop", "packet": { "label": "ask" } }
-        ],
-        "notes": [
-          { "id": "which", "x": 6.2, "y": 6.2, "text": "Which steps? Depends.", "status": "warn" }
+          { "from": "app", "to": "cal", "route": "mid", "style": "dashed" }
         ]
       }
     },
@@ -47,27 +79,33 @@
       "title": "An agent is a model in a loop",
       "chapter": "idea",
       "body": [
-        "An <span class=\"term\">agent</span> is lesson 4's tool use, repeated. The model asks for a tool. Your code runs it and sends back the result. The model asks for another, or decides it has enough and answers.",
-        "That is the whole trick: the model chooses the next step each time, and your <span class=\"term\">agent loop</span> keeps going until the model stops asking."
+        "An <span class=\"term\">agent</span> is tool use, repeated. Claude asks for a tool; your code runs it and sends back the result. Claude asks for another, or decides it has enough and answers.",
+        "The model chooses each next step. Your <span class=\"term\">agent loop</span> keeps going until it stops asking. More steps means more calls and a longer wait."
       ],
       "callout": {
         "type": "analogy",
         "text": "A detective with a phone. Each call's answer decides who they ring next. You cannot script the calls in advance, but you can decide whose numbers they have."
       },
+      "changes": [
+        "~ App Server: runs the loop, tool after tool",
+        "~ Model calls 2 → 5",
+        "~ Wait time 3 → 15 s"
+      ],
+      "metrics": {
+        "calls": { "value": 5, "tone": "warn" },
+        "wait": { "value": 15, "tone": "warn" }
+      },
       "scene": {
         "extends": "previous",
-        "caption": "Ask model, run tool, send result, repeat. The model decides when to stop.",
-        "remove": ["which"],
+        "caption": "Ask, run, return, repeat: the model picks each next tool.",
         "nodes": [
-          { "id": "loop", "label": "Agent loop", "sublabel": "your code", "icon": "refresh", "status": "active" },
-          { "id": "search", "status": "normal" },
+          { "id": "llm", "status": "normal", "pill": null },
+          { "id": "app", "status": "active", "pill": { "text": "loop", "icon": "refresh" } },
           { "id": "cal", "status": "normal" }
         ],
         "edges": [
-          { "from": "loop", "to": "llm", "label": "history + results", "packet": { "label": "context" } },
-          { "from": "llm", "to": "loop", "label": "next tool?", "status": "active", "packet": { "label": "tool_use", "status": "active" } },
-          { "from": "loop", "to": "search", "label": "step 1", "packet": true },
-          { "from": "loop", "to": "cal", "label": "step 2", "style": "dashed" }
+          { "id": "app>llm", "packet": { "kind": "request", "direction": "both", "speed": "fast" } },
+          { "id": "app>cal", "style": "solid", "packet": { "kind": "data", "direction": "both", "returns": "data" } }
         ]
       }
     },
@@ -75,24 +113,23 @@
       "title": "The loop, in about a dozen lines",
       "chapter": "how",
       "body": [
-        "Call the model with the tools. Append its reply to the history. If <code>stop_reason</code> is not <code>tool_use</code>, you are done. Otherwise run the tools, append the results, and go again.",
+        "Call the model with the tools. Add its reply to the history. If <code>stop_reason</code> is not <code>tool_use</code>, you are done. Otherwise run the tools, add the results, and go again.",
         "Note the step limit. A loop without one can run, and bill, for a very long time. SDKs also ship a tool runner that writes this loop for you."
       ],
       "code": {
         "language": "ts",
         "filename": "lib/agent/run.ts",
         "code": "const messages: Anthropic.MessageParam[] = [\n  { role: \"user\", content: request },\n];\nfor (let step = 0; step < 10; step++) {\n  const res = await anthropic.messages.create({\n    model, max_tokens: 4096, system, tools, messages,\n  });\n  messages.push({ role: \"assistant\", content: res.content });\n  if (res.stop_reason !== \"tool_use\") return res;\n  const results = await runTools(res.content, user);\n  messages.push({ role: \"user\", content: results });\n}\nthrow new Error(\"Agent hit the step limit\");",
-        "caption": "runTools runs each tool_use block as this user and returns matching tool_result blocks."
+        "caption": "runTools runs each tool request as this user and returns the matching results."
       },
+      "changes": [
+        "~ App Server: the loop gets a limit of 10 steps"
+      ],
       "scene": {
         "extends": "previous",
-        "caption": "Each turn of the loop adds to the history. It stops on an answer or at the limit.",
+        "caption": "The loop lives in your code, and your code sets its limit.",
         "nodes": [
-          { "id": "loop", "tags": ["step 3 of 10"] }
-        ],
-        "edges": [
-          { "id": "loop>search", "packet": false, "style": "dashed" },
-          { "id": "loop>cal", "style": "solid", "packet": true }
+          { "id": "app", "pill": { "text": "max 10 steps", "icon": "refresh" } }
         ]
       }
     },
@@ -100,24 +137,24 @@
       "title": "Tools are the agent's hands",
       "chapter": "how",
       "body": [
-        "An agent is only as good as its tools. Give it a few clear ones, not thirty overlapping ones. Describe when to use each, and return errors it can act on: \"No notes match 'logo'. Try a broader query.\"",
-        "Split tools that <em>read</em> from tools with <span class=\"term\" data-term=\"side effect\">side effects</span>. Reading notes is harmless. Sending email or deleting events is not, and deserves a human's yes."
+        "An agent is only as good as its tools. Give it a few clear ones, not thirty, and return errors it can act on: \"No notes match 'logo'. Try a broader query.\"",
+        "Split tools that <em>read</em> from tools with <span class=\"term\" data-term=\"side effect\">side effects</span>. Reading the calendar is harmless. Creating or deleting events is not, and deserves Maya's yes."
       ],
       "callout": {
         "type": "tip",
-        "text": "Tool results go back into the context window. Return what the model needs, like titles and short excerpts, not whole tables. Big results make every later step slower and more expensive."
+        "text": "Tool results go back into the model's context. Return what it needs, like titles and short excerpts, not whole tables. Big results make every later step slower and pricier."
       },
+      "changes": [
+        "~ Calendar: reading is free, changing it needs Maya's yes",
+        "~ Database: returns short excerpts, not whole notes"
+      ],
       "scene": {
         "extends": "previous",
-        "caption": "Read tools run freely. Tools that change the world wait for approval.",
+        "caption": "Read tools run freely; tools that change things wait for a person.",
         "nodes": [
-          { "id": "loop", "tags": null },
-          { "id": "search", "status": "ok", "tags": ["read only"] },
-          { "id": "cal", "label": "create_event", "sublabel": "tool, changes things", "status": "warn", "tags": ["needs approval"] }
-        ],
-        "edges": [
-          { "id": "loop>search", "style": "solid", "packet": true },
-          { "id": "loop>cal", "style": "dashed", "status": "warn", "packet": false, "label": "ask Maya first" }
+          { "id": "app", "status": "normal" },
+          { "id": "cal", "status": "warn", "pill": { "text": "ask first", "icon": "lock", "tone": "warn" } },
+          { "id": "db", "pill": "excerpts" }
         ]
       }
     },
@@ -125,28 +162,34 @@
       "title": "MCP: one plug for every agent",
       "chapter": "how",
       "body": [
-        "Every agent needs tools, and every app has its own. <span class=\"term\">MCP</span> is an open standard that lets an <span class=\"term\">MCP server</span> offer tools once, so any MCP-capable app can use them.",
-        "You already use this: the Supabase or GitHub servers you add to Claude Code. Notely could ship its own, so Maya's Claude app can search her notes. That is a real feature to sell a client."
+        "Every agent needs tools. <span class=\"term\">MCP</span> is an open standard: an <span class=\"term\">MCP server</span> offers tools once, and any app that speaks MCP can use them.",
+        "You already use this: the Supabase or GitHub servers in your Claude Code. Notely could ship its own, so Maya's Claude app searches her notes. A real feature to sell."
       ],
       "code": {
         "language": "bash",
         "code": "# connect Claude Code to a remote MCP server\nclaude mcp add --transport http notely https://notely.app/mcp",
-        "caption": "Same server, many clients. A real one needs sign-in (OAuth), so it acts only as that user. The URL is made up."
+        "caption": "Same server, many apps. A real one needs sign-in, so it acts only as that user. The URL is made up."
       },
+      "changes": [
+        "− Maya, App Server, Claude API, Calendar",
+        "+ Notely MCP: offers Notely's tools to any AI app",
+        "+ Claude Code, Claude App, Your Agent: three apps using it",
+        "~ Database: each user still sees only their notes"
+      ],
       "scene": {
-        "caption": "One MCP server, many AI apps that can use its tools.",
+        "caption": "One Notely MCP server, plugged into three different AI apps.",
         "nodes": [
-          { "id": "cc", "x": 2.2, "y": 2, "label": "Claude Code", "icon": "terminal", "kind": "client" },
-          { "id": "app", "x": 2.2, "y": 4, "label": "Claude app", "sublabel": "Maya's account", "icon": "chat", "kind": "client" },
-          { "id": "loop", "x": 0.6, "y": 6.4, "label": "Your own agent", "icon": "robot", "kind": "client" },
-          { "id": "mcp", "x": 6.6, "y": 4, "label": "Notely MCP", "sublabel": "search_notes, add_note", "icon": "link", "kind": "server", "status": "active" },
-          { "id": "db", "x": 10.4, "y": 4, "label": "notes table", "sublabel": "RLS per user", "icon": "database", "kind": "data" }
+          { "id": "cc", "x": 1.2, "y": 1.0, "label": "Claude Code", "icon": "terminal", "kind": "ai" },
+          { "id": "capp", "x": 1.2, "y": 3.8, "label": "Claude App", "icon": "chat", "kind": "ai" },
+          { "id": "own", "x": 1.2, "y": 6.6, "label": "Your Agent", "icon": "robot", "kind": "ai" },
+          { "id": "mcp", "x": 5.4, "y": 3.8, "label": "Notely MCP", "icon": "api", "kind": "server", "status": "active" },
+          { "id": "db", "x": 9.4, "y": 3.8, "label": "Database", "icon": "database", "kind": "data", "pill": { "text": "per user", "icon": "lock" } }
         ],
         "edges": [
-          { "from": "cc", "to": "mcp", "label": "MCP", "packet": true },
-          { "from": "app", "to": "mcp", "label": "MCP", "packet": { "label": "search" } },
-          { "from": "loop", "to": "mcp", "label": "MCP", "style": "dashed" },
-          { "from": "mcp", "to": "db", "label": "as the user" }
+          { "from": "cc", "to": "mcp", "packet": { "kind": "request", "direction": "both", "speed": "slow" } },
+          { "from": "capp", "to": "mcp", "packet": { "kind": "request", "direction": "both" } },
+          { "from": "own", "to": "mcp", "packet": { "kind": "request", "direction": "both", "speed": "slow" } },
+          { "from": "mcp", "to": "db", "packet": { "kind": "data", "direction": "both", "returns": "data" } }
         ]
       }
     },
@@ -154,32 +197,27 @@
       "title": "Most features do not need an agent",
       "chapter": "idea",
       "body": [
-        "Agents are slower, cost more, and behave less predictably, because the model chooses the path. So use the simplest thing that works.",
-        "One model call: summaries, extraction. A <span class=\"term\">workflow</span>, where <em>your code</em> fixes the steps: fetch, then call the model, then save. An agent only when the steps truly cannot be known in advance, like debugging or open research."
+        "Agents are slower, cost more, and are less predictable, because the model chooses the path. Use the simplest thing that works.",
+        "One model call: summaries. A <span class=\"term\">workflow</span>, where <em>your code</em> fixes the steps (fetch, call the model, save): a weekly plan. An agent only when the steps truly cannot be known ahead, like open-ended research."
       ],
       "callout": {
         "type": "tip",
         "text": "Clients often ask for \"an agent\" when they mean \"an AI feature\". Propose the simplest version that meets the goal. It is cheaper to run, easier to test, and quicker to ship."
       },
+      "changes": [
+        "− Claude Code, Claude App, Your Agent, Notely MCP, Database",
+        "+ Summary, Weekly Plan, Research: simplest to most open"
+      ],
       "scene": {
-        "caption": "From simple to complex. Start on the left; move right only when you must.",
-        "zones": [
-          { "id": "z-call", "x": 0.3, "y": 0.5, "w": 3.6, "h": 7, "label": "One call" },
-          { "id": "z-flow", "x": 4.2, "y": 0.5, "w": 3.6, "h": 7, "label": "Workflow" },
-          { "id": "z-agent", "x": 8.1, "y": 0.5, "w": 3.6, "h": 7, "label": "Agent" }
-        ],
+        "caption": "Pick the simplest build that does the job.",
         "nodes": [
-          { "id": "c1", "x": 2.1, "y": 2.6, "label": "Note summary", "icon": "sparkle", "kind": "ai", "status": "ok" },
-          { "id": "c2", "x": 2.1, "y": 5, "label": "Extract tasks", "icon": "list", "kind": "ai", "status": "ok" },
-          { "id": "f1", "x": 6, "y": 2.6, "label": "Weekly plan", "sublabel": "fetch, call, save", "icon": "calendar", "kind": "server", "status": "active" },
-          { "id": "f2", "x": 6, "y": 5, "label": "Digest email", "sublabel": "fixed steps", "icon": "mail", "kind": "server" },
-          { "id": "a1", "x": 9.9, "y": 2.6, "label": "Research help", "sublabel": "open-ended", "icon": "robot", "kind": "ai" },
-          { "id": "a2", "x": 9.9, "y": 5, "label": "Claude Code", "sublabel": "debug, build", "icon": "terminal", "kind": "ai" }
+          { "id": "f1", "x": 1.6, "y": 3.8, "label": "Summary", "icon": "file", "shape": "tile", "kind": "neutral", "status": "ok", "pill": "one call" },
+          { "id": "f2", "x": 5.8, "y": 3.8, "label": "Weekly Plan", "icon": "list", "shape": "tile", "kind": "neutral", "status": "ok", "pill": "workflow" },
+          { "id": "f3", "x": 10.0, "y": 3.8, "label": "Research", "icon": "search", "shape": "tile", "kind": "neutral", "status": "warn", "pill": "agent" }
         ],
         "edges": [
-          { "from": "c1", "to": "c2", "style": "dotted", "arrow": "none" },
-          { "from": "f1", "to": "f2", "style": "dotted", "arrow": "none" },
-          { "from": "a1", "to": "a2", "style": "dotted", "arrow": "none" }
+          { "from": "f1", "to": "f2", "style": "dotted", "label": "more steps" },
+          { "from": "f2", "to": "f3", "style": "dotted", "label": "open-ended" }
         ]
       }
     },
@@ -187,8 +225,8 @@
       "title": "Notely's planner: workflow first",
       "chapter": "example",
       "body": [
-        "Look again at \"plan my week\". Notely almost always needs the same two things: last week's notes and next week's calendar. So code fetches both, in parallel, and makes one model call.",
-        "It is faster, cheaper, and you can test it with fixed inputs. If users later ask follow-ups that need open-ended digging, the planner can grow into an agent. Start here."
+        "Look again at \"plan my week\". It almost always needs the same two things: last week's notes and next week's calendar. So code fetches both at once and makes <b>one</b> model call.",
+        "Faster, cheaper, and testable with fixed inputs. If users later need open-ended digging, the planner can grow into an agent."
       ],
       "code": {
         "language": "ts",
@@ -196,20 +234,30 @@
         "code": "const [notes, events] = await Promise.all([\n  getRecentNotes(user.id, 7),\n  getCalendarEvents(user.id, nextWeek),\n]);\nconst plan = await anthropic.messages.create({\n  model: process.env.PLANNER_MODEL!,\n  max_tokens: 4096,\n  system: PLANNER_PROMPT,\n  messages: [{ role: \"user\", content: render(notes, events) }],\n});",
         "caption": "Your code picks the steps. The model does the part only it can do: the planning."
       },
+      "changes": [
+        "− Summary, Weekly Plan, Research",
+        "+ Maya, App Server, Claude API, Database, Calendar: back",
+        "~ Model calls 5 → 1",
+        "~ Wait time 15 → 6 s"
+      ],
+      "metrics": {
+        "calls": { "value": 1, "tone": "good" },
+        "wait": { "value": 6, "tone": "good" }
+      },
       "scene": {
-        "caption": "A workflow: code fetches the data, one model call writes the plan.",
+        "caption": "Code fetches notes and calendar, then makes a single call to plan.",
         "nodes": [
-          { "id": "user", "x": 2, "y": 4, "label": "Maya", "sublabel": "\"plan my week\"", "icon": "user", "kind": "person" },
-          { "id": "loop", "x": 4.6, "y": 4, "label": "Planner route", "sublabel": "fixed steps", "icon": "function", "kind": "server", "status": "ok" },
-          { "id": "llm", "x": 10.2, "y": 1.6, "label": "Claude API", "sublabel": "one call", "icon": "sparkle", "kind": "ai" },
-          { "id": "search", "x": 10.2, "y": 3.8, "label": "Recent notes", "sublabel": "fetched by code", "icon": "database", "kind": "data" },
-          { "id": "cal", "x": 10.2, "y": 6.6, "label": "Calendar", "sublabel": "fetched by code", "icon": "calendar", "kind": "external" }
+          { "id": "maya", "x": 0.8, "y": 3.8, "label": "Maya", "icon": "user", "kind": "person" },
+          { "id": "app", "x": 4.6, "y": 3.8, "label": "App Server", "icon": "server", "kind": "server", "status": "ok", "pill": "fixed steps" },
+          { "id": "llm", "x": 8.8, "y": 3.8, "label": "Claude API", "icon": "sparkle", "kind": "ai" },
+          { "id": "db", "x": 4.6, "y": 7.3, "label": "Database", "icon": "database", "kind": "data" },
+          { "id": "cal", "x": 8.8, "y": 7.3, "label": "Calendar", "icon": "calendar", "kind": "external" }
         ],
         "edges": [
-          { "from": "user", "to": "loop", "packet": { "label": "ask" } },
-          { "from": "loop", "to": "search", "label": "1a", "packet": true },
-          { "from": "loop", "to": "cal", "label": "1b", "packet": true },
-          { "from": "loop", "to": "llm", "label": "2: one call", "status": "ok", "packet": { "label": "plan?", "status": "ok" } }
+          { "from": "maya", "to": "app", "packet": { "kind": "request", "direction": "both", "speed": "slow" } },
+          { "from": "app", "to": "llm", "packet": { "kind": "request", "direction": "both", "speed": "slow" } },
+          { "from": "app", "to": "db", "packet": { "kind": "data", "direction": "both", "returns": "data" } },
+          { "from": "app", "to": "cal", "route": "mid", "packet": { "kind": "data", "direction": "both", "returns": "data" } }
         ]
       }
     },
@@ -217,26 +265,36 @@
       "title": "Loops that never stop",
       "chapter": "watch-out",
       "body": [
-        "When you do build an agent, assume it will sometimes get stuck: calling the same tool again and again, each call re-sending a growing history.",
-        "Cap the steps and the total tokens. Stop and ask before any side effect. Log every step, so you can replay what it did. And remember tool results are untrusted text: a note can try to steer the agent, which lesson 9 covers."
+        "When you do build an agent, expect it to get stuck sometimes: calling the same tool again and again, each call re-sending a growing history.",
+        "Cap the steps and total tokens. Ask before any side effect. Log every step to replay it later. Tool results are untrusted text too: a note can try to steer the agent (lesson 9)."
       ],
       "callout": {
         "type": "claude-code",
-        "text": "When Claude Code builds an agent, ask: what is the max number of steps? Is there a token or time budget? Which tools can change data, and do they need approval? Is every tool call logged with its input and result? Could a simple workflow do the same job?"
+        "text": "When Claude Code builds an agent, ask: what is the max number of steps? Is there a token or time budget? Which tools change data, and do they need approval? Is every tool call logged? Could a workflow do the job?"
+      },
+      "changes": [
+        "~ App Server: an agent loop again, stuck searching",
+        "~ Database: searched nine times for the same thing",
+        "~ Model calls 1 → 10",
+        "~ Wait time 6 → 60 s"
+      ],
+      "metrics": {
+        "calls": { "value": 10, "tone": "bad" },
+        "wait": { "value": 60, "tone": "bad" }
       },
       "scene": {
-        "caption": "A stuck agent repeats itself. Limits and approvals stop it.",
+        "extends": "previous",
+        "caption": "The same search, over and over, each call costing more than the last.",
         "nodes": [
-          { "id": "user", "x": 2, "y": 4, "label": "Maya", "sublabel": "waiting…", "icon": "user", "kind": "person", "status": "dim" },
-          { "id": "loop", "x": 4.6, "y": 4, "label": "Agent loop", "sublabel": "your code", "icon": "refresh", "kind": "server", "status": "warn", "tags": ["step 10 of 10", "stop"] },
-          { "id": "llm", "x": 10.2, "y": 1.6, "label": "Claude API", "sublabel": "same call again", "icon": "sparkle", "kind": "ai", "status": "warn" },
-          { "id": "search", "x": 10.2, "y": 3.8, "label": "search_notes", "sublabel": "called 9 times", "icon": "search", "kind": "server", "status": "warn" },
-          { "id": "cal", "x": 10.2, "y": 6.6, "label": "create_event", "sublabel": "blocked", "icon": "calendar", "kind": "external", "status": "ok", "tags": ["needs approval"] }
+          { "id": "maya", "status": "warn" },
+          { "id": "app", "status": "error", "pill": { "text": "step 10", "icon": "refresh", "tone": "bad" } },
+          { "id": "db", "status": "warn", "pill": { "text": "9 searches", "tone": "bad" } },
+          { "id": "cal", "status": "dim" }
         ],
         "edges": [
-          { "from": "loop", "to": "llm", "label": "growing history", "status": "warn", "packet": { "label": "$$", "status": "warn", "speed": "fast" } },
-          { "from": "loop", "to": "search", "label": "again", "status": "warn", "packet": { "speed": "fast" } },
-          { "from": "loop", "to": "cal", "label": "ask Maya first", "style": "dashed", "status": "ok" }
+          { "id": "app>llm", "packet": { "kind": "request", "direction": "both", "speed": "fast" } },
+          { "id": "app>db", "status": "warn", "packet": { "kind": "data", "direction": "both", "returns": "data", "speed": "fast" } },
+          { "id": "app>cal", "status": "dim", "packet": false }
         ]
       }
     },
@@ -244,9 +302,34 @@
       "title": "Recap in one breath",
       "chapter": "recap",
       "body": [
-        "An agent is a model choosing tools in a loop until it is done. Your code runs the tools, caps the steps, asks before side effects, and logs everything.",
-        "MCP lets one tool server work with many AI apps. And most features are better as one call or a fixed workflow. Reach for an agent only when the steps cannot be known in advance."
-      ]
+        "An agent is a model choosing tools in a loop. Your code runs the tools, caps the steps, asks before side effects, and logs everything. MCP lets one tool server work with many AI apps.",
+        "Most features are better as one call or a workflow. Reach for an agent only when the steps cannot be known in advance."
+      ],
+      "changes": [
+        "~ App Server: back to the planner workflow",
+        "~ Database and Calendar: one fetch each",
+        "~ Model calls 10 → 1",
+        "~ Wait time 60 → 6 s"
+      ],
+      "metrics": {
+        "calls": { "value": 1, "tone": "good" },
+        "wait": { "value": 6, "tone": "good" }
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Simple, capped, predictable: the right amount of AI.",
+        "nodes": [
+          { "id": "maya", "status": "normal" },
+          { "id": "app", "status": "ok", "pill": "fixed steps" },
+          { "id": "db", "status": "normal", "pill": null },
+          { "id": "cal", "status": "normal" }
+        ],
+        "edges": [
+          { "id": "app>llm", "packet": { "kind": "request", "direction": "both", "speed": "slow" } },
+          { "id": "app>db", "status": "normal", "packet": { "kind": "data", "direction": "both", "returns": "data" } },
+          { "id": "app>cal", "status": "normal", "packet": { "kind": "data", "direction": "both", "returns": "data" } }
+        ]
+      }
     }
   ],
   "quiz": [
@@ -259,9 +342,9 @@
       ]
     },
     {
-      "question": "A salon owner, Sam, wants \"an AI agent\" that sends each client a reminder text the day before their booking. What do you propose?",
+      "question": "A salon owner, Sam, wants \"an AI agent\" that texts each client a reminder the day before their booking. What do you propose?",
       "options": [
-        { "text": "An agent with tools to read bookings and send texts, running every hour.", "why": "The steps are fully known. An agent adds cost, latency and a way to send wrong texts, for no gain." },
+        { "text": "An agent with tools to read bookings and send texts, running every hour.", "why": "The steps are fully known. An agent adds cost, delay and a way to send wrong texts, for no gain." },
         { "text": "A model call that decides whether reminders are needed at all.", "why": "Whether to remind is a fixed business rule. Code can decide it reliably." },
         { "text": "A scheduled job: code selects tomorrow's bookings and sends a text, maybe with a model writing a friendly message.", "correct": true, "why": "Fixed steps belong in code. The model, if used at all, fills in one step: the wording." }
       ]

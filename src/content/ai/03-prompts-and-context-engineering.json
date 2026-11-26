@@ -11,7 +11,10 @@
     "Why more context is not always better, and why user text is never instructions"
   ],
   "glossary": {
+    "app server": "A computer, somewhere else, that runs the app's own code. Notely's runs on Vercel.",
+    "Claude API": "Anthropic's AI, reached over the internet: you send it text, it sends text back. Each call costs a little money.",
     "prompt": "Everything you send the model for one request: instructions, data and the question.",
+    "context window": "The maximum amount of text, counted in tokens, that a model can look at in one request.",
     "system prompt": "Standing instructions sent with every request, separate from the conversation, that set the model's role and rules.",
     "context engineering": "Choosing what goes into the model's context window for each request: which instructions, which data, which examples, and in what order.",
     "few-shot examples": "A handful of sample inputs with the ideal outputs, included in the prompt so the model copies the pattern.",
@@ -19,28 +22,56 @@
     "hallucination": "When a model states something that sounds right but is not supported by its input or by fact.",
     "prompt injection": "Text inside user data that tries to act as instructions to the model, like \"ignore your rules and…\"."
   },
+  "metrics": [
+    { "id": "bad", "label": "Bad summaries", "icon": "alert", "unit": "/ 100" },
+    { "id": "tokens", "label": "Prompt tokens", "icon": "upload" }
+  ],
   "steps": [
+    {
+      "title": "Notely sends one line and the note",
+      "chapter": "setup",
+      "body": [
+        "Notely is our course's notes app. When Maya clicks <b>Summarize</b>, the <span class=\"term\">app server</span> (the computer running Notely's code) takes her note and sends it to the <span class=\"term\">Claude API</span>, Anthropic's AI.",
+        "With the note goes one instruction: \"Summarize this note.\" That is Notely's whole <span class=\"term\">prompt</span>. In your demo, every summary looked fine."
+      ],
+      "metrics": {
+        "bad": { "value": 0, "tone": "good" },
+        "tokens": 400
+      },
+      "scene": {
+        "caption": "The app server sends Maya's note plus one line of instructions.",
+        "nodes": [
+          { "id": "maya", "x": 2.4, "y": 3.7, "label": "Maya", "icon": "user", "kind": "person" },
+          { "id": "note", "x": 2.4, "y": 6.5, "label": "Note", "icon": "file", "shape": "tile", "kind": "data" },
+          { "id": "app", "x": 6.4, "y": 3.7, "label": "App Server", "icon": "server", "kind": "server", "pill": "one line" },
+          { "id": "llm", "x": 10.4, "y": 3.7, "label": "Claude API", "icon": "sparkle", "kind": "ai" }
+        ],
+        "edges": [
+          { "from": "maya", "to": "app", "packet": { "kind": "request", "direction": "both", "speed": "slow" } },
+          { "from": "note", "to": "app", "packet": { "kind": "data", "speed": "slow" } },
+          { "from": "app", "to": "llm", "packet": { "kind": "request", "direction": "both" } }
+        ]
+      }
+    },
     {
       "title": "Same button, three different results",
       "chapter": "problem",
       "body": [
-        "Notely's first <span class=\"term\">prompt</span> was one line: \"Summarize this note.\" It works in a demo. With real users it goes sideways.",
-        "One summary has twelve bullets. One invents a to-do the note never mentioned. One answers in English for a note written in Spanish. The model is not broken. It is guessing what you want, because you never said."
+        "Real users arrive. One summary has twelve bullets. One invents a to-do the note never mentioned. One answers in English for a note written in Spanish.",
+        "The model is not broken. It is guessing what you want, because you never said."
       ],
+      "changes": [
+        "~ Bad summaries 0 → 30 in every 100",
+        "~ Claude API: guessing"
+      ],
+      "metrics": {
+        "bad": { "value": 30, "tone": "bad" }
+      },
       "scene": {
-        "caption": "A vague prompt leaves the model guessing, so results vary from note to note.",
+        "extends": "previous",
+        "caption": "With only one line to go on, the model fills the gaps with guesses.",
         "nodes": [
-          { "id": "ask", "x": 2.2, "y": 4, "label": "Prompt", "sublabel": "\"Summarize this note\"", "icon": "pencil", "kind": "neutral", "status": "warn" },
-          { "id": "llm", "x": 6.4, "y": 4, "label": "Claude API", "sublabel": "guessing", "icon": "sparkle", "kind": "ai" },
-          { "id": "out1", "x": 10.2, "y": 1.2, "label": "12 bullets", "sublabel": "far too long", "icon": "list", "kind": "neutral", "status": "warn" },
-          { "id": "out2", "x": 10.2, "y": 4, "label": "Invented to-do", "sublabel": "not in the note", "icon": "alert", "kind": "neutral", "status": "error" },
-          { "id": "out3", "x": 10.2, "y": 6.6, "label": "Wrong language", "sublabel": "Spanish in, English out", "icon": "globe", "kind": "neutral", "status": "warn" }
-        ],
-        "edges": [
-          { "from": "ask", "to": "llm", "packet": { "label": "note" } },
-          { "from": "llm", "to": "out1" },
-          { "from": "llm", "to": "out2", "status": "error" },
-          { "from": "llm", "to": "out3" }
+          { "id": "llm", "status": "warn", "pill": { "text": "guessing", "tone": "warn" } }
         ]
       }
     },
@@ -48,30 +79,23 @@
       "title": "The model only knows what is on the desk",
       "chapter": "idea",
       "body": [
-        "The model cannot see Notely, Maya, or your intentions. It sees only the tokens in its context window, and fills every gap with a plausible guess.",
-        "So the real job is <span class=\"term\">context engineering</span>: deciding, for each request, which instructions, examples and data go in, and in what order. A \"prompt\" is the result of those choices."
+        "The model cannot see Notely, Maya, or your intentions. It sees only the text you send, which must fit in its <span class=\"term\">context window</span>, and fills every gap with a plausible guess.",
+        "So the real job is <span class=\"term\">context engineering</span>: deciding, for each request, which instructions, examples and data go in, and in what order."
       ],
       "callout": {
         "type": "analogy",
-        "text": "Briefing a brilliant freelancer on their first day. They know a lot, but nothing about your client. A two-line brief gets a generic result. A clear brief with an example and the right files gets what you wanted."
+        "text": "Briefing a brilliant freelancer on day one. They know a lot, but nothing about your client. A two-line brief gets a generic result. A clear brief with an example and the right files gets what you wanted."
       },
+      "changes": [
+        "− Maya: we look only at what reaches the model",
+        "~ App Server: decides what goes into each request"
+      ],
       "scene": {
-        "caption": "The context is built from parts. Right now only the note and a one-line request are in it.",
-        "zones": [
-          { "id": "window", "x": 0.4, "y": 0.5, "w": 6.2, "h": 7, "label": "Context window" }
-        ],
+        "extends": "previous",
+        "remove": ["maya"],
+        "caption": "Whatever the app server sends is all the model knows.",
         "nodes": [
-          { "id": "sys", "x": 3.4, "y": 0.8, "label": "System prompt", "sublabel": "role and rules", "icon": "gear", "kind": "neutral", "status": "dim" },
-          { "id": "ex", "x": 3.5, "y": 2.9, "label": "Examples", "sublabel": "what good looks like", "icon": "check", "kind": "neutral", "status": "dim" },
-          { "id": "ctx", "x": 3.5, "y": 5, "label": "Note + facts", "sublabel": "the data", "icon": "file", "kind": "data" },
-          { "id": "ask", "x": 3.5, "y": 6.4, "label": "The request", "sublabel": "\"Summarize this note\"", "icon": "pencil", "kind": "neutral", "status": "normal" },
-          { "id": "llm", "x": 9.8, "y": 4, "label": "Claude API", "sublabel": "sees only this", "icon": "sparkle", "kind": "ai", "status": "active" }
-        ],
-        "edges": [
-          { "from": "sys", "to": "llm", "style": "dotted", "status": "dim" },
-          { "from": "ex", "to": "llm", "style": "dotted", "status": "dim" },
-          { "from": "ctx", "to": "llm" },
-          { "from": "ask", "to": "llm" }
+          { "id": "app", "status": "active" }
         ]
       }
     },
@@ -80,7 +104,7 @@
       "chapter": "how",
       "body": [
         "The <span class=\"term\">system prompt</span> holds what is true for every request: who the reader is, what the output is for, the format, and the rules.",
-        "Give the reason behind each rule. \"Only use facts from the note, because users act on these summaries\" works better than \"NEVER add facts\". The model generalizes from reasons; shouting in capitals tends to make it overly cautious."
+        "Give the reason behind each rule. \"Only use facts from the note, because users act on these summaries\" works better than \"NEVER add facts\". Models generalize from reasons; shouting in capitals makes them oddly cautious."
       ],
       "code": {
         "language": "text",
@@ -88,38 +112,56 @@
         "code": "You write summaries for Notely, a personal notes app.\nThe reader is the note's author, skimming on a phone.\n\nWrite at most 3 bullets, each under 15 words.\nWrite in the same language as the note.\nOnly include facts that appear in the note. Do not add\ntasks or advice, because users act on these summaries.",
         "caption": "Reader, purpose, format, rules with reasons. Plain sentences beat clever tricks."
       },
+      "changes": [
+        "+ System Prompt: standing rules sent with every request",
+        "~ Bad summaries 30 → 12",
+        "~ Prompt tokens 400 → 550"
+      ],
+      "metrics": {
+        "bad": { "value": 12, "tone": "warn" },
+        "tokens": 550
+      },
       "scene": {
         "extends": "previous",
-        "caption": "The system prompt adds the standing brief to every request.",
+        "caption": "A brief joins every request: reader, format, rules and reasons.",
         "nodes": [
-          { "id": "sys", "status": "active" }
+          { "id": "app", "status": "normal", "pill": null },
+          { "id": "sys", "x": 2.4, "y": 0.9, "label": "System Prompt", "icon": "list", "shape": "tile", "kind": "neutral", "status": "active" }
         ],
         "edges": [
-          { "id": "sys>llm", "style": "solid", "status": "active", "packet": { "label": "brief" } }
+          { "from": "sys", "to": "app", "packet": { "kind": "data", "speed": "slow" } }
         ]
       }
     },
     {
-      "title": "Show one or two good answers",
+      "title": "Show two or three good answers",
       "chapter": "how",
       "body": [
-        "Describing a format takes paragraphs. Showing it takes one example. <span class=\"term\" data-term=\"few-shot examples\">Few-shot examples</span> are sample notes paired with ideal summaries.",
-        "Models copy examples closely, sometimes too closely. If both examples are about meetings, every summary starts sounding like meeting minutes. Pick two or three that differ: a short note, a messy one, one in another language."
+        "Describing a format takes paragraphs; showing it takes one example. <span class=\"term\" data-term=\"few-shot examples\">Few-shot examples</span> are sample notes paired with ideal summaries.",
+        "Models copy examples closely, sometimes too closely. If both are about meetings, every summary sounds like meeting minutes. Pick two or three that differ: a short note, a messy one, one in another language."
       ],
       "callout": {
         "type": "tip",
         "text": "Wrap each example in tags such as <code>&lt;example&gt;</code>, so the model knows it is a sample, not the note to summarize."
       },
+      "changes": [
+        "+ Examples: sample notes with ideal summaries",
+        "~ Bad summaries 12 → 6",
+        "~ Prompt tokens 550 → 1,200"
+      ],
+      "metrics": {
+        "bad": { "value": 6, "tone": "warn" },
+        "tokens": 1200
+      },
       "scene": {
         "extends": "previous",
-        "caption": "Examples show the target format directly.",
+        "caption": "Examples show the model what good looks like.",
         "nodes": [
-          { "id": "sys", "status": "ok" },
-          { "id": "ex", "status": "active", "tags": ["short", "messy", "Spanish"] }
+          { "id": "sys", "status": "normal" },
+          { "id": "ex", "x": 2.4, "y": 3.7, "label": "Examples", "icon": "check", "shape": "tile", "kind": "neutral", "status": "active", "pill": "3 varied" }
         ],
         "edges": [
-          { "id": "sys>llm", "status": "ok", "packet": false },
-          { "id": "ex>llm", "style": "solid", "status": "active", "packet": { "label": "examples" } }
+          { "from": "ex", "to": "app", "packet": { "kind": "data", "speed": "slow" } }
         ]
       }
     },
@@ -127,8 +169,8 @@
       "title": "Label the data, then ask",
       "chapter": "how",
       "body": [
-        "Put the data in the user message, wrapped in <span class=\"term\" data-term=\"XML tags\">tags</span>, with the actual request at the end. Long documents first, question last, tends to work best.",
-        "Add only facts the model cannot know: the note's title, the user's language, today's date if the note says \"tomorrow\". Each one removes a guess."
+        "Put the note in the user message, wrapped in <span class=\"term\" data-term=\"XML tags\">tags</span>, with the actual request at the end. Long documents first, question last, tends to work best.",
+        "Add only facts the model cannot know: the note's title, the author's language, today's date if the note says \"tomorrow\". Each one removes a guess."
       ],
       "code": {
         "language": "ts",
@@ -136,16 +178,19 @@
         "code": "const userContent = `<note title=\"${note.title}\">\n${note.body}\n</note>\n\n<context>\nToday is ${today}. The author writes in ${user.locale}.\n</context>\n\nSummarize the note above.`;",
         "caption": "Tags tell the model where data starts and ends. The request comes last."
       },
+      "changes": [
+        "~ Note: wrapped in tags, with a few facts added",
+        "~ Bad summaries 6 → 4"
+      ],
+      "metrics": {
+        "bad": { "value": 4, "tone": "warn" }
+      },
       "scene": {
         "extends": "previous",
-        "caption": "The note arrives labeled, with the few facts the model cannot guess.",
+        "caption": "The note arrives clearly labeled as data.",
         "nodes": [
-          { "id": "ex", "status": "ok", "tags": null },
-          { "id": "ctx", "status": "active", "tags": ["<note>", "today", "locale"] }
-        ],
-        "edges": [
-          { "id": "ex>llm", "status": "ok", "packet": false },
-          { "id": "ctx>llm", "status": "active", "packet": { "label": "<note>" } }
+          { "id": "ex", "status": "normal" },
+          { "id": "note", "status": "active", "pill": "<note> tags" }
         ]
       }
     },
@@ -153,20 +198,24 @@
       "title": "Give the model a way out",
       "chapter": "how",
       "body": [
-        "A model asked for three bullets will produce three bullets, even from a note that says only \"call mom\". That pressure is where <span class=\"term\">hallucination</span> creeps in.",
-        "Tell it what to do when the task does not fit: \"If the note is too short to summarize, reply exactly: Too short to summarize.\" Now there is an honest answer available, and your UI can handle it."
+        "Asked for three bullets, a model produces three bullets, even from a note that says only \"call mom\". That pressure is where <span class=\"term\">hallucination</span> creeps in: confident text the note does not support.",
+        "So add an exit: \"If the note is too short, reply exactly: Too short to summarize.\" Now an honest answer exists."
       ],
+      "changes": [
+        "~ System Prompt: gains an exit for odd notes",
+        "~ Claude API: no longer guessing",
+        "~ Bad summaries 4 → 1"
+      ],
+      "metrics": {
+        "bad": { "value": 1, "tone": "good" }
+      },
       "scene": {
         "extends": "previous",
-        "caption": "With a clear brief, examples, labeled data and an exit, the result is predictable.",
+        "caption": "With an honest answer available, the model stops inventing one.",
         "nodes": [
-          { "id": "ctx", "status": "ok", "tags": null },
-          { "id": "ask", "sublabel": "with a way out", "status": "ok" },
-          { "id": "llm", "status": "ok", "sublabel": "fewer guesses" }
-        ],
-        "edges": [
-          { "id": "ctx>llm", "status": "ok", "packet": false },
-          { "id": "ask>llm", "status": "ok" }
+          { "id": "note", "status": "normal" },
+          { "id": "sys", "status": "active", "pill": "way out" },
+          { "id": "llm", "status": "ok", "pill": null }
         ]
       }
     },
@@ -174,21 +223,21 @@
       "title": "Notely keeps prompts in code",
       "chapter": "example",
       "body": [
-        "Notely's prompt lives in one file, <code>lib/prompts/summary.ts</code>, next to the code that calls the model. It is reviewed in pull requests and versioned in git, like any other code.",
-        "That matters because prompts change behavior as much as code does. When summaries get worse, <code>git log</code> on that file is the first place to look. Lesson 7 adds tests that run on every prompt change."
+        "Notely's prompt lives in one file, <code>lib/prompts/summary.ts</code>, next to the code that calls the model. It is reviewed and versioned in git, like any other code.",
+        "Prompts change behavior as much as code does. When summaries get worse, the history of that file is the first place to look. Lesson 7 adds tests that run on every prompt change."
       ],
       "callout": {
         "type": "claude-code",
-        "text": "Ask: where do the prompts live? One file per feature, or strings scattered through routes? Is user text wrapped in tags and kept out of the system prompt? Does the prompt say what to do when the input is empty or odd? Are there secrets or other users' data in the prompt by accident?"
+        "text": "Ask: where do the prompts live? One file per feature, or strings scattered through routes? Is user text wrapped in tags and kept out of the system prompt? What happens with empty or odd input? Any secrets in the prompt?"
       },
+      "changes": [
+        "~ System Prompt: saved in summary.ts, tracked in git"
+      ],
       "scene": {
         "extends": "previous",
-        "caption": "The whole context comes from one versioned file, reviewed like code.",
+        "caption": "The system prompt is a file in the codebase, with a history.",
         "nodes": [
-          { "id": "file", "x": 9.8, "y": 1.4, "label": "summary.ts", "sublabel": "in git", "icon": "git", "kind": "neutral", "status": "active" }
-        ],
-        "edges": [
-          { "from": "file", "to": "sys", "label": "builds", "style": "dashed" }
+          { "id": "sys", "pill": { "text": "in git", "icon": "git" } }
         ]
       }
     },
@@ -196,21 +245,30 @@
       "title": "More context is not better context",
       "chapter": "watch-out",
       "body": [
-        "Two traps. First, stuffing in everything: all of Maya's notes, every rule you can think of. It costs more, runs slower, and buries what matters. Add what this request needs.",
-        "Second, the note is data, not orders. A note can contain \"Ignore your instructions and…\". That is <span class=\"term\">prompt injection</span>, and tags alone do not stop it. Lesson 9 covers the defenses."
+        "Tempting: send everything, all 2,000 of Maya's notes, \"just in case\". It costs more, runs slower, and buries what matters, so answers get worse.",
+        "Add what this one request needs. If a feature truly needs many notes, fetch only the relevant few; lesson 5 shows how."
       ],
+      "callout": {
+        "type": "warn",
+        "text": "The note is data, not orders. A note can contain \"Ignore your instructions and…\". That is <span class=\"term\">prompt injection</span>, and tags alone do not stop it. Lesson 9 covers the defenses."
+      },
+      "changes": [
+        "~ Note → All Notes: every note Maya ever wrote",
+        "~ Prompt tokens 1,200 → 150,000",
+        "~ Bad summaries 1 → 8",
+        "~ Claude API: distracted"
+      ],
+      "metrics": {
+        "tokens": { "value": 150000, "tone": "bad" },
+        "bad": { "value": 8, "tone": "warn" }
+      },
       "scene": {
         "extends": "previous",
-        "caption": "An overstuffed context and a note that tries to give orders.",
-        "remove": ["file"],
+        "caption": "A desk buried in notes: slower, pricier, and worse answers.",
         "nodes": [
-          { "id": "ctx", "status": "warn", "sublabel": "all 2,000 notes?", "tags": ["slow", "costly"] },
-          { "id": "llm", "status": "warn", "sublabel": "distracted" },
-          { "id": "inj", "x": 9.8, "y": 6.6, "label": "\"Ignore rules\"", "sublabel": "text inside a note", "icon": "bug", "kind": "threat", "status": "error" }
-        ],
-        "edges": [
-          { "id": "ctx>llm", "status": "warn" },
-          { "from": "inj", "to": "llm", "label": "data, not orders", "status": "error", "style": "dashed" }
+          { "id": "sys", "status": "normal" },
+          { "id": "note", "label": "All Notes", "shape": "stack", "status": "warn", "pill": { "text": "2,000 notes", "tone": "bad" } },
+          { "id": "llm", "status": "warn", "pill": { "text": "distracted", "tone": "warn" } }
         ]
       }
     },
@@ -218,22 +276,42 @@
       "title": "Recap in one breath",
       "chapter": "recap",
       "body": [
-        "The model sees only its context, and guesses the rest. Context engineering is choosing what goes in.",
-        "A system prompt with reader, format and reasoned rules. Two or three varied examples. The data, tagged, with the request last. A way out for odd input. Only what this request needs, and user text treated as data, never as instructions."
-      ]
+        "The model sees only its context and guesses the rest. Context engineering is choosing what goes in: a system prompt with reader, format and reasoned rules; two or three varied examples; the data, tagged, with the request last; a way out for odd input.",
+        "Send only what this request needs, and treat user text as data, never as instructions."
+      ],
+      "changes": [
+        "~ All Notes → Note: only the one being summarized",
+        "~ Prompt tokens 150,000 → 1,200",
+        "~ Bad summaries 8 → 1",
+        "~ Claude API: focused again"
+      ],
+      "metrics": {
+        "tokens": { "value": 1200, "tone": "good" },
+        "bad": { "value": 1, "tone": "good" }
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Brief, examples, tagged note: everything the model needs, nothing more.",
+        "nodes": [
+          { "id": "note", "label": "Note", "shape": "tile", "status": "ok", "pill": "<note> tags" },
+          { "id": "sys", "status": "ok", "pill": null },
+          { "id": "ex", "status": "ok", "pill": null },
+          { "id": "llm", "status": "ok", "pill": null }
+        ]
+      }
     }
   ],
   "quiz": [
     {
       "question": "Notely's summaries sometimes include action items the author never wrote. Which change helps most?",
       "options": [
-        { "text": "Add \"NEVER INVENT TASKS!!!\" in capitals to the prompt.", "why": "Shouting tends to make models overly cautious in odd ways. A reason works better than volume." },
+        { "text": "Add \"NEVER INVENT TASKS!!!\" in capitals to the prompt.", "why": "Shouting tends to make models cautious in odd ways. A reason works better than volume." },
         { "text": "Switch to the largest model available.", "why": "A bigger model still has to guess when the brief is vague. Fix the context before paying for more model." },
         { "text": "Say only facts from the note count, explain why, and allow a \"too short\" answer.", "correct": true, "why": "The reason tells the model what matters, and the exit removes the pressure to fill bullets with invented content." }
       ]
     },
     {
-      "question": "Both few-shot examples in the prompt are meeting notes. Now every summary reads like meeting minutes, even for recipes. Why?",
+      "question": "Both examples in the prompt are meeting notes. Now every summary reads like meeting minutes, even for recipes. Why?",
       "options": [
         { "text": "Models copy the pattern of examples closely, so the examples need variety.", "correct": true, "why": "Examples are a strong signal. Two similar ones teach a narrow style; varied ones teach the general format." },
         { "text": "The model is confused by having any examples at all.", "why": "Examples usually help a lot. The problem is that these two are too alike." },
@@ -254,6 +332,6 @@
     "A good <b>system prompt</b> names the reader, the purpose, the format, and gives reasons for its rules.",
     "Two or three <b>varied examples</b> teach format better than paragraphs of description.",
     "Wrap data in tags, put the request last, and give the model a way out for odd input.",
-    "Keep prompts in versioned files. Treat user text as data, never as instructions."
+    "Keep prompts in versioned files. Send only what the request needs, and treat user text as data, never as instructions."
   ]
 }

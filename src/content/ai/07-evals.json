@@ -11,6 +11,8 @@
     "How to catch <b>regressions</b> before they ship, in CI"
   ],
   "glossary": {
+    "app server": "A computer, somewhere else, that runs the app's own code. Notely's runs on Vercel.",
+    "Claude API": "Anthropic's AI, reached over the internet: you send it text, it sends text back. Each call costs a little money.",
     "eval": "An automated test for an AI feature: run a fixed set of inputs through it, grade each output, and get a score.",
     "test set": "The fixed list of inputs (and what you expect from them) that an eval runs every time.",
     "grader": "The check that decides whether one output passes: a piece of code, a model with a rubric, or a person.",
@@ -18,30 +20,57 @@
     "rubric": "A short list of specific pass/fail criteria that a grader applies to each output.",
     "regression": "Something that used to work and broke after a change.",
     "baseline": "The score of the current version, which every change is compared against.",
+    "pull request": "A proposed change to the code, reviewed before it is merged into the main version.",
     "CI": "Continuous integration: checks that run automatically on every pull request, for example in GitHub Actions."
   },
+  "metrics": [
+    { "id": "cases", "label": "Cases tested", "icon": "list" },
+    { "id": "pass", "label": "Pass rate", "icon": "check", "unit": "%" }
+  ],
   "steps": [
+    {
+      "title": "You test prompts by trying them",
+      "chapter": "setup",
+      "body": [
+        "Notely, our notes app, summarizes Maya's notes. The <span class=\"term\">app server</span> (the computer running Notely's code) sends each note to the <span class=\"term\">Claude API</span>, Anthropic's AI, with the summary prompt from lesson 3.",
+        "When you change that prompt, you try it on a note or two by hand. If it looks good, you ship. Nobody knows the real pass rate."
+      ],
+      "metrics": {
+        "cases": { "value": 1, "tone": "warn" }
+      },
+      "scene": {
+        "caption": "Maya's notes go through the app server to Claude and come back summarized.",
+        "nodes": [
+          { "id": "maya", "x": 0.8, "y": 3.6, "label": "Maya", "icon": "user", "kind": "person" },
+          { "id": "app", "x": 4.6, "y": 3.6, "label": "App Server", "icon": "server", "kind": "server" },
+          { "id": "llm", "x": 8.8, "y": 3.6, "label": "Claude API", "icon": "sparkle", "kind": "ai" }
+        ],
+        "edges": [
+          { "from": "maya", "to": "app", "packet": { "kind": "request", "direction": "both", "speed": "slow" } },
+          { "from": "app", "to": "llm", "packet": { "kind": "request", "direction": "both" } }
+        ]
+      }
+    },
     {
       "title": "Fixed one note, broke three others",
       "chapter": "problem",
       "body": [
-        "Spanish notes were getting English summaries, so Maya changed the prompt. She tried it on one Spanish note. Perfect. Shipped.",
-        "A week later a user complains: summaries of long notes stopped mentioning decisions. Nobody tested long notes, and nobody could have noticed by clicking around. Model output varies, so a few manual tries prove very little."
+        "Spanish notes were getting English summaries, so you changed the prompt. You tried one Spanish note. Perfect. Shipped.",
+        "A week later Maya complains: summaries of long notes stopped mentioning decisions. Nobody tried long notes. Model output varies, so a few tries by hand prove very little."
+      ],
+      "changes": [
+        "~ App Server: runs prompt version 2",
+        "~ Maya: long summaries lost their decisions"
       ],
       "scene": {
-        "caption": "One manual check passed. The cases nobody tried quietly broke.",
+        "extends": "previous",
+        "caption": "The fix worked for one note and quietly broke another kind.",
         "nodes": [
-          { "id": "cases", "x": 1.2, "y": 4, "label": "One test note", "sublabel": "tried by hand", "icon": "user", "kind": "person" },
-          { "id": "app", "x": 6.2, "y": 4, "label": "Summary prompt", "sublabel": "version 2", "icon": "pencil", "kind": "ai", "status": "active" },
-          { "id": "o1", "x": 10.2, "y": 1.6, "label": "Spanish note", "sublabel": "fixed", "icon": "check", "kind": "neutral", "status": "ok" },
-          { "id": "o2", "x": 10.2, "y": 4, "label": "Long notes", "sublabel": "lost the decisions", "icon": "file", "kind": "neutral", "status": "error" },
-          { "id": "o3", "x": 10.2, "y": 6.4, "label": "Empty notes", "sublabel": "never tried", "icon": "file", "kind": "neutral", "status": "warn" }
+          { "id": "app", "pill": "prompt v2" },
+          { "id": "maya", "status": "error", "pill": { "text": "no decisions", "tone": "bad" } }
         ],
         "edges": [
-          { "from": "cases", "to": "app", "packet": { "label": "1 note" } },
-          { "from": "app", "to": "o1", "status": "ok" },
-          { "from": "app", "to": "o2", "status": "error", "style": "dashed" },
-          { "from": "app", "to": "o3", "status": "warn", "style": "dotted" }
+          { "id": "maya>app", "status": "error" }
         ]
       }
     },
@@ -49,26 +78,34 @@
       "title": "Same inputs, graded, every time",
       "chapter": "idea",
       "body": [
-        "An <span class=\"term\">eval</span> is a test for fuzzy output. Take a fixed <span class=\"term\">test set</span> of inputs, run each through the real feature, have a <span class=\"term\">grader</span> mark each output pass or fail, and add up a score.",
-        "Then run it again after every prompt or model change. The question stops being \"does it look fine?\" and becomes \"did the score go up or down, and which cases changed?\""
+        "An <span class=\"term\">eval</span> is a test for output that varies. Take a fixed <span class=\"term\">test set</span>, run each input through the real feature, let a <span class=\"term\">grader</span> mark each output pass or fail, and add up the score.",
+        "Rerun it after every prompt or model change. The question becomes: did the score go up or down, and which cases changed?"
       ],
       "callout": {
         "type": "analogy",
         "text": "A design crit with a fixed checklist and the same ten screens every week. Opinions vary; the checklist makes changes visible."
       },
+      "changes": [
+        "− Maya: evals run before users see anything",
+        "+ Test Set and Grader: fixed inputs, marked pass or fail",
+        "~ Cases tested 1 → 60",
+        "~ Pass rate – → 75%"
+      ],
+      "metrics": {
+        "cases": { "value": 60, "tone": "good" },
+        "pass": { "value": 75, "tone": "warn" }
+      },
       "scene": {
-        "caption": "A fixed set of cases, the real feature, a grader, a score.",
+        "extends": "previous",
+        "remove": ["maya"],
+        "caption": "Sixty fixed notes go through the real feature, and each answer gets graded.",
         "nodes": [
-          { "id": "cases", "x": 1.2, "y": 4, "label": "Test set", "sublabel": "60 notes", "icon": "list", "kind": "data", "status": "active" },
-          { "id": "app", "x": 6.2, "y": 4, "label": "Summary prompt", "sublabel": "the real code", "icon": "pencil", "kind": "ai" },
-          { "id": "grader", "x": 10.2, "y": 4, "label": "Grader", "sublabel": "pass or fail", "icon": "check", "kind": "server" }
+          { "id": "tests", "x": 0.8, "y": 3.6, "label": "Test Set", "icon": "list", "shape": "stack", "kind": "data", "status": "active" },
+          { "id": "grader", "x": 4.6, "y": 7.2, "label": "Grader", "icon": "check", "kind": "neutral", "status": "active" }
         ],
         "edges": [
-          { "from": "cases", "to": "app", "label": "each case", "packet": { "label": "note" } },
-          { "from": "app", "to": "grader", "label": "each output", "packet": { "label": "summary" } }
-        ],
-        "notes": [
-          { "id": "score", "x": 9.4, "y": 6, "text": "Score: 54 / 60", "status": "active" }
+          { "from": "tests", "to": "app", "packet": { "kind": "data" } },
+          { "from": "app", "to": "grader", "packet": { "kind": "response" } }
         ]
       }
     },
@@ -76,8 +113,8 @@
       "title": "Build the test set from what breaks",
       "chapter": "how",
       "body": [
-        "Start small: 30 to 100 cases beat zero. Use realistic notes (made up, or real ones with consent and personal details removed), and deliberately add the awkward ones.",
-        "Empty notes. Huge notes. Other languages. Lists, tables, pasted emails. Notes that try to give the model orders. And every bug a user ever reported. Each case says what a good answer must have."
+        "Start small: 30 to 100 cases beat zero. Use realistic notes, made up or real ones with consent and personal details removed, and add the awkward ones on purpose.",
+        "Empty notes. Huge notes. Other languages. Pasted emails. Notes that try to give the model orders. Every bug a user ever reported. Each case says what a good answer must have."
       ],
       "code": {
         "language": "json",
@@ -85,11 +122,19 @@
         "code": "{\"id\":\"es-01\",\"note\":\"logo azul…\",\"expect\":{\"include\":[\"azul\"]}}\n{\"id\":\"empty-01\",\"note\":\"\",\"expect\":{\"exact\":\"Too short to summarize.\"}}\n{\"id\":\"long-07\",\"note\":\"(4k words)\",\"expect\":{\"include\":[\"decided\"]}}",
         "caption": "One case per line, kept in the repo next to the prompt it tests."
       },
+      "changes": [
+        "~ Test Set: filled with edge cases and past bugs",
+        "~ Grader steps back"
+      ],
       "scene": {
         "extends": "previous",
-        "caption": "The test set leans on edge cases and past bugs, not on happy paths.",
+        "caption": "The test set holds the cases most likely to break.",
         "nodes": [
-          { "id": "cases", "tags": ["edge cases", "past bugs", "languages"] }
+          { "id": "tests", "pill": "edge cases" },
+          { "id": "grader", "status": "dim" }
+        ],
+        "edges": [
+          { "id": "app>grader", "status": "dim", "packet": false }
         ]
       }
     },
@@ -97,20 +142,28 @@
       "title": "Grade with code wherever you can",
       "chapter": "how",
       "body": [
-        "Many checks need no AI at all. Is it valid JSON? Three bullets or fewer? Does it contain the words this case requires? Is it the exact \"too short\" reply for an empty note?",
+        "Many checks need no AI at all. Three bullets or fewer? Does it contain the words this case requires? Is it the exact \"too short\" reply for an empty note?",
         "Code graders are free, instant, and give the same verdict every time. Write as many as you can before reaching for anything fancier."
       ],
       "code": {
         "language": "ts",
         "filename": "evals/checks.ts",
-        "code": "export function checkSummary(out: string, expect: Expect) {\n  const fails: string[] = [];\n  const bullets = out.split(\"\\n\").filter((l) => l.startsWith(\"- \"));\n  if (bullets.length > 3) fails.push(\"too many bullets\");\n  if (expect.exact && out.trim() !== expect.exact) {\n    fails.push(\"expected the exact fallback text\");\n  }\n  for (const w of expect.include ?? []) {\n    if (!out.toLowerCase().includes(w)) fails.push(`missing ${w}`);\n  }\n  return fails;\n}"
+        "code": "export function checkSummary(out: string, expect: Expect) {\n  const fails: string[] = [];\n  const bullets = out.split(\"\\n\").filter((l) => l.startsWith(\"- \"));\n  if (bullets.length > 3) fails.push(\"too many bullets\");\n  if (expect.exact && out.trim() !== expect.exact) {\n    fails.push(\"expected the exact fallback text\");\n  }\n  for (const w of expect.include ?? []) {\n    if (!out.toLowerCase().includes(w)) fails.push(`missing ${w}`);\n  }\n  return fails;\n}",
+        "caption": "Format, length, required words: all checked by plain code."
       },
+      "changes": [
+        "~ Grader: plain code checks format, length, words",
+        "~ Test Set steps back"
+      ],
       "scene": {
         "extends": "previous",
-        "caption": "Code checks run first: cheap, fast, and always consistent.",
+        "caption": "The first grader is ordinary code.",
         "nodes": [
-          { "id": "cases", "tags": null, "status": "normal" },
-          { "id": "grader", "label": "Code checks", "sublabel": "format, length, words", "icon": "code", "status": "ok" }
+          { "id": "tests", "status": "normal", "pill": null },
+          { "id": "grader", "status": "active", "pill": { "text": "code checks", "icon": "code" } }
+        ],
+        "edges": [
+          { "id": "app>grader", "status": "normal", "packet": { "kind": "response" } }
         ]
       }
     },
@@ -118,8 +171,8 @@
       "title": "A model as judge, with a rubric",
       "chapter": "how",
       "body": [
-        "Some qualities code cannot check: is every claim actually in the note? Is the key decision there? For those, use an <span class=\"term\">LLM judge</span>: a separate model call with the note, the summary, and a strict <span class=\"term\">rubric</span>.",
-        "Ask for pass or fail per criterion, not a score out of ten. Then check the judge itself: grade 20 outputs by hand and see if it agrees with you."
+        "Some qualities code cannot check: is every claim actually in the note? Is the key decision there? Use an <span class=\"term\">LLM judge</span>: a separate Claude call with the note, the summary and a strict <span class=\"term\">rubric</span>.",
+        "Ask for pass or fail per point, not a score out of ten. Grade 20 outputs by hand to check the judge agrees."
       ],
       "code": {
         "language": "text",
@@ -127,18 +180,23 @@
         "code": "You grade a summary of a note. For each point, answer PASS or FAIL.\n1. Every fact in the summary appears in the note.\n2. The note's main decision, if any, is included.\n3. It is written in the same language as the note.\nExplain briefly, then give the three verdicts.",
         "caption": "Get the verdicts back as structured output (lesson 4), so the runner can count them."
       },
+      "changes": [
+        "~ Grader: also asks Claude to judge, with a rubric",
+        "~ Claude API: second job as the judge",
+        "~ Pass rate 75 → 70%: the judge catches invented facts"
+      ],
+      "metrics": {
+        "pass": { "value": 70, "tone": "warn" }
+      },
       "scene": {
         "extends": "previous",
-        "caption": "Code checks the format. A judge model checks faithfulness against the rubric.",
+        "caption": "The grader sends hard questions to a separate judge call.",
         "nodes": [
-          { "id": "grader", "y": 2.6 },
-          { "id": "judge", "x": 11, "y": 6.6, "label": "LLM judge", "sublabel": "rubric: pass / fail", "icon": "brain", "kind": "ai", "status": "active" }
+          { "id": "grader", "pill": { "text": "+ LLM judge", "icon": "brain" } },
+          { "id": "llm", "status": "active", "pill": "judge" }
         ],
         "edges": [
-          { "from": "app", "to": "judge", "label": "note + summary", "packet": { "label": "grade" } }
-        ],
-        "notes": [
-          { "id": "score", "x": 9.4, "y": 7.3, "text": "Score: 54 / 60" }
+          { "from": "llm", "to": "grader", "route": "y-first", "arrow": "end", "packet": { "kind": "request", "direction": "both" } }
         ]
       }
     },
@@ -146,26 +204,34 @@
       "title": "Catch regressions before they ship",
       "chapter": "how",
       "body": [
-        "Record the current score as the <span class=\"term\">baseline</span>. When a change scores lower, or a case that passed now fails, that is a <span class=\"term\">regression</span>. Look at it before merging.",
-        "Automate it: run the eval in <span class=\"term\">CI</span> on any pull request that touches prompts, tools or the model setting. Then a prompt change gets the same review a code change does."
+        "Record today's score as the <span class=\"term\">baseline</span>. When a change scores lower, or a case that passed now fails, that is a <span class=\"term\">regression</span>.",
+        "Run the eval in <span class=\"term\">CI</span> (checks that run automatically) on every <span class=\"term\">pull request</span> that touches prompts, tools or the model. A new prompt scores 65% against a baseline of 70%: CI blocks the merge."
       ],
       "callout": {
         "type": "tip",
         "text": "Evals call the model, so they cost money. Run the full set on prompt changes and before releases, not on every commit to every file."
       },
+      "changes": [
+        "+ CI: runs the eval on every pull request",
+        "~ Pass rate 70 → 65%: below the baseline",
+        "~ Grader and Claude API step back"
+      ],
+      "metrics": {
+        "pass": { "value": 65, "tone": "bad" }
+      },
       "scene": {
         "extends": "previous",
-        "caption": "In CI, the new score is compared with the baseline before the change can merge.",
+        "caption": "CI runs the eval and refuses a change that scores lower.",
         "nodes": [
-          { "id": "ci", "x": 2, "y": 1.4, "label": "GitHub Actions", "sublabel": "on prompt changes", "icon": "git", "kind": "server", "status": "active" },
-          { "id": "judge", "status": "normal" },
-          { "id": "app", "sublabel": "version 3" }
+          { "id": "grader", "status": "dim" },
+          { "id": "llm", "status": "dim", "pill": null },
+          { "id": "ci", "x": 4.6, "y": 0.4, "label": "CI", "icon": "git", "kind": "server", "status": "error", "pill": { "text": "blocked", "icon": "ban", "tone": "bad" } }
         ],
         "edges": [
-          { "from": "ci", "to": "cases", "label": "runs", "style": "dashed" }
-        ],
-        "notes": [
-          { "id": "score", "text": "52 / 60, below 54: blocked", "status": "error" }
+          { "id": "app>grader", "status": "dim", "packet": false },
+          { "id": "llm>grader", "status": "dim", "packet": false },
+          { "id": "app>llm", "status": "dim", "packet": false },
+          { "from": "ci", "to": "app", "packet": { "kind": "job" } }
         ]
       }
     },
@@ -173,24 +239,35 @@
       "title": "Notely's eval runner",
       "chapter": "example",
       "body": [
-        "The runner is a small script. It loads the cases, calls the <em>same</em> <code>summarize</code> function the app uses, grades each output, prints the failures and fails CI if the score drops.",
-        "No framework needed to start. Eval tools add dashboards and history later; the idea stays this simple."
+        "The runner is a small script. It loads the cases, calls the <em>same</em> <code>summarize</code> function the app uses, grades each output, prints the failures, and fails CI if the score drops.",
+        "No framework needed to start. Eval tools add dashboards and history later; the idea stays this simple. You fix the prompt, and the score climbs."
       ],
       "code": {
         "language": "ts",
         "filename": "evals/summary.eval.ts",
-        "code": "const cases = await loadJsonl(\"evals/summary.jsonl\");\nlet passed = 0;\nfor (const c of cases) {\n  const out = await summarize(c.note); // the real app code\n  const fails = [\n    ...checkSummary(out, c.expect),\n    ...(await judge(c.note, out)),\n  ];\n  if (fails.length === 0) passed++;\n  else console.log(`FAIL ${c.id}: ${fails.join(\", \")}`);\n}\nconsole.log(`score ${passed} / ${cases.length}`);\nif (passed < BASELINE) process.exit(1);"
+        "code": "const cases = await loadJsonl(\"evals/summary.jsonl\");\nlet passed = 0;\nfor (const c of cases) {\n  const out = await summarize(c.note); // the real app code\n  const fails = [\n    ...checkSummary(out, c.expect),\n    ...(await judge(c.note, out)),\n  ];\n  if (fails.length === 0) passed++;\n  else console.log(`FAIL ${c.id}: ${fails.join(\", \")}`);\n}\nconsole.log(`score ${passed} / ${cases.length}`);\nif (passed < BASELINE) process.exit(1);",
+        "caption": "The runner tests the real function, so it can never drift from what users get."
+      },
+      "changes": [
+        "~ CI: passes after the prompt fix",
+        "~ Pass rate 65 → 88%",
+        "~ Grader and Claude API back in view"
+      ],
+      "metrics": {
+        "pass": { "value": 88, "tone": "good" }
       },
       "scene": {
         "extends": "previous",
-        "caption": "One script: real feature code in, pass count out, CI fails on a drop.",
+        "caption": "Cases in, real feature, graded, scored: the whole loop in one script.",
         "nodes": [
-          { "id": "ci", "status": "ok" },
-          { "id": "grader", "status": "ok" },
-          { "id": "judge", "status": "ok" }
+          { "id": "grader", "status": "normal" },
+          { "id": "llm", "status": "normal" },
+          { "id": "ci", "status": "ok", "pill": { "text": "passed", "icon": "check", "tone": "good" } }
         ],
-        "notes": [
-          { "id": "score", "text": "57 / 60, up from 54: merge", "status": "ok" }
+        "edges": [
+          { "id": "app>grader", "status": "normal", "packet": { "kind": "response" } },
+          { "id": "llm>grader", "status": "normal", "packet": { "kind": "request", "direction": "both" } },
+          { "id": "app>llm", "status": "normal", "packet": { "kind": "request", "direction": "both" } }
         ]
       }
     },
@@ -198,25 +275,32 @@
       "title": "Evals rot unless you feed them",
       "chapter": "watch-out",
       "body": [
-        "Output varies, so one run can pass by luck. For key cases, run several times and look at the pass rate.",
-        "Do not tune the prompt until the test set passes and stop there: that is overfitting, and real users bring new cases. Feed the set from production: every thumbs-down, support complaint or odd log becomes a new case."
+        "Output varies, so one run can pass by luck: run key cases several times. And do not tune the prompt until the set passes and stop there. That is overfitting, and real users bring new cases.",
+        "Feed the set from real use: every thumbs-down, complaint or odd log from Maya and friends becomes a new case."
       ],
       "callout": {
         "type": "claude-code",
-        "text": "When Claude Code \"fixes\" a prompt, ask it to run the eval and show before/after per case, not one example. Check the diff: did it edit or delete test cases to make them pass? Does the eval call the real app function, or a copy that can drift?"
+        "text": "When Claude Code \"fixes\" a prompt, ask it to run the eval and show before/after per case, not one example. Check the diff: did it edit or delete test cases to make them pass? Does the eval call the real app function?"
+      },
+      "changes": [
+        "+ Maya: her thumbs-down becomes a new test case",
+        "~ Cases tested 60 → 64",
+        "~ Pass rate 88 → 84%: new cases are hard ones"
+      ],
+      "metrics": {
+        "cases": { "value": 64, "tone": "good" },
+        "pass": { "value": 84, "tone": "warn" }
       },
       "scene": {
         "extends": "previous",
-        "caption": "Production failures flow back into the test set, so it keeps up with real use.",
+        "caption": "Real complaints flow into the test set, so it keeps up with real use.",
         "nodes": [
-          { "id": "prod", "x": 6.2, "y": 6.6, "label": "Production", "sublabel": "thumbs-down, logs", "icon": "log", "kind": "server", "status": "warn" },
-          { "id": "ci", "status": "normal" }
+          { "id": "ci", "status": "normal", "pill": null },
+          { "id": "maya", "x": 0.8, "y": 7.2, "label": "Maya", "icon": "user", "kind": "person", "status": "active" },
+          { "id": "tests", "status": "active", "pill": "+4 cases" }
         ],
         "edges": [
-          { "from": "prod", "to": "cases", "label": "new cases", "status": "warn", "packet": { "label": "bug", "status": "warn" } }
-        ],
-        "notes": [
-          { "id": "score", "text": "57 / 60 + 3 new cases", "status": "active" }
+          { "from": "maya", "to": "tests", "packet": { "kind": "data", "speed": "slow" } }
         ]
       }
     },
@@ -226,7 +310,20 @@
       "body": [
         "AI output varies, so trying it by hand proves little. An eval runs a fixed test set through the real feature, grades each output, and gives a score.",
         "Grade with code first, use an LLM judge with a pass/fail rubric for the rest, compare with the baseline in CI, and keep feeding the set with real failures."
-      ]
+      ],
+      "changes": [
+        "~ Every part working together: cases, grader, CI"
+      ],
+      "scene": {
+        "extends": "previous",
+        "caption": "Test set, real feature, graders, CI, and real failures flowing back in.",
+        "nodes": [
+          { "id": "maya", "status": "normal" },
+          { "id": "tests", "status": "ok", "pill": null },
+          { "id": "grader", "status": "ok" },
+          { "id": "ci", "status": "ok" }
+        ]
+      }
     }
   ],
   "quiz": [
@@ -257,8 +354,8 @@
   ],
   "takeaways": [
     "An <b>eval</b> = fixed test set + grader + score, run on every prompt or model change.",
-    "Build the test set from edge cases and past bugs, then keep adding real failures from production.",
-    "Grade with code first. Use an <b>LLM judge</b> with a pass/fail rubric for faithfulness and tone, and check it against your own grading.",
+    "Build the test set from edge cases and past bugs, then keep adding real failures from users.",
+    "Grade with code first. Use an <b>LLM judge</b> with a pass/fail rubric for faithfulness, and check it against your own grading.",
     "Compare each run with the <b>baseline</b> per case, in CI, before merging.",
     "Ask Claude Code for before/after eval results, never one hand-picked example."
   ]

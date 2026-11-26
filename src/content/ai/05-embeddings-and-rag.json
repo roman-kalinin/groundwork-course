@@ -11,6 +11,10 @@
     "The bugs that leak data or serve stale answers, and how to check for them"
   ],
   "glossary": {
+    "app server": "A computer, somewhere else, that runs the app's own code. Notely's runs on Vercel.",
+    "database": "A program built to store data safely and find it again fast. Notely's is Postgres, run by Supabase.",
+    "Claude API": "Anthropic's AI, reached over the internet: you send it text, it sends text back. Each call costs a little money.",
+    "context window": "The maximum amount of text, counted in tokens, that a model can look at in one request.",
     "embedding": "A list of numbers that represents the meaning of a piece of text. Texts with similar meaning get similar lists.",
     "vector": "A list of numbers, like a point on a map with many directions. Embeddings are vectors.",
     "embedding model": "A model whose only job is turning text into an embedding. It is separate from the chat model and much cheaper.",
@@ -19,29 +23,63 @@
     "pgvector": "A Postgres extension that adds a vector column type and fast nearest-match search. Supabase supports it.",
     "cosine distance": "A way to measure how far apart two vectors point. Smaller distance means closer meaning.",
     "HNSW": "A type of index for vectors that finds near matches very fast by skipping most rows, at the price of being approximate.",
-    "hybrid search": "Combining keyword search and vector search, so exact words and similar meanings both count."
+    "hybrid search": "Combining keyword search and vector search, so exact words and similar meanings both count.",
+    "RLS": "Row Level Security: Postgres rules that decide which rows each logged-in user may read, enforced by the database itself."
   },
+  "metrics": [
+    { "id": "found", "label": "Useful matches", "icon": "search" },
+    { "id": "tokens", "label": "Prompt tokens", "icon": "upload" }
+  ],
   "steps": [
+    {
+      "title": "Notely's chat searches by keyword",
+      "chapter": "setup",
+      "body": [
+        "Maya has 2,000 notes in Notely, our notes app. They live in the <span class=\"term\">database</span>. When she asks Notely's chat something, the <span class=\"term\">app server</span> (the computer running Notely's code) searches her notes for the words she typed.",
+        "The match goes to the <span class=\"term\">Claude API</span>, Anthropic's AI, which answers. Ask about \"groceries\": it finds the grocery note."
+      ],
+      "metrics": {
+        "found": { "value": 1, "tone": "good" },
+        "tokens": { "value": 800, "tone": "good" }
+      },
+      "scene": {
+        "caption": "Question in, keyword search in the database, answer from Claude.",
+        "nodes": [
+          { "id": "maya", "x": 0.8, "y": 3.8, "label": "Maya", "icon": "user", "kind": "person" },
+          { "id": "app", "x": 4.6, "y": 3.8, "label": "App Server", "icon": "server", "kind": "server" },
+          { "id": "llm", "x": 8.8, "y": 3.8, "label": "Claude API", "icon": "sparkle", "kind": "ai" },
+          { "id": "db", "x": 4.6, "y": 7.3, "label": "Database", "icon": "database", "kind": "data", "pill": "2,000 notes" }
+        ],
+        "edges": [
+          { "from": "maya", "to": "app", "packet": { "kind": "request", "direction": "both", "speed": "slow" } },
+          { "from": "app", "to": "db", "packet": { "kind": "data", "direction": "both", "returns": "data" } },
+          { "from": "app", "to": "llm", "packet": { "kind": "request", "direction": "both" } }
+        ]
+      }
+    },
     {
       "title": "\"What did I decide about the logo?\"",
       "chapter": "problem",
       "body": [
-        "Maya asks Notely's chat a question about her own notes. She has 2,000 of them. Sending them all would overflow the context window, and cost a fortune every question.",
-        "Keyword search does not save us either. The note that answers it says \"going with the blue brand mark\". It never uses the word <em>logo</em>, so a search for \"logo\" finds nothing."
+        "Maya asks about the logo. The note that answers it says \"going with the blue brand mark\". It never uses the word <em>logo</em>, so keyword search finds nothing.",
+        "Sending all 2,000 notes instead would overflow the <span class=\"term\">context window</span> (the most the model can read at once) and cost a fortune on every question."
       ],
+      "changes": [
+        "~ Useful matches 1 → 0",
+        "~ Database: no note contains the word \"logo\""
+      ],
+      "metrics": {
+        "found": { "value": 0, "tone": "bad" }
+      },
       "scene": {
-        "caption": "Too many notes to send, and the right one does not contain the search word.",
+        "extends": "previous",
+        "caption": "The answer is in the database, but no note uses the word Maya typed.",
         "nodes": [
-          { "id": "q", "x": 2, "y": 3.8, "label": "Maya's question", "sublabel": "\"the logo?\"", "icon": "chat", "kind": "person" },
-          { "id": "route", "x": 6.4, "y": 4, "label": "Chat route", "sublabel": "Notely server", "icon": "function", "kind": "server" },
-          { "id": "notes", "x": 10.2, "y": 4, "label": "notes table", "sublabel": "2,000 notes", "icon": "database", "kind": "data", "status": "warn", "tags": ["0 rows match"] }
+          { "id": "db", "status": "error", "pill": { "text": "0 for logo", "tone": "bad" } },
+          { "id": "llm", "status": "dim" }
         ],
         "edges": [
-          { "from": "q", "to": "route", "packet": { "label": "ask" } },
-          { "from": "route", "to": "notes", "label": "ILIKE '%logo%'", "status": "warn", "packet": true }
-        ],
-        "notes": [
-          { "id": "miss", "x": 9.8, "y": 6.2, "text": "The note says \"brand mark\"", "status": "warn" }
+          { "id": "app>llm", "status": "dim", "packet": false }
         ]
       }
     },
@@ -49,38 +87,41 @@
       "title": "Turn meaning into coordinates",
       "chapter": "idea",
       "body": [
-        "An <span class=\"term\">embedding model</span> turns text into an <span class=\"term\">embedding</span>: a <span class=\"term\">vector</span>, or long list of numbers. Think of it as a position on a map of meaning.",
-        "Texts about similar things land near each other, even with no words in common. \"Logo decision\" and \"blue brand mark\" sit close. \"Grocery list\" sits far away. Searching becomes: find the nearest points."
+        "An <span class=\"term\">embedding model</span> turns text into an <span class=\"term\">embedding</span>: a <span class=\"term\">vector</span>, a long list of numbers. Think of it as a position on a map of meaning.",
+        "Similar texts land near each other, even with no words in common. \"Logo decision\" and \"blue brand mark\" sit close; \"grocery list\" sits far away. Search becomes: find the nearest points."
       ],
       "callout": {
         "type": "analogy",
         "text": "A library shelved by topic, not by title. Walk to where your question would sit, and the useful books are right there, whatever their titles say."
       },
+      "changes": [
+        "− Maya, App Server, Claude API, Database: we zoom into meaning",
+        "+ Question, Brand Mark, Font List: close together",
+        "+ Groceries and Gym Plan: far away"
+      ],
       "scene": {
-        "caption": "On the map of meaning, the question lands next to the note that answers it.",
+        "caption": "On the map of meaning, Maya's question lands right next to the brand mark note.",
         "zones": [
-          { "id": "space", "x": 0.4, "y": 0.5, "w": 11.2, "h": 7, "label": "Meaning space" }
+          { "id": "map", "x": 1.4, "y": 0.4, "w": 10.2, "h": 7.2, "label": "Meaning map" }
         ],
         "nodes": [
-          { "id": "q", "x": 2.6, "y": 2.8, "label": "\"Logo decision?\"", "sublabel": "the question", "icon": "chat", "kind": "person", "status": "active" },
-          { "id": "n1", "x": 6.8, "y": 3, "label": "Blue brand mark", "sublabel": "brand call note", "icon": "file", "kind": "data", "status": "ok" },
-          { "id": "n2", "x": 3.6, "y": 5.4, "label": "Font shortlist", "sublabel": "design note", "icon": "file", "kind": "data" },
-          { "id": "n3", "x": 9.8, "y": 6.4, "label": "Grocery list", "icon": "file", "kind": "data", "status": "dim" },
-          { "id": "n4", "x": 9.8, "y": 1.4, "label": "Gym plan", "icon": "file", "kind": "data", "status": "dim" }
+          { "id": "q", "x": 3.4, "y": 3.8, "label": "Question", "icon": "chat", "shape": "token", "kind": "person", "status": "active" },
+          { "id": "n1", "x": 6.4, "y": 2.2, "label": "Brand Mark", "icon": "file", "shape": "token", "kind": "data", "status": "ok" },
+          { "id": "n2", "x": 6.4, "y": 5.4, "label": "Font List", "icon": "file", "shape": "token", "kind": "data" },
+          { "id": "n3", "x": 10.2, "y": 1.6, "label": "Groceries", "icon": "file", "shape": "token", "kind": "data", "status": "dim" },
+          { "id": "n4", "x": 10.2, "y": 6.0, "label": "Gym Plan", "icon": "file", "shape": "token", "kind": "data", "status": "dim" }
         ],
         "edges": [
-          { "from": "q", "to": "n1", "label": "very close", "status": "ok", "arrow": "none" },
-          { "from": "q", "to": "n2", "label": "close", "style": "dashed", "arrow": "none" },
-          { "from": "q", "to": "n3", "label": "far", "style": "dotted", "status": "dim", "arrow": "none" }
+          { "from": "q", "to": "n1", "label": "closest", "style": "dashed", "status": "ok", "arrow": "none" }
         ]
       }
     },
     {
-      "title": "Step 1: index your notes once",
+      "title": "Step 1: index the notes once",
       "chapter": "how",
       "body": [
-        "Split each note into <span class=\"term\" data-term=\"chunk\">chunks</span> of a paragraph or so, embed each chunk, and store the vector next to its text in Postgres with <span class=\"term\">pgvector</span>.",
-        "This happens ahead of time, not per question. Anthropic does not sell an embedding model, so Claude Code will pick one from another provider. Whatever you pick, the column size must match its output size."
+        "Ahead of time, the app server splits each note into <span class=\"term\" data-term=\"chunk\">chunks</span> of a paragraph or so, sends each to an embedding model, and stores the vector next to its text, using <span class=\"term\">pgvector</span> (a Postgres add-on for vectors).",
+        "Anthropic does not sell one, so Claude Code will pick another provider's. The column size must match its output."
       ],
       "code": {
         "language": "sql",
@@ -88,16 +129,26 @@
         "code": "create extension if not exists vector;\n\ncreate table note_chunks (\n  id bigint generated always as identity primary key,\n  note_id uuid not null references notes(id) on delete cascade,\n  user_id uuid not null references auth.users(id),\n  content text not null,\n  embedding vector(1024) -- must match your model's size\n);",
         "caption": "user_id on every chunk is not optional. You will see why in the watch-out step."
       },
+      "changes": [
+        "− Question, Brand Mark, Font List, Groceries, Gym Plan",
+        "+ Maya, App Server, Claude API, Database: back to Notely",
+        "+ Embedding Model: turns each chunk into a vector",
+        "~ Database: stores every chunk with its vector"
+      ],
       "scene": {
-        "caption": "Indexing: notes are chunked, embedded, and stored as vectors next to their text.",
+        "caption": "Once, ahead of time: every note is chunked, embedded and stored.",
         "nodes": [
-          { "id": "notes", "x": 2, "y": 1.6, "label": "notes table", "sublabel": "2,000 notes", "icon": "database", "kind": "data" },
-          { "id": "embedder", "x": 6.4, "y": 3.2, "label": "Embedding model", "sublabel": "text → vector", "icon": "vector", "kind": "ai", "status": "active" },
-          { "id": "chunks", "x": 10.6, "y": 3.2, "label": "note_chunks", "sublabel": "text + vector", "icon": "table", "kind": "data", "tags": ["vector(1024)"] }
+          { "id": "maya", "x": 0.8, "y": 3.8, "label": "Maya", "icon": "user", "kind": "person", "status": "dim" },
+          { "id": "app", "x": 4.6, "y": 3.8, "label": "App Server", "icon": "server", "kind": "server" },
+          { "id": "llm", "x": 8.8, "y": 3.8, "label": "Claude API", "icon": "sparkle", "kind": "ai", "status": "dim" },
+          { "id": "db", "x": 4.6, "y": 7.3, "label": "Database", "icon": "database", "kind": "data", "status": "active", "pill": "note_chunks" },
+          { "id": "embed", "x": 4.6, "y": 0.4, "label": "Embedding Model", "icon": "vector", "kind": "ai", "status": "active" }
         ],
         "edges": [
-          { "from": "notes", "to": "embedder", "label": "chunks", "packet": { "label": "text" } },
-          { "from": "embedder", "to": "chunks", "label": "store", "packet": { "label": "vector", "status": "active" } }
+          { "from": "maya", "to": "app", "status": "dim" },
+          { "from": "app", "to": "db", "packet": { "kind": "data", "direction": "both", "returns": "data" } },
+          { "from": "app", "to": "llm", "status": "dim" },
+          { "from": "app", "to": "embed", "packet": { "kind": "data", "direction": "both", "returns": "data" } }
         ]
       }
     },
@@ -105,26 +156,32 @@
       "title": "Step 2: find the nearest chunks",
       "chapter": "how",
       "body": [
-        "When Maya asks, embed her question with the <b>same</b> model. Now it is a point on the same map.",
-        "Then ask Postgres for the rows whose vectors are closest. pgvector's <code>&lt;=&gt;</code> operator gives the <span class=\"term\">cosine distance</span>: smaller means more similar. Take the top five. That is retrieval."
+        "When Maya asks, the app server embeds her question with the <b>same</b> model. Now it is a point on the same map.",
+        "Then it asks Postgres for the rows whose vectors are closest. pgvector's <code>&lt;=&gt;</code> operator gives the <span class=\"term\">cosine distance</span>: smaller means more similar. Take the top five. That is retrieval."
       ],
       "code": {
         "language": "sql",
         "code": "select note_id, content\nfrom note_chunks\norder by embedding <=> $1  -- $1 = the question's vector\nlimit 5;",
         "caption": "Sorting by distance: the five chunks closest in meaning to the question."
       },
+      "changes": [
+        "~ Maya asks again; her question is embedded",
+        "~ Database: returns the five closest chunks",
+        "~ Useful matches 0 → 5"
+      ],
+      "metrics": {
+        "found": { "value": 5, "tone": "good" }
+      },
       "scene": {
         "extends": "previous",
-        "caption": "The question is embedded the same way, then matched to its nearest chunks.",
+        "caption": "The question becomes a vector, and the database returns its nearest neighbors.",
         "nodes": [
-          { "id": "notes", "status": "dim" },
-          { "id": "q", "x": 2, "y": 4.6, "label": "Maya's question", "sublabel": "\"the logo?\"", "icon": "chat", "kind": "person", "status": "active" },
-          { "id": "chunks", "status": "ok", "tags": ["top 5 by <=>"] }
+          { "id": "maya", "status": "normal" },
+          { "id": "embed", "status": "normal" },
+          { "id": "db", "status": "ok", "pill": "top 5" }
         ],
         "edges": [
-          { "id": "notes>embedder", "status": "dim", "packet": false },
-          { "id": "embedder>chunks", "label": "nearest 5?", "packet": { "label": "query", "status": "active" } },
-          { "from": "q", "to": "embedder", "label": "same model", "packet": { "label": "text" } }
+          { "id": "maya>app", "status": "normal", "packet": { "kind": "request", "direction": "both", "speed": "slow" } }
         ]
       }
     },
@@ -132,26 +189,33 @@
       "title": "Step 3: answer from what you found",
       "chapter": "how",
       "body": [
-        "Put those chunks into the prompt, each tagged with its note id, and ask the model to answer <em>only</em> from them and cite the id. Allow \"not in your notes\" as an answer.",
-        "Find, then add to the prompt, then generate: <span class=\"term\">RAG</span>. The model reads five paragraphs instead of 2,000 notes, and Notely can link each claim to its source."
+        "The app server puts those chunks in the prompt, tagged with note ids, and asks the model to answer <em>only</em> from them, cite ids, and admit when the answer is missing.",
+        "Retrieve, add to the prompt, generate: that is <span class=\"term\">RAG</span>. The model reads five paragraphs, not 2,000 notes, and each claim links to its source."
       ],
       "code": {
         "language": "ts",
         "code": "const sources = chunks\n  .map((c) => `<source id=\"${c.note_id}\">\\n${c.content}\\n</source>`)\n  .join(\"\\n\");\n\nconst prompt = `${sources}\n\nAnswer the question using only the sources above.\nCite source ids. If they do not answer it, say so.\n\nQuestion: ${question}`;",
         "caption": "The prompt habits from lesson 3: labeled data first, the request last, a way out."
       },
+      "changes": [
+        "~ Claude API: answers from five chunks and cites them",
+        "~ Prompt tokens 800 → 1,500",
+        "~ Embedding Model steps back"
+      ],
+      "metrics": {
+        "tokens": { "value": 1500, "tone": "good" }
+      },
       "scene": {
         "extends": "previous",
-        "caption": "Only the best chunks reach the model, which answers and cites them.",
+        "caption": "Only the best five chunks reach the model.",
         "nodes": [
-          { "id": "embedder", "status": "normal" },
-          { "id": "route", "x": 6.4, "y": 6.4, "label": "Chat route", "sublabel": "builds the prompt", "icon": "function", "kind": "server", "status": "active" },
-          { "id": "llm", "x": 11.1, "y": 6.8, "label": "Claude API", "sublabel": "answers + cites", "icon": "sparkle", "kind": "ai", "status": "ok" }
+          { "id": "embed", "status": "dim" },
+          { "id": "db", "status": "normal" },
+          { "id": "llm", "status": "active", "pill": "cites notes" }
         ],
         "edges": [
-          { "id": "embedder>chunks", "packet": false },
-          { "from": "chunks", "to": "route", "label": "top 5 chunks", "packet": { "label": "chunks", "status": "ok" } },
-          { "from": "route", "to": "llm", "label": "question + sources", "packet": { "label": "prompt" } }
+          { "id": "app>embed", "status": "dim", "packet": false },
+          { "id": "app>llm", "status": "normal", "packet": { "kind": "request", "direction": "both" } }
         ]
       }
     },
@@ -159,22 +223,31 @@
       "title": "Make retrieval fast and sharp",
       "chapter": "how",
       "body": [
-        "Without an index, Postgres compares the question with every row. An <span class=\"term\">HNSW</span> index makes nearest-match search fast on large tables, trading a little accuracy for a lot of speed. You met indexes in system design; this is one for vectors.",
-        "Pure vector search can miss exact things like names or order numbers. <span class=\"term\">Hybrid search</span> combines it with Postgres full-text search."
+        "Without an index, Postgres compares the question with every row. An <span class=\"term\">HNSW</span> index makes nearest-match search fast on large tables, trading a little accuracy for a lot of speed.",
+        "Pure vector search can miss exact things like names or order numbers. <span class=\"term\">Hybrid search</span> combines it with Postgres's own keyword search."
       ],
       "code": {
         "language": "sql",
         "code": "create index on note_chunks\nusing hnsw (embedding vector_cosine_ops);",
         "caption": "The operator class must match the distance you sort by: cosine here."
       },
+      "callout": {
+        "type": "tip",
+        "text": "You met indexes in system design. This is one more kind, built for vectors."
+      },
+      "changes": [
+        "~ Database: gains an HNSW index for vectors",
+        "~ Claude API steps back"
+      ],
       "scene": {
         "extends": "previous",
-        "caption": "An index on the vectors keeps search fast as Notely grows.",
+        "caption": "An index lets the database skip most rows when searching.",
         "nodes": [
-          { "id": "chunks", "tags": ["HNSW index", "+ full-text"] }
+          { "id": "llm", "status": "dim", "pill": null },
+          { "id": "db", "status": "active", "pill": { "text": "HNSW index", "icon": "bolt" } }
         ],
         "edges": [
-          { "id": "chunks>route", "packet": { "label": "fast", "status": "ok", "speed": "fast" } }
+          { "id": "app>llm", "status": "dim", "packet": false }
         ]
       }
     },
@@ -182,43 +255,54 @@
       "title": "Notely's search, scoped to Maya",
       "chapter": "example",
       "body": [
-        "In Supabase, wrap the search in a Postgres function and call it with <code>supabase.rpc(\"match_note_chunks\", …)</code> from the route, using Maya's logged-in client.",
-        "The function filters by <code>auth.uid()</code> and runs as the caller, so the RLS policies on <code>note_chunks</code> apply too. Two locks on the same door. This is also what lesson 4's <code>search_notes</code> tool calls under the hood."
+        "In Supabase, wrap the search in a Postgres function and call it with <code>supabase.rpc(\"match_note_chunks\", …)</code>, using Maya's logged-in connection.",
+        "The function keeps only rows where <code>user_id = auth.uid()</code> (the logged-in user), and runs as the caller, so the <span class=\"term\">RLS</span> rules on <code>note_chunks</code> apply too. Two locks on one door. Lesson 4's <code>search_notes</code> tool calls this."
       ],
       "code": {
         "language": "sql",
-        "code": "create function match_note_chunks(\n  query_embedding vector(1024),\n  match_count int default 5\n) returns table (note_id uuid, content text)\nlanguage sql stable security invoker\nas $$\n  select note_id, content from note_chunks\n  where user_id = auth.uid()\n  order by embedding <=> query_embedding\n  limit match_count;\n$$;"
+        "code": "create function match_note_chunks(\n  query_embedding vector(1024),\n  match_count int default 5\n) returns table (note_id uuid, content text)\nlanguage sql stable security invoker\nas $$\n  select note_id, content from note_chunks\n  where user_id = auth.uid()\n  order by embedding <=> query_embedding\n  limit match_count;\n$$;",
+        "caption": "security invoker: the function runs with Maya's rights, not an admin's."
       },
+      "callout": {
+        "type": "claude-code",
+        "text": "Ask: does every chunk row have a <code>user_id</code>, and does the search filter by it? Is it called as the user or with the service role key? What re-embeds a note when it is edited or deleted? Is there a vector index?"
+      },
+      "changes": [
+        "~ Database: search filtered to Maya's own chunks"
+      ],
       "scene": {
         "extends": "previous",
-        "caption": "The search runs as Maya, so it can only ever return Maya's chunks.",
+        "caption": "The search only ever looks at Maya's rows.",
         "nodes": [
-          { "id": "chunks", "tags": ["user = auth.uid()", "RLS on"], "status": "ok" },
-          { "id": "route", "tags": ["Maya's client"] }
+          { "id": "db", "status": "ok", "pill": { "text": "Maya only", "icon": "lock", "tone": "good" } }
         ]
       }
     },
     {
-      "title": "Leaks, stale answers, mixed models",
+      "title": "The leak: someone else's notes",
       "chapter": "watch-out",
       "body": [
-        "<b>Leaks:</b> a match function that skips the user filter, or runs with the service role key, hands Maya someone else's notes. <b>Stale:</b> Maya edits a note, but the old chunks stay, so answers quote what she deleted. Re-embed on every change.",
-        "<b>Mixed models:</b> vectors from two different embedding models are not comparable. Switching models means re-embedding everything."
+        "A match function that skips the user filter, or runs with the service role key (an admin key that ignores RLS), searches every user's chunks. Leo's private note lands in Maya's prompt, and the model happily quotes it.",
+        "Once it is in the prompt, it has leaked. Filter in the database, never by asking the model to ignore things."
       ],
       "callout": {
-        "type": "claude-code",
-        "text": "Ask: does every chunk row have a <code>user_id</code>, and does the search filter by it? Is it called with the user's client or the service role? What re-embeds a note when it is edited or deleted? Is the embedding model name stored, so a switch is visible? Is there a vector index?"
+        "type": "warn",
+        "text": "Two quieter bugs. <b>Stale:</b> Maya edits a note, the old chunks stay, answers quote deleted text; re-embed on every change. <b>Mixed models:</b> vectors from two embedding models do not compare; switching means re-embedding everything."
       },
+      "changes": [
+        "~ Database: user filter missing, searches all users",
+        "~ Claude API: quotes another user's note"
+      ],
       "scene": {
         "extends": "previous",
-        "caption": "The two classic failures: someone else's chunks, and chunks from a deleted version.",
+        "caption": "Without the filter, other people's notes flow into Maya's answer.",
         "nodes": [
-          { "id": "chunks", "status": "error", "tags": ["no user filter?", "old versions?"] },
-          { "id": "llm", "status": "warn", "sublabel": "quotes the wrong note" },
-          { "id": "route", "tags": null, "status": "warn" }
+          { "id": "db", "status": "error", "pill": { "text": "all users", "tone": "bad" } },
+          { "id": "llm", "status": "error", "pill": { "text": "Leo's note", "tone": "bad" } }
         ],
         "edges": [
-          { "id": "chunks>route", "label": "someone else's chunk", "status": "error", "packet": { "label": "leak", "status": "error" } }
+          { "id": "app>db", "status": "error" },
+          { "id": "app>llm", "status": "error", "packet": { "kind": "error", "direction": "both" } }
         ]
       }
     },
@@ -228,7 +312,26 @@
       "body": [
         "Embeddings turn meaning into points on a map, so search finds \"brand mark\" when you ask about the logo.",
         "RAG has two halves. Ahead of time: chunk, embed, store in pgvector. Per question: embed it with the same model, fetch the nearest chunks for this user only, and let the model answer from them with citations. Keep the index fresh."
-      ]
+      ],
+      "changes": [
+        "~ Database: filtered to Maya again",
+        "~ Claude API: answers from Maya's notes, with sources",
+        "~ Embedding Model back in view"
+      ],
+      "scene": {
+        "extends": "previous",
+        "caption": "Index once, retrieve per question, answer from your own data.",
+        "nodes": [
+          { "id": "db", "status": "ok", "pill": { "text": "Maya only", "icon": "lock", "tone": "good" } },
+          { "id": "llm", "status": "ok", "pill": "cites notes" },
+          { "id": "embed", "status": "normal" }
+        ],
+        "edges": [
+          { "id": "app>db", "status": "normal" },
+          { "id": "app>embed", "status": "normal", "packet": { "kind": "data", "direction": "both", "returns": "data" } },
+          { "id": "app>llm", "status": "normal", "packet": { "kind": "request", "direction": "both" } }
+        ]
+      }
     }
   ],
   "quiz": [
@@ -251,9 +354,9 @@
     {
       "question": "Claude Code wrote a <code>match_note_chunks</code> function with no <code>user_id</code> filter and calls it with the service role key \"for speed\". What do you ask for?",
       "options": [
-        { "text": "Filter by <code>auth.uid()</code> and call it with the logged-in user's client, so RLS applies.", "correct": true, "why": "Without both, the nearest chunks can come from any user's notes, and then they land in Maya's answer." },
+        { "text": "Filter by <code>auth.uid()</code> and call it with the logged-in user's connection, so RLS applies.", "correct": true, "why": "Without both, the nearest chunks can come from any user's notes, and then they land in Maya's answer." },
         { "text": "Nothing, as long as the prompt tells the model to ignore other users' notes.", "why": "Once another user's text is in the prompt, it has already leaked. Filtering must happen in the database." },
-        { "text": "Add an HNSW index so the search is fast without the service role.", "why": "An index helps speed, but the issue is access. The fix is the user filter and the user's own client." }
+        { "text": "Add an HNSW index so the search is fast without the service role.", "why": "An index helps speed, but the issue is access. The fix is the user filter and the user's own connection." }
       ]
     }
   ],

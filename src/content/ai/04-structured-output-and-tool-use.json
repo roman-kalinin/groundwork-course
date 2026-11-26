@@ -11,31 +11,74 @@
     "Why the model must never decide whose data a tool touches"
   ],
   "glossary": {
+    "app server": "A computer, somewhere else, that runs the app's own code. Notely's runs on Vercel.",
+    "Claude API": "Anthropic's AI, reached over the internet: you send it text, it sends text back. Each call costs a little money.",
+    "database": "A program built to store data safely and find it again fast. Notely's is Postgres, run by Supabase.",
+    "JSON": "A plain-text format for data that code reads easily: names and values in curly braces, lists in square brackets.",
     "structured output": "Asking the API for an answer that must match a schema you define, so your code gets clean data instead of prose.",
     "JSON schema": "A description of the shape JSON must have: which fields, which types, which are required.",
     "Zod": "A popular TypeScript library for describing data shapes once and using them for both types and runtime checks.",
     "tool use": "Also called function calling: you describe functions to the model, and it can reply with a request to call one, with arguments.",
     "tool_use": "The content block a model returns when it wants a tool called: the tool's name, an id, and the input arguments.",
     "tool_result": "The content block you send back with the output of a tool call, matched to the request by its id.",
+    "session": "The server's record of who is logged in, tied to the browser's sign-in cookie. Code reads the current user from it.",
     "RLS": "Row Level Security: Postgres rules that decide which rows each logged-in user may read or change, enforced by the database itself."
   },
+  "metrics": [
+    { "id": "fail", "label": "Parse errors", "icon": "bug", "unit": "/ 100" },
+    { "id": "calls", "label": "Model calls", "icon": "sparkle", "unit": "a turn" }
+  ],
   "steps": [
+    {
+      "title": "Notely learns to find tasks",
+      "chapter": "setup",
+      "body": [
+        "Maya wants Notely, our notes app, to pull the to-dos out of a note. Claude Code built it: the <span class=\"term\">app server</span> (the computer running Notely's code) sends the note to the <span class=\"term\">Claude API</span>, Anthropic's AI, with \"Return the tasks as <span class=\"term\">JSON</span>\".",
+        "It reads the reply as data and saves each task in the <span class=\"term\">database</span>."
+      ],
+      "metrics": {
+        "fail": { "value": 0, "tone": "good" },
+        "calls": 1
+      },
+      "scene": {
+        "caption": "Note in, tasks out, saved to the database.",
+        "nodes": [
+          { "id": "maya", "x": 0.8, "y": 3.6, "label": "Maya", "icon": "user", "kind": "person" },
+          { "id": "app", "x": 4.6, "y": 3.6, "label": "App Server", "icon": "server", "kind": "server" },
+          { "id": "llm", "x": 8.8, "y": 3.6, "label": "Claude API", "icon": "sparkle", "kind": "ai" },
+          { "id": "db", "x": 4.6, "y": 7.2, "label": "Database", "icon": "database", "kind": "data" }
+        ],
+        "edges": [
+          { "from": "maya", "to": "app", "packet": { "kind": "request", "direction": "both", "speed": "slow" } },
+          { "from": "app", "to": "llm", "packet": { "kind": "request", "direction": "both" } },
+          { "from": "app", "to": "db", "packet": { "kind": "data", "speed": "slow" } }
+        ]
+      }
+    },
     {
       "title": "\"Sure! Here are your tasks:\"",
       "chapter": "problem",
       "body": [
-        "Maya wants Notely to pull to-dos out of a note into her task list. Claude Code wrote a prompt that says \"Return the tasks as JSON\", then calls <code>JSON.parse</code> on the reply.",
-        "Nine times in ten it works. The tenth reply starts with \"Sure! Here are your tasks:\", or wraps the JSON in a code fence, and the parse throws. Free text is for people, not for code."
+        "Nine times in ten it works. The tenth reply starts with \"Sure! Here are your tasks:\", or wraps the data in extra formatting, and the code that reads it (<code>JSON.parse</code>) throws an error.",
+        "No tasks get saved, and Maya sees a broken button. Free text is for people, not for code."
       ],
+      "changes": [
+        "~ Parse errors 0 → 10 in every 100",
+        "~ App Server: cannot read the reply",
+        "~ Database: nothing saved"
+      ],
+      "metrics": {
+        "fail": { "value": 10, "tone": "bad" }
+      },
       "scene": {
-        "caption": "The model replies in friendly prose. The server's JSON parser chokes on it.",
+        "extends": "previous",
+        "caption": "A friendly sentence in front of the data breaks the code that reads it.",
         "nodes": [
-          { "id": "route", "x": 1.2, "y": 4, "label": "Tasks route", "sublabel": "Notely server", "icon": "function", "kind": "server", "status": "error", "tags": ["JSON.parse ✗"] },
-          { "id": "llm", "x": 9.8, "y": 4, "label": "Claude API", "sublabel": "friendly by default", "icon": "sparkle", "kind": "ai" }
+          { "id": "app", "status": "error", "pill": { "text": "parse failed", "tone": "bad" } },
+          { "id": "db", "status": "dim" }
         ],
         "edges": [
-          { "from": "route", "to": "llm", "label": "extract tasks as JSON", "packet": { "label": "note" } },
-          { "from": "llm", "to": "route", "label": "\"Sure! Here are…\"", "status": "error", "packet": { "label": "prose", "status": "error" } }
+          { "id": "app>db", "status": "dim", "packet": false }
         ]
       }
     },
@@ -44,30 +87,39 @@
       "chapter": "idea",
       "body": [
         "Instead of asking nicely, give the API a <span class=\"term\">JSON schema</span>: the exact fields, their types, which ones are required.",
-        "With <span class=\"term\">structured output</span> turned on, the API constrains the answer to that shape. No greeting, no code fence, no missing bracket. Whenever the answer finishes normally, your code receives data it can parse."
+        "With <span class=\"term\">structured output</span> turned on, the API holds the answer to that shape. No greeting, no extra formatting, no missing bracket. Whenever the answer finishes normally, your code gets data it can read."
       ],
       "callout": {
         "type": "analogy",
-        "text": "Asking a guest to \"write down your details\" on a blank page versus handing them a form with labeled boxes. Same person, far more usable result."
+        "text": "Asking a guest to \"write down your details\" on a blank page, versus handing them a form with labeled boxes. Same person, far more usable result."
+      },
+      "changes": [
+        "+ Schema: the exact shape the answer must have",
+        "~ Parse errors 10 → 0",
+        "~ App Server and Database working again"
+      ],
+      "metrics": {
+        "fail": { "value": 0, "tone": "good" }
       },
       "scene": {
         "extends": "previous",
-        "caption": "The schema rides along with the request. The answer comes back in exactly that shape.",
+        "caption": "The schema goes with the request, and the API keeps the answer to it.",
         "nodes": [
-          { "id": "route", "status": "ok", "tags": ["parsed ✓"] },
-          { "id": "schema", "x": 6.1, "y": 2.9, "label": "JSON schema", "sublabel": "title, due date", "icon": "list", "kind": "data", "status": "active" }
+          { "id": "app", "status": "ok", "pill": null },
+          { "id": "db", "status": "normal" },
+          { "id": "schema", "x": 8.8, "y": 7.2, "label": "Schema", "icon": "list", "shape": "tile", "kind": "neutral", "status": "active" }
         ],
         "edges": [
-          { "from": "schema", "to": "llm", "label": "answer must fit", "style": "dashed" },
-          { "id": "llm>route", "label": "{ tasks: [...] }", "status": "ok", "packet": { "label": "JSON", "status": "ok" } }
+          { "id": "app>db", "status": "normal", "packet": { "kind": "data", "speed": "slow" } },
+          { "from": "schema", "to": "llm" }
         ]
       }
     },
     {
-      "title": "One schema for types and the API",
+      "title": "One schema for your code and the API",
       "chapter": "how",
       "body": [
-        "In TypeScript, <span class=\"term\">Zod</span> lets you describe the shape once. The SDK turns it into a JSON schema for the request, and checks the reply against it.",
+        "In TypeScript, <span class=\"term\">Zod</span> lets you describe the shape once. The SDK (Anthropic's helper library) turns it into a JSON schema for the request, and checks the reply against it.",
         "You get back <code>parsed_output</code>: a typed object, not a string. Your editor knows <code>tasks[0].title</code> exists before you run anything."
       ],
       "code": {
@@ -76,15 +128,16 @@
         "code": "const Tasks = z.object({\n  tasks: z.array(z.object({\n    title: z.string(),\n    due: z.string().nullable(), // ISO date, or null\n  })),\n});\n\nconst res = await anthropic.messages.parse({\n  model: process.env.TASKS_MODEL!,\n  max_tokens: 2048,\n  messages: [{ role: \"user\", content: prompt }],\n  output_config: { format: zodOutputFormat(Tasks) },\n});\nif (res.stop_reason !== \"end_turn\" || !res.parsed_output) {\n  throw new Error(`No tasks parsed: ${res.stop_reason}`);\n}\nconst tasks = res.parsed_output.tasks;",
         "caption": "zodOutputFormat comes from @anthropic-ai/sdk/helpers/zod. A cut-off or refused answer will not fit the schema, so check stop_reason first."
       },
+      "changes": [
+        "~ Schema: written once in Zod, used by code and API",
+        "~ App Server: gets a typed object back"
+      ],
       "scene": {
         "extends": "previous",
-        "caption": "One Zod schema becomes the JSON schema and the TypeScript type.",
+        "caption": "One description of the shape serves both your code and the API.",
         "nodes": [
-          { "id": "schema", "label": "Zod schema", "sublabel": "→ JSON schema + type", "status": "ok" },
-          { "id": "route", "tags": ["typed tasks"] }
-        ],
-        "edges": [
-          { "id": "llm>route", "packet": { "label": "parsed", "status": "ok" } }
+          { "id": "schema", "status": "normal", "pill": "Zod" },
+          { "id": "app", "status": "active", "pill": "typed" }
         ]
       }
     },
@@ -92,23 +145,26 @@
       "title": "Right shape, wrong facts",
       "chapter": "how",
       "body": [
-        "A schema guarantees the <em>shape</em>, not the <em>truth</em>. The due date can be a valid string for a day that does not exist in the note. A task can be invented.",
-        "So check the content before it reaches the database: is the date real and in the future, is the title non-empty, did we already save this task? Then insert, as the logged-in user."
+        "A schema guarantees the <em>shape</em>, not the <em>truth</em>. The due date can be a valid date the note never mentioned. A task can be invented.",
+        "So the app server checks the content before saving: is the date real and in the future, is the title non-empty, is this task already saved? Then it inserts, as the logged-in user."
       ],
       "callout": {
         "type": "tip",
         "text": "Keep schemas small and flat. Prefer <code>null</code> for \"unknown\" over a guessed value, and say so in the field's description."
       },
+      "changes": [
+        "~ App Server: checks every task before saving",
+        "~ Schema steps back"
+      ],
       "scene": {
         "extends": "previous",
-        "caption": "Shape is guaranteed. Content still gets checked before it is saved.",
+        "caption": "Between the model and the database sits a check on the content.",
         "nodes": [
-          { "id": "schema", "status": "normal" },
-          { "id": "route", "status": "active", "tags": ["check dates", "dedupe"] },
-          { "id": "db", "x": 6.1, "y": 6.9, "label": "tasks table", "sublabel": "Supabase Postgres", "icon": "table", "kind": "data" }
+          { "id": "schema", "status": "dim" },
+          { "id": "app", "status": "active", "pill": { "text": "checks facts", "icon": "check" } }
         ],
         "edges": [
-          { "from": "route", "to": "db", "label": "insert checked rows", "status": "ok", "packet": { "label": "rows", "status": "ok" } }
+          { "id": "schema>llm", "status": "dim" }
         ]
       }
     },
@@ -117,20 +173,25 @@
       "chapter": "idea",
       "body": [
         "Now Notely gets a chat. Maya asks: \"When is the logo due?\" The model does not have her notes. It needs to look.",
-        "With <span class=\"term\">tool use</span>, you describe functions it may request, like <code>search_notes</code>. Instead of an answer, the model can reply: \"please call <code>search_notes</code> with query 'logo deadline'\". Your code runs it. The model never touches your database itself."
+        "With <span class=\"term\">tool use</span>, you describe functions it may request, like <code>search_notes</code>. Instead of answering, the model can reply \"please run <code>search_notes</code> for 'logo deadline'\". Your code runs it. The model never touches your database."
+      ],
+      "changes": [
+        "− Schema: we move on to the chat",
+        "+ search_notes: a tool your code runs on request",
+        "~ App Server: back to normal"
       ],
       "scene": {
-        "caption": "The model gets a list of tools it may ask for. It replies with a request, not an answer.",
+        "extends": "previous",
+        "remove": ["schema"],
+        "caption": "The model asks for a search; the app server runs it against the database.",
         "nodes": [
-          { "id": "route", "x": 1.2, "y": 3, "label": "Chat route", "sublabel": "Notely server", "icon": "function", "kind": "server", "status": "active" },
-          { "id": "llm", "x": 9.8, "y": 3, "label": "Claude API", "sublabel": "can ask for tools", "icon": "sparkle", "kind": "ai" },
-          { "id": "tooldef", "x": 9.8, "y": 6.2, "label": "Tool list", "sublabel": "search_notes", "icon": "gear", "kind": "neutral" },
-          { "id": "db", "x": 2.4, "y": 6.2, "label": "notes table", "sublabel": "Maya's notes", "icon": "database", "kind": "data", "status": "dim" }
+          { "id": "app", "status": "normal", "pill": null },
+          { "id": "tool", "x": 8.8, "y": 7.2, "label": "search_notes", "icon": "search", "shape": "tile", "kind": "server", "status": "active" }
         ],
         "edges": [
-          { "from": "route", "to": "llm", "label": "question + tools", "packet": { "label": "ask" } },
-          { "from": "llm", "to": "route", "label": "tool_use: search_notes", "status": "active", "packet": { "label": "call?", "status": "active" } },
-          { "from": "tooldef", "to": "llm", "label": "may request", "style": "dashed" }
+          { "id": "app>db", "status": "dim", "packet": false },
+          { "from": "app", "to": "tool", "route": "mid", "packet": { "kind": "request", "speed": "slow" } },
+          { "from": "tool", "to": "db", "packet": { "kind": "data", "direction": "both", "returns": "data" } }
         ]
       }
     },
@@ -138,25 +199,30 @@
       "title": "The round trip, step by step",
       "chapter": "how",
       "body": [
-        "1. You send the question plus tool definitions. 2. The reply has <code>stop_reason: \"tool_use\"</code> and a <span class=\"term\">tool_use</span> block. 3. Your code runs the function. 4. You send the output back as a <span class=\"term\">tool_result</span> with the same id. 5. The model writes the final answer.",
-        "Two calls to the model, one to your database. Remember: the API has no memory, so call two re-sends the whole conversation."
+        "The app server sends the question plus the tool list. The reply says <code>stop_reason: \"tool_use\"</code> and holds a <span class=\"term\">tool_use</span> block. Your code runs the search and sends the output back as a <span class=\"term\">tool_result</span> with the same id. Then the model answers.",
+        "Two model calls. The API has no memory, so call two re-sends the whole conversation."
       ],
       "code": {
         "language": "text",
         "code": "assistant → { type: \"tool_use\", id: \"toolu_01\",\n              name: \"search_notes\",\n              input: { query: \"logo deadline\" } }\n\nuser      → { type: \"tool_result\", tool_use_id: \"toolu_01\",\n              content: \"Brand call: logo due Friday\" }",
         "caption": "The id links the result to the request. Then the model answers: \"Friday.\""
       },
+      "changes": [
+        "~ Model calls 1 → 2 a turn",
+        "~ Claude API: answers \"Friday\" from the search result"
+      ],
+      "metrics": {
+        "calls": { "value": 2, "tone": "neutral" }
+      },
       "scene": {
         "extends": "previous",
-        "caption": "Your code runs the search and hands the result back. Then the model can answer.",
+        "caption": "Ask, run, send back, answer: two calls to the model.",
         "nodes": [
-          { "id": "db", "status": "normal" },
-          { "id": "llm", "status": "ok", "sublabel": "answers: Friday" }
+          { "id": "tool", "status": "normal" },
+          { "id": "llm", "status": "ok", "pill": "Friday" }
         ],
         "edges": [
-          { "from": "route", "to": "db", "label": "run search", "packet": { "label": "query" } },
-          { "id": "route>llm", "label": "tool_result", "packet": { "label": "result", "status": "ok" } },
-          { "id": "llm>route", "label": "\"The logo is due Friday\"", "status": "ok", "packet": { "label": "answer", "status": "ok" } }
+          { "id": "app>llm", "packet": { "kind": "request", "direction": "both", "speed": "fast" } }
         ]
       }
     },
@@ -165,7 +231,7 @@
       "chapter": "example",
       "body": [
         "A tool is a name, a description and an input schema. The description is a prompt: it tells the model <em>when</em> to use the tool, so write it like one.",
-        "<code>strict: true</code> makes the API hold the arguments to the schema exactly. Notice what is missing from the inputs: any user id. The route already knows who is logged in."
+        "<code>strict: true</code> holds the arguments to the schema exactly. Notice what is missing: any user id. The app server already knows who is logged in."
       ],
       "code": {
         "language": "ts",
@@ -173,17 +239,15 @@
         "code": "export const searchNotesTool = {\n  name: \"search_notes\",\n  description:\n    \"Search the current user's notes. Use it whenever the \" +\n    \"question is about something the user wrote down.\",\n  strict: true,\n  input_schema: {\n    type: \"object\",\n    properties: {\n      query: { type: \"string\", description: \"What to look for\" },\n    },\n    required: [\"query\"],\n    additionalProperties: false,\n  },\n};",
         "caption": "Lesson 5 shows how search_notes finds notes by meaning, not only by keyword."
       },
+      "changes": [
+        "~ search_notes: takes only a query, no user id"
+      ],
       "scene": {
         "extends": "previous",
-        "caption": "The tool definition: a name, a description that says when to use it, and an input schema.",
+        "caption": "The tool's only input is what to look for.",
         "nodes": [
-          { "id": "tooldef", "status": "active", "tags": ["query: string", "strict"] },
-          { "id": "llm", "status": "normal", "sublabel": "can ask for tools" }
-        ],
-        "edges": [
-          { "id": "route>db", "packet": false },
-          { "id": "llm>route", "packet": false },
-          { "id": "route>llm", "packet": false }
+          { "id": "llm", "status": "normal", "pill": null },
+          { "id": "tool", "status": "active", "pill": "query only" }
         ]
       }
     },
@@ -191,25 +255,31 @@
       "title": "The model must not pick whose data",
       "chapter": "watch-out",
       "body": [
-        "Tool arguments come from the model, and the model reads user text. If <code>search_notes</code> took a <code>user_id</code> argument, a crafted message could ask for someone else's notes.",
-        "So: take identity from the session, never from tool input. Run queries as the logged-in user, so <span class=\"term\">RLS</span> limits the rows. Validate every argument. For tools that change or delete things, ask the user to confirm first."
+        "Tool arguments come from the model, which reads user text. If <code>search_notes</code> took a <code>user_id</code>, crafted text could ask for someone else's notes.",
+        "So take identity from the <span class=\"term\">session</span> (the server's record of who is logged in), never from the model. Query as that user, so <span class=\"term\">RLS</span> limits the rows. Confirm before any tool changes or deletes things."
       ],
       "callout": {
         "type": "claude-code",
-        "text": "Read every tool's <code>input_schema</code>. Any <code>user_id</code>, <code>email</code> or table name in there? Does the handler use the service role key, which skips RLS? Are tool errors returned as a <code>tool_result</code> with <code>is_error: true</code> instead of crashing the route? Does anything destructive run without a confirm?"
+        "text": "Read every tool's <code>input_schema</code>: any <code>user_id</code>, email or table name? Does the handler use the service role key, which skips RLS? Are tool errors sent back with <code>is_error: true</code>? Does anything destructive run without a confirm?"
       },
+      "changes": [
+        "+ Someone Else: sends a message asking for user 7's notes",
+        "~ search_notes: takes a user_id from the model",
+        "~ Database: hands over another user's notes"
+      ],
       "scene": {
         "extends": "previous",
-        "caption": "If the model could choose the user id, a crafted message could read anyone's notes.",
+        "caption": "If the model picks the user id, crafted text picks it for you.",
         "nodes": [
-          { "id": "tooldef", "status": "normal", "tags": null },
-          { "id": "evil", "x": 5.9, "y": 0.6, "label": "Crafted message", "sublabel": "\"use user_id 7\"", "icon": "incognito", "kind": "threat", "status": "error" },
-          { "id": "db", "status": "ok", "tags": ["RLS: only Maya"] },
-          { "id": "route", "status": "ok", "tags": ["id from session"] }
+          { "id": "maya", "status": "dim" },
+          { "id": "evil", "x": 0.8, "y": 0.6, "label": "Someone Else", "icon": "incognito", "kind": "threat", "status": "active" },
+          { "id": "tool", "status": "error", "pill": { "text": "user_id 7", "tone": "bad" } },
+          { "id": "db", "status": "error" }
         ],
         "edges": [
-          { "from": "evil", "to": "llm", "label": "tries to steer", "status": "error", "style": "dashed" },
-          { "id": "route>db", "label": "as Maya only", "status": "ok" }
+          { "id": "maya>app", "status": "dim", "packet": false },
+          { "from": "evil", "to": "app", "status": "error", "packet": { "kind": "error" } },
+          { "id": "tool>db", "status": "error", "packet": { "kind": "data", "direction": "both", "returns": "data" } }
         ]
       }
     },
@@ -217,9 +287,29 @@
       "title": "Recap in one breath",
       "chapter": "recap",
       "body": [
-        "When code needs the answer, ask for <b>structured output</b> against a schema, then check the content before saving it.",
-        "When the model needs to look something up or act, give it <b>tools</b>. It replies with a request; your code decides, runs it with the logged-in user's identity, and sends back the result. The model asks. Your code is in charge."
-      ]
+        "When code needs the answer, ask for <b>structured output</b> against a schema, then check the content before saving.",
+        "When the model needs to look something up or act, give it <b>tools</b>. It replies with a request; your code decides, runs it as the logged-in user, and sends back the result. The model asks. Your code is in charge."
+      ],
+      "changes": [
+        "− Someone Else",
+        "~ search_notes: user comes from the session",
+        "~ Database: RLS shows only Maya's rows"
+      ],
+      "scene": {
+        "extends": "previous",
+        "remove": ["evil"],
+        "caption": "The model asks, your code runs the tool as Maya, the database guards the rows.",
+        "nodes": [
+          { "id": "maya", "status": "normal" },
+          { "id": "tool", "status": "ok", "pill": "session user" },
+          { "id": "db", "status": "ok", "pill": "RLS" },
+          { "id": "app", "status": "normal" }
+        ],
+        "edges": [
+          { "id": "maya>app", "status": "normal", "packet": { "kind": "request", "direction": "both", "speed": "slow" } },
+          { "id": "tool>db", "status": "ok" }
+        ]
+      }
     }
   ],
   "quiz": [
@@ -227,8 +317,8 @@
       "question": "Claude Code extracts tasks with \"Return JSON only\" in the prompt and <code>JSON.parse</code> on the reply. It fails now and then. What is the sturdier fix?",
       "options": [
         { "text": "Add \"ONLY JSON, NO OTHER TEXT\" in capitals.", "why": "That lowers the failure rate but cannot guarantee it. A schema-constrained answer can." },
-        { "text": "Strip everything before the first <code>{</code> with a regex.", "why": "That patches one failure style and misses others, like truncated or slightly malformed JSON." },
-        { "text": "Use structured output with a schema, and read <code>parsed_output</code>.", "correct": true, "why": "The API constrains the answer to the schema, so every completed answer parses into the right shape. Prompt wording alone cannot promise that." }
+        { "text": "Strip everything before the first <code>{</code> with a regex.", "why": "That patches one failure style and misses others, like cut-off or slightly malformed JSON." },
+        { "text": "Use structured output with a schema, and read <code>parsed_output</code>.", "correct": true, "why": "The API holds the answer to the schema, so every completed answer parses into the right shape. Prompt wording alone cannot promise that." }
       ]
     },
     {
@@ -243,8 +333,8 @@
       "question": "A tool Claude Code wrote is <code>get_notes(user_id)</code>, and the handler uses the service role key. What is the risk?",
       "options": [
         { "text": "None, because the model is told to use the current user's id.", "why": "Instructions can be overridden by crafted input. Security cannot depend on the model following the rules." },
-        { "text": "Crafted text can make the model request another user's id, and nothing in the database stops it.", "correct": true, "why": "The model picks the argument and the service role skips RLS. Take the user from the session and query as that user." },
-        { "text": "It is slower, because each call carries a user id.", "why": "Speed is not the problem. Letting model output choose whose data to read is." }
+        { "text": "It is slower, because each call carries a user id.", "why": "Speed is not the problem. Letting model output choose whose data to read is." },
+        { "text": "Crafted text can make the model request another user's id, and nothing in the database stops it.", "correct": true, "why": "The model picks the argument and the service role skips RLS. Take the user from the session and query as that user." }
       ]
     }
   ],
