@@ -34,8 +34,8 @@
       "title": "Notely waits for the whole summary",
       "chapter": "setup",
       "body": [
-        "Notely is our course's notes app. Maya clicks <b>Summarize</b> in her <b>browser</b>. The browser asks the <span class=\"term\">app server</span> (the computer running Notely's code), which asks the <span class=\"term\">Claude API</span>, Anthropic's AI.",
-        "The app server waits until the whole summary is written, then sends it back in one piece. For a short note, that takes about three seconds."
+        "Maya, a user of Notely (our course's notes app), clicks <b>Summarize</b> in her <b>browser</b> (the screen she types into). The browser asks the <span class=\"term\">app server</span> (the computer running Notely's code), which asks the <span class=\"term\">Claude API</span>, Anthropic's AI.",
+        "The app server waits for the whole summary, then sends it all at once: about three seconds for a short note."
       ],
       "metrics": {
         "first": { "value": 3, "tone": "good" },
@@ -62,7 +62,7 @@
       "chapter": "problem",
       "body": [
         "Maya summarizes a long note. A spinner turns for twenty seconds, then the whole summary pops in.",
-        "Nothing is broken. The model was writing the whole time, one <span class=\"term\">token</span> (a small piece of text) after another. Notely waited for the last one before showing anything. To Maya, that <span class=\"term\">latency</span> looks like a frozen app, so she clicks again."
+        "Nothing is broken. The model was writing the whole time, one <span class=\"term\">token</span> (a small piece of text) after another. Notely waited for the last one. To Maya, that wait (<span class=\"term\">latency</span>) looks like a frozen app, so she clicks again."
       ],
       "changes": [
         "~ First words 3 → 20 s",
@@ -121,7 +121,7 @@
       "title": "One response that stays open",
       "chapter": "how",
       "body": [
-        "With streaming on, the Claude API keeps one response open and pushes a series of small events down it. This web format is called <span class=\"term\">SSE</span>.",
+        "With streaming on, the Claude API keeps one response open and pushes a series of small events down it. This web format is called <span class=\"term\">SSE</span> (server-sent events).",
         "First a <code>message_start</code>, then many <code>content_block_delta</code> events with a few characters each, then <code>message_stop</code>. The SDK (Anthropic's helper library) turns these into simple callbacks, but you will see them in network logs."
       ],
       "code": {
@@ -183,8 +183,8 @@
       "title": "A chain of timeouts",
       "chapter": "how",
       "body": [
-        "Every hop has a <span class=\"term\">timeout</span>. The browser can give up, the host (Vercel) limits how long server code may run, and the SDK has its own limit.",
-        "The shortest one wins. Maya summarizes a whole notebook, and the app server is cut off while the model is still writing."
+        "Every hop has a <span class=\"term\">timeout</span>. The browser gives up, Vercel (the company that runs Notely's server code) limits how long it may run, and the SDK has its own limit.",
+        "The shortest one wins. Maya summarizes a whole notebook: the app server is cut off mid-answer. Streaming does not help: the server still runs until the last token."
       ],
       "callout": {
         "type": "tip",
@@ -214,7 +214,7 @@
       "title": "Too slow for a request: background it",
       "chapter": "how",
       "body": [
-        "Some jobs take minutes, too long to hold a request open. So the app server saves a <span class=\"term\">background job</span> in the database and answers at once with a job id.",
+        "Some jobs take minutes. So the app server saves a <span class=\"term\">background job</span> in the database (where Notely keeps its data) and answers at once with a job id.",
         "A <span class=\"term\">worker</span> (a separate program) picks it up, calls the Claude API and saves the result. The page checks back by <span class=\"term\">polling</span>: is it done yet?"
       ],
       "callout": {
@@ -225,7 +225,7 @@
         "+ Database: keeps a jobs table with status and result",
         "+ Worker: runs the job, no user waiting",
         "~ Request open 90 → 0.2 s: the server answers at once",
-        "~ Maya steps back; the app server no longer calls Claude"
+        "~ App Server: no longer calls Claude, only creates the job"
       ],
       "metrics": {
         "open": { "value": 0.2, "tone": "good" }

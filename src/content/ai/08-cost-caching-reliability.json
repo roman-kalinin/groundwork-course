@@ -26,14 +26,14 @@
   "metrics": [
     { "id": "cost", "label": "AI cost", "icon": "money", "unit": "$/day" },
     { "id": "err", "label": "Failed clicks", "icon": "alert", "unit": "%" },
-    { "id": "hits", "label": "Cache hits", "icon": "bolt", "unit": "%" }
+    { "id": "hits", "label": "Prompt cache", "icon": "bolt", "unit": "%" }
   ],
   "steps": [
     {
       "title": "Notely's Summarize, at a calm size",
       "chapter": "setup",
       "body": [
-        "Notely, our notes app, has about 1,000 users. Each <b>Summarize</b> click goes to the <span class=\"term\">app server</span> (the computer running Notely's code), which calls the <span class=\"term\">Claude API</span>, Anthropic's AI.",
+        "Notely, our notes app, has about 1,000 users, Maya among them. Each <b>Summarize</b> click goes to the <span class=\"term\">app server</span> (the computer running Notely's code), which calls the <span class=\"term\">Claude API</span>, Anthropic's AI.",
         "Every call costs a little. Today the AI bill is about $5 a day, and clicks almost never fail."
       ],
       "metrics": {
@@ -132,7 +132,7 @@
       },
       "changes": [
         "~ Claude API: reads the stable start from its cache",
-        "~ Cache hits 0 → 92%",
+        "~ Prompt cache 0 → 92% of calls hit",
         "~ AI cost $180 → $90 a day"
       ],
       "metrics": {
@@ -215,7 +215,7 @@
       "title": "Retry with backoff and jitter",
       "chapter": "how",
       "body": [
-        "Retry only what can succeed later: <code>429</code>, overloaded and other 5xx server errors, network drops. Never retry a <code>400</code>: the request itself is wrong and will fail forever.",
+        "Retry only what can succeed later: <code>429</code>, overloaded and other 5xx errors (trouble on the provider's side), network drops. Never retry a <code>400</code>: the request itself is wrong.",
         "Wait longer each time (<span class=\"term\">exponential backoff</span>), add a little randomness (<span class=\"term\">jitter</span>), honor <code>retry-after</code>, and stop after a few tries. The official SDKs do this; you set the numbers."
       ],
       "code": {

@@ -33,8 +33,8 @@
       "title": "Notely learns to find tasks",
       "chapter": "setup",
       "body": [
-        "Maya wants Notely, our notes app, to pull the to-dos out of a note. Claude Code built it: the <span class=\"term\">app server</span> (the computer running Notely's code) sends the note to the <span class=\"term\">Claude API</span>, Anthropic's AI, with \"Return the tasks as <span class=\"term\">JSON</span>\".",
-        "It reads the reply as data and saves each task in the <span class=\"term\">database</span>."
+        "Maya, a Notely user, wants the to-dos pulled out of her notes. Claude Code built it: the <span class=\"term\">app server</span> (the computer running Notely's code) sends the note to the <span class=\"term\">Claude API</span> (Anthropic's AI) with \"Return the tasks as <span class=\"term\">JSON</span>\" (a plain-text data format code can read).",
+        "It saves each task in the <span class=\"term\">database</span>, where notes live."
       ],
       "metrics": {
         "fail": { "value": 0, "tone": "good" },
@@ -119,7 +119,7 @@
       "title": "One schema for your code and the API",
       "chapter": "how",
       "body": [
-        "In TypeScript, <span class=\"term\">Zod</span> lets you describe the shape once. The SDK (Anthropic's helper library) turns it into a JSON schema for the request, and checks the reply against it.",
+        "In TypeScript (the language Notely is written in), <span class=\"term\">Zod</span> lets you describe the shape once. The SDK (Anthropic's helper library) turns it into a JSON schema for the request, and checks the reply against it.",
         "You get back <code>parsed_output</code>: a typed object, not a string. Your editor knows <code>tasks[0].title</code> exists before you run anything."
       ],
       "code": {
@@ -256,7 +256,7 @@
       "chapter": "watch-out",
       "body": [
         "Tool arguments come from the model, which reads user text. If <code>search_notes</code> took a <code>user_id</code>, crafted text could ask for someone else's notes.",
-        "So take identity from the <span class=\"term\">session</span> (the server's record of who is logged in), never from the model. Query as that user, so <span class=\"term\">RLS</span> limits the rows. Confirm before any tool changes or deletes things."
+        "So take identity from the <span class=\"term\">session</span> (the server's record of who is logged in), never from the model. Query as that user, so <span class=\"term\">RLS</span> (database rules: each user sees only their rows) applies."
       ],
       "callout": {
         "type": "claude-code",
@@ -264,7 +264,7 @@
       },
       "changes": [
         "+ Someone Else: sends a message asking for user 7's notes",
-        "~ search_notes: takes a user_id from the model",
+        "~ search_notes, bad version: takes a user_id from the model",
         "~ Database: hands over another user's notes"
       ],
       "scene": {

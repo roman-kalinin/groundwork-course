@@ -33,8 +33,8 @@
       "title": "Notely's assistant reads and acts",
       "chapter": "setup",
       "body": [
-        "Notely, our notes app, has an assistant. Maya asks it things; the <span class=\"term\">app server</span> (the computer running Notely's code) reads her notes from the <span class=\"term\">database</span> and sends them to the <span class=\"term\">Claude API</span>, Anthropic's AI.",
-        "The assistant also has a <span class=\"term\">tool</span> (lesson 4): <code>send_email</code>, so Claude can ask the app server to email a plan."
+        "Notely, our notes app, has an assistant. Maya, a user, asks it things. The <span class=\"term\">app server</span> (the computer running Notely's code) reads her notes from the <span class=\"term\">database</span> and sends them, plus her name, email and phone, to the <span class=\"term\">Claude API</span>, Anthropic's AI.",
+        "It also has a <span class=\"term\">tool</span> (an action Claude can ask your code for): <code>send_email</code>."
       ],
       "metrics": {
         "leaked": { "value": 0, "tone": "good" },
@@ -116,8 +116,8 @@
       "title": "Give tools the least power that works",
       "chapter": "how",
       "body": [
-        "Apply <span class=\"term\">least privilege</span> to every tool. Does the assistant need to email <em>anyone</em>? No. It needs to email Maya a draft.",
-        "So replace <code>send_email(to, body)</code> with a tool whose recipient is fixed in code. The model can still be fooled, but the worst outcome is Maya getting an odd email. That closes this path for <span class=\"term\">exfiltration</span>."
+        "Apply <span class=\"term\">least privilege</span>. Does the assistant need to email <em>anyone</em>? No. It needs to email Maya a draft.",
+        "So replace <code>send_email(to, body)</code> with a tool whose recipient is fixed in code. The model can still be fooled, but the worst outcome is an odd email to Maya. That closes this path for <span class=\"term\">exfiltration</span> (sneaking data out)."
       ],
       "code": {
         "language": "ts",
@@ -174,7 +174,7 @@
       "title": "Check what goes in and what comes out",
       "chapter": "how",
       "body": [
-        "<span class=\"term\" data-term=\"guardrail\">Guardrails</span> sit around the model. Before it: cap input length and AI calls per user. After it: treat output as untrusted. Check its structure and show it as text, never raw HTML, or a crafted reply becomes <span class=\"term\">XSS</span> on your page.",
+        "<span class=\"term\" data-term=\"guardrail\">Guardrails</span> sit around the model. Before it: cap input length and AI calls per user. After it: treat output as untrusted. Show it as text, never as raw HTML (live page code), or a crafted reply becomes <span class=\"term\">XSS</span> on your page.",
         "Input filters help against abuse, not injection. That is why tool limits come first."
       ],
       "code": {

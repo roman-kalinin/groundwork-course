@@ -35,7 +35,7 @@
       "title": "Notely's chat searches by keyword",
       "chapter": "setup",
       "body": [
-        "Maya has 2,000 notes in Notely, our notes app. They live in the <span class=\"term\">database</span>. When she asks Notely's chat something, the <span class=\"term\">app server</span> (the computer running Notely's code) searches her notes for the words she typed.",
+        "Maya, a user of Notely (our notes app), has 2,000 notes. They live in the <span class=\"term\">database</span>. When she asks the chat something, the <span class=\"term\">app server</span> (the computer running Notely's code) searches her notes for the words she typed.",
         "The match goes to the <span class=\"term\">Claude API</span>, Anthropic's AI, which answers. Ask about \"groceries\": it finds the grocery note."
       ],
       "metrics": {
@@ -87,8 +87,8 @@
       "title": "Turn meaning into coordinates",
       "chapter": "idea",
       "body": [
-        "An <span class=\"term\">embedding model</span> turns text into an <span class=\"term\">embedding</span>: a <span class=\"term\">vector</span>, a long list of numbers. Think of it as a position on a map of meaning.",
-        "Similar texts land near each other, even with no words in common. \"Logo decision\" and \"blue brand mark\" sit close; \"grocery list\" sits far away. Search becomes: find the nearest points."
+        "An <span class=\"term\">embedding model</span> turns text into an <span class=\"term\">embedding</span>: a <span class=\"term\">vector</span>, a long list of numbers. Think of it as a spot on a map of meaning.",
+        "Similar texts land close, even with no shared words. \"Logo decision\" lands by \"blue brand mark\" and a font list; groceries and gym sit far away. Search means: find the nearest."
       ],
       "callout": {
         "type": "analogy",
@@ -255,8 +255,8 @@
       "title": "Notely's search, scoped to Maya",
       "chapter": "example",
       "body": [
-        "In Supabase, wrap the search in a Postgres function and call it with <code>supabase.rpc(\"match_note_chunks\", …)</code>, using Maya's logged-in connection.",
-        "The function keeps only rows where <code>user_id = auth.uid()</code> (the logged-in user), and runs as the caller, so the <span class=\"term\">RLS</span> rules on <code>note_chunks</code> apply too. Two locks on one door. Lesson 4's <code>search_notes</code> tool calls this."
+        "Wrap the search in a Postgres function and call it with <code>supabase.rpc(\"match_note_chunks\", …)</code> (Supabase's way to run a database function), using Maya's logged-in connection.",
+        "The function keeps only rows where <code>user_id = auth.uid()</code> (the logged-in user), and runs as the caller, so the <span class=\"term\">RLS</span> rules on <code>note_chunks</code> apply too. Lesson 4's <code>search_notes</code> tool calls this."
       ],
       "code": {
         "language": "sql",
@@ -282,8 +282,8 @@
       "title": "The leak: someone else's notes",
       "chapter": "watch-out",
       "body": [
-        "A match function that skips the user filter, or runs with the service role key (an admin key that ignores RLS), searches every user's chunks. Leo's private note lands in Maya's prompt, and the model happily quotes it.",
-        "Once it is in the prompt, it has leaked. Filter in the database, never by asking the model to ignore things."
+        "A match function that skips the user filter, or runs with the service role key (an admin key that ignores RLS), searches every user's chunks. Leo's private note (Leo, another user) lands in Maya's prompt, and the model happily quotes it.",
+        "Once it is in the prompt, it has leaked. Filter in the database, never by asking the model."
       ],
       "callout": {
         "type": "warn",

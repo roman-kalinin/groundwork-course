@@ -31,7 +31,7 @@
       "title": "Notely sends one line and the note",
       "chapter": "setup",
       "body": [
-        "Notely is our course's notes app. When Maya clicks <b>Summarize</b>, the <span class=\"term\">app server</span> (the computer running Notely's code) takes her note and sends it to the <span class=\"term\">Claude API</span>, Anthropic's AI.",
+        "Notely is our course's notes app. When Maya, one of its users, clicks <b>Summarize</b>, the <span class=\"term\">app server</span> (the computer running Notely's code) takes her <b>note</b> and sends it to the <span class=\"term\">Claude API</span>, Anthropic's AI.",
         "With the note goes one instruction: \"Summarize this note.\" That is Notely's whole <span class=\"term\">prompt</span>. In your demo, every summary looked fine."
       ],
       "metrics": {
@@ -79,8 +79,8 @@
       "title": "The model only knows what is on the desk",
       "chapter": "idea",
       "body": [
-        "The model cannot see Notely, Maya, or your intentions. It sees only the text you send, which must fit in its <span class=\"term\">context window</span>, and fills every gap with a plausible guess.",
-        "So the real job is <span class=\"term\">context engineering</span>: deciding, for each request, which instructions, examples and data go in, and in what order."
+        "The model cannot see Notely, Maya, or your intentions. It sees only what you send, which must fit in its <span class=\"term\">context window</span> (the most it can read at once), and fills every gap with a plausible guess.",
+        "So the real job is <span class=\"term\">context engineering</span>: choosing, for each request, which instructions, examples and data go in, in what order."
       ],
       "callout": {
         "type": "analogy",
@@ -114,6 +114,7 @@
       },
       "changes": [
         "+ System Prompt: standing rules sent with every request",
+        "~ App Server: one line → a full brief",
         "~ Bad summaries 30 → 12",
         "~ Prompt tokens 400 → 550"
       ],
@@ -223,8 +224,8 @@
       "title": "Notely keeps prompts in code",
       "chapter": "example",
       "body": [
-        "Notely's prompt lives in one file, <code>lib/prompts/summary.ts</code>, next to the code that calls the model. It is reviewed and versioned in git, like any other code.",
-        "Prompts change behavior as much as code does. When summaries get worse, the history of that file is the first place to look. Lesson 7 adds tests that run on every prompt change."
+        "Notely's prompt lives in one file, <code>lib/prompts/summary.ts</code>, next to the code that calls the model. It is reviewed and kept in git (the tool that saves every past version of your code).",
+        "When summaries get worse, that file's history is the first place to look. Lesson 7 adds tests that run on every prompt change."
       ],
       "callout": {
         "type": "claude-code",

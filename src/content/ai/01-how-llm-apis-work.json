@@ -34,8 +34,8 @@
       "title": "Notely's Summarize button",
       "chapter": "setup",
       "body": [
-        "Notely is our course's notes app. Maya, one of its users, opens a long note in her <b>browser</b> and clicks <b>Summarize</b>.",
-        "The browser sends the click to the <span class=\"term\">app server</span> (the computer running Notely's code). The app server sends the note's text to the <span class=\"term\">Claude API</span>, Anthropic's AI. Seconds later, three short lines come back."
+        "Notely is our course's notes app. Maya, one of its users, opens a long note in her <b>browser</b> (the screen she types into) and clicks <b>Summarize</b>.",
+        "The browser sends the click to the <span class=\"term\">app server</span> (the computer running Notely's code). The app server sends the note's text to the <span class=\"term\">Claude API</span>, Anthropic's AI. Three short lines come back."
       ],
       "metrics": {
         "tin": { "value": 800, "tone": "good" },
@@ -197,8 +197,8 @@
       "title": "Answers have a length cap",
       "chapter": "how",
       "body": [
-        "You also set <span class=\"term\">max_tokens</span>: the most the model may write. Hit it, and the answer stops mid-sentence, with no error.",
-        "Each response says why it ended in <span class=\"term\">stop_reason</span>: <code>end_turn</code> means it finished, <code>max_tokens</code> means it was cut off. Check it before saving, or Notely stores half a bullet and looks broken."
+        "You also set <span class=\"term\">max_tokens</span>: the most the model may write. Say someone lowers it to 50 to save money. Maya's summary needs 60, so it stops mid-sentence, with no error.",
+        "Each response says why it ended in <span class=\"term\">stop_reason</span>: <code>end_turn</code> means finished, <code>max_tokens</code> means cut off. Check it before saving, or Notely stores half a bullet."
       ],
       "code": {
         "language": "ts",
@@ -207,13 +207,13 @@
       },
       "changes": [
         "~ Tokens in 400,000 → 2,000: a normal note again",
-        "~ Tokens out 60 → 1,024: the answer hit the cap",
+        "~ Tokens out 60 → 50: the answer hit the cap",
         "~ Stop reason end_turn → max_tokens",
         "~ Messages back to normal; Claude API answers, cut short"
       ],
       "metrics": {
         "tin": { "value": 2000, "tone": "good" },
-        "tout": { "value": 1024, "tone": "bad" },
+        "tout": { "value": 50, "tone": "bad" },
         "stop": { "value": "max_tokens", "tone": "bad" }
       },
       "scene": {
@@ -233,20 +233,21 @@
       "title": "Pick a model per feature",
       "chapter": "example",
       "body": [
-        "Models come in sizes. Small ones are fast and cheap; large ones reason better but are slower and pricier. Choose per feature.",
-        "Notely's summary runs fine on a small model; \"plan my week from 200 notes\" may need a large one. Keep each model id in an <span class=\"term\">env var</span> (a setting outside the code) to switch easily."
+        "Models come in sizes, all behind the Claude API. Small ones are fast and cheap; large ones reason better but cost more and take longer.",
+        "Notely's summary runs fine on a small model; \"plan my week from 200 notes\" may need a large one. Keep each model id in an <span class=\"term\">env var</span> (a setting outside the code)."
       ],
       "callout": {
         "type": "claude-code",
         "text": "Ask: which model does each feature use, and why? Is the model id in an env var or hard-coded in five files? Is <code>max_tokens</code> set and <code>stop_reason</code> checked? Model names change often: ask it to check the current list."
       },
       "changes": [
-        "− Claude API and Messages: we look at the model choice",
+        "− Claude API and Messages: we look at the models behind the API",
         "+ Small Model: fast and cheap, for summaries",
         "+ Large Model: slower, for hard planning",
-        "~ Stop reason max_tokens → end_turn: cap raised"
+        "~ Cap back to 1,024: Tokens out 50 → 60, Stop reason → end_turn"
       ],
       "metrics": {
+        "tout": { "value": 60, "tone": "good" },
         "stop": { "value": "end_turn", "tone": "good" }
       },
       "scene": {
@@ -277,7 +278,7 @@
       "changes": [
         "− Small Model and Large Model",
         "+ Claude API: back, holding the bill",
-        "+ Someone Else: a stranger who copied the leaked key",
+        "+ Someone Else: a stranger calling Claude with the copied key",
         "~ Browser now carries the key: a mistake"
       ],
       "scene": {
@@ -293,6 +294,7 @@
         "edges": [
           { "id": "browser>app", "status": "normal", "packet": { "kind": "request", "direction": "both" } },
           { "from": "browser", "to": "thief", "status": "error", "packet": { "kind": "secret" } },
+          { "from": "thief", "to": "llm", "status": "error", "packet": { "kind": "request" } },
           { "from": "app", "to": "llm" }
         ]
       }
@@ -306,12 +308,8 @@
       ],
       "changes": [
         "− Someone Else: the key lives only on the app server",
-        "~ Browser safe again; every part working",
-        "~ Tokens out 1,024 → 60"
+        "~ Browser safe again; every part working"
       ],
-      "metrics": {
-        "tout": { "value": 60, "tone": "good" }
-      },
       "scene": {
         "extends": "previous",
         "remove": ["thief"],

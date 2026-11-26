@@ -30,8 +30,8 @@
       "title": "Notely's chat can look things up",
       "chapter": "setup",
       "body": [
-        "Maya chats with Notely, our notes app. The <span class=\"term\">app server</span> (the computer running Notely's code) passes her question to the <span class=\"term\">Claude API</span>, Anthropic's AI.",
-        "Thanks to <span class=\"term\">tool use</span> (lesson 4), Claude can ask the app server to search her notes in the <b>database</b>, then answer. One question: two model calls, about three seconds."
+        "Maya, a Notely user, chats with our notes app. The <span class=\"term\">app server</span> (the computer running Notely's code) passes her question to the <span class=\"term\">Claude API</span>, Anthropic's AI.",
+        "Thanks to <span class=\"term\">tool use</span> (lesson 4), Claude can ask the server to search her notes in the <b>database</b> (where notes live), then answer. One question: two model calls, three seconds."
       ],
       "metrics": {
         "calls": { "value": 2, "tone": "good" },
@@ -162,8 +162,8 @@
       "title": "MCP: one plug for every agent",
       "chapter": "how",
       "body": [
-        "Every agent needs tools. <span class=\"term\">MCP</span> is an open standard: an <span class=\"term\">MCP server</span> offers tools once, and any app that speaks MCP can use them.",
-        "You already use this: the Supabase or GitHub servers in your Claude Code. Notely could ship its own, so Maya's Claude app searches her notes. A real feature to sell."
+        "<span class=\"term\">MCP</span> is an open standard: an <span class=\"term\">MCP server</span> offers tools once, and any app that speaks MCP can use them.",
+        "You already use this: Supabase or GitHub servers in Claude Code. Notely could ship one, so Maya searches her notes from Anthropic's Claude app. It checks who is asking, so each user sees only their notes."
       ],
       "code": {
         "language": "bash",
@@ -173,7 +173,7 @@
       "changes": [
         "− Maya, App Server, Claude API, Calendar",
         "+ Notely MCP: offers Notely's tools to any AI app",
-        "+ Claude Code, Claude App, Your Agent: three apps using it",
+        "+ Claude Code, Claude App, Your Agent: three AI apps using it",
         "~ Database: each user still sees only their notes"
       ],
       "scene": {

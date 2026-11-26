@@ -32,8 +32,8 @@
       "title": "You test prompts by trying them",
       "chapter": "setup",
       "body": [
-        "Notely, our notes app, summarizes Maya's notes. The <span class=\"term\">app server</span> (the computer running Notely's code) sends each note to the <span class=\"term\">Claude API</span>, Anthropic's AI, with the summary prompt from lesson 3.",
-        "When you change that prompt, you try it on a note or two by hand. If it looks good, you ship. Nobody knows the real pass rate."
+        "Notely, our notes app, summarizes notes for users like Maya. The <span class=\"term\">app server</span> (the computer running Notely's code) sends each note to the <span class=\"term\">Claude API</span>, Anthropic's AI, with the summary prompt from lesson 3.",
+        "When you change that prompt, you try a note or two by hand, then ship. Nobody knows the real pass rate."
       ],
       "metrics": {
         "cases": { "value": 1, "tone": "warn" }
@@ -204,8 +204,8 @@
       "title": "Catch regressions before they ship",
       "chapter": "how",
       "body": [
-        "Record today's score as the <span class=\"term\">baseline</span>. When a change scores lower, or a case that passed now fails, that is a <span class=\"term\">regression</span>.",
-        "Run the eval in <span class=\"term\">CI</span> (checks that run automatically) on every <span class=\"term\">pull request</span> that touches prompts, tools or the model. A new prompt scores 65% against a baseline of 70%: CI blocks the merge."
+        "Today's score is the <span class=\"term\">baseline</span>. A lower score, or a case that passed and now fails, is a <span class=\"term\">regression</span>.",
+        "Run the eval in <span class=\"term\">CI</span> (checks that run automatically) on every <span class=\"term\">pull request</span> (a proposed code change, before it is merged) that touches prompts or models. Prompt v3 scores 65% against a 70% baseline: CI blocks it."
       ],
       "callout": {
         "type": "tip",
@@ -214,6 +214,7 @@
       "changes": [
         "+ CI: runs the eval on every pull request",
         "~ Pass rate 70 → 65%: below the baseline",
+        "~ App Server: tries prompt version 3",
         "~ Grader and Claude API step back"
       ],
       "metrics": {
@@ -225,6 +226,7 @@
         "nodes": [
           { "id": "grader", "status": "dim" },
           { "id": "llm", "status": "dim", "pill": null },
+          { "id": "app", "pill": "prompt v3" },
           { "id": "ci", "x": 4.6, "y": 0.4, "label": "CI", "icon": "git", "kind": "server", "status": "error", "pill": { "text": "blocked", "icon": "ban", "tone": "bad" } }
         ],
         "edges": [
@@ -249,6 +251,7 @@
         "caption": "The runner tests the real function, so it can never drift from what users get."
       },
       "changes": [
+        "~ App Server: prompt version 4, the fix",
         "~ CI: passes after the prompt fix",
         "~ Pass rate 65 → 88%",
         "~ Grader and Claude API back in view"
@@ -262,7 +265,8 @@
         "nodes": [
           { "id": "grader", "status": "normal" },
           { "id": "llm", "status": "normal" },
-          { "id": "ci", "status": "ok", "pill": { "text": "passed", "icon": "check", "tone": "good" } }
+          { "id": "ci", "status": "ok", "pill": { "text": "passed", "icon": "check", "tone": "good" } },
+          { "id": "app", "pill": "prompt v4" }
         ],
         "edges": [
           { "id": "app>grader", "status": "normal", "packet": { "kind": "response" } },
