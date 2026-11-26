@@ -196,7 +196,7 @@
           { "id": "llm", "status": "active", "pill": "judge" }
         ],
         "edges": [
-          { "from": "llm", "to": "grader", "route": "y-first", "arrow": "end", "packet": { "kind": "request", "direction": "both" } }
+          { "from": "grader", "to": "llm", "route": "x-first", "arrow": "none", "packet": { "kind": "request", "direction": "both" } }
         ]
       }
     },
@@ -231,7 +231,7 @@
         ],
         "edges": [
           { "id": "app>grader", "status": "dim", "packet": false },
-          { "id": "llm>grader", "status": "dim", "packet": false },
+          { "id": "grader>llm", "status": "dim", "packet": false },
           { "id": "app>llm", "status": "dim", "packet": false },
           { "from": "ci", "to": "app", "packet": { "kind": "job" } }
         ]
@@ -270,7 +270,7 @@
         ],
         "edges": [
           { "id": "app>grader", "status": "normal", "packet": { "kind": "response" } },
-          { "id": "llm>grader", "status": "normal", "packet": { "kind": "request", "direction": "both" } },
+          { "id": "grader>llm", "status": "normal", "packet": { "kind": "request", "direction": "both" } },
           { "id": "app>llm", "status": "normal", "packet": { "kind": "request", "direction": "both" } }
         ]
       }

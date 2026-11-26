@@ -47,7 +47,7 @@
           { "id": "repo", "x": 7.2, "y": 2.2, "label": "Code Repo", "icon": "git", "kind": "external" },
           { "id": "aikey", "x": 4.4, "y": 5.4, "label": "AI Key", "icon": "key", "kind": "external" },
           { "id": "domain", "x": 7.2, "y": 5.4, "label": "Domain", "icon": "globe", "kind": "external" },
-          { "id": "sam", "x": 11.0, "y": 5.4, "label": "Sam", "icon": "user", "kind": "person" }
+          { "id": "sam", "x": 11.0, "y": 8.0, "label": "Sam", "icon": "user", "kind": "person" }
         ],
         "edges": [
           { "from": "you", "to": "host", "packet": { "kind": "request", "speed": "slow" } }
@@ -80,7 +80,7 @@
         ],
         "edges": [
           { "id": "you>host", "packet": false },
-          { "from": "sam", "to": "you", "label": "please?", "style": "dashed", "status": "error", "packet": { "kind": "request", "speed": "slow" } }
+          { "from": "sam", "to": "you", "route": "x-first", "label": "please?", "style": "dashed", "status": "error", "packet": { "kind": "request", "speed": "slow" } }
         ]
       }
     },

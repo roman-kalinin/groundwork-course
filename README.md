@@ -22,7 +22,7 @@ npm run preview    # serve dist/ at http://localhost:4173
 
 ### Visual QA (optional)
 
-`npm run qa` opens every step of every lesson in headless Chromium in two passes. The still pass (reduced motion, 1440x900 and 390x844) reports overlapping diagram text (name plates, pills, edge labels, zone names, resting packets), text that overflows its plate or pill, horizontal page scroll and console errors. The motion pass (1440x900, animation on) samples the moving packets at four moments of their loop and reports a packet covering other text or two packets colliding. Start `npm run preview` first, then `npm run qa -- http://localhost:4173/` (add `--still-only` to skip the motion pass). The first time, run `npx playwright install chromium`.
+`npm run qa` opens every step of every lesson in headless Chromium in two passes. The still pass (reduced motion, 1440x900 and 390x844) reports overlapping diagram text (name plates, pills, edge labels, zone names, resting packets), text that overflows its plate or pill, horizontal page scroll and console errors. The motion pass (1440x900, animation on) samples the moving packets at four moments of their loop and reports a packet covering other text or two packets colliding. Start `npm run preview` first, then `npm run qa -- http://localhost:4173/` (add `--still-only` to skip the motion pass, or `--only=<module>` to check one module). The first time, run `npx playwright install chromium`.
 
 ## Add a lesson
 
