@@ -6,11 +6,15 @@
   "level": "beginner",
   "youWillLearn": [
     "Why a <b>commit</b> is a save point you can always return to",
+    "How to undo a bad change with <code>git revert</code>",
     "How <b>branches</b> keep unfinished work away from the live app",
     "What a <b>pull request</b> adds: a preview, checks and a second pair of eyes",
-    "How to undo a bad deploy with <code>git revert</code>, and why a leaked secret needs more than that"
+    "Why a leaked secret needs more than a revert"
   ],
   "glossary": {
+    "GitHub": "A website that stores a copy of your project's code and its history, and where changes are reviewed.",
+    "production": "The live version of the app, the one real users open.",
+    "Git": "A program on your laptop that records every saved version of the project's files.",
     "repository": "The project folder plus its full history of changes. Your laptop has a copy, GitHub has a copy.",
     "commit": "A saved snapshot of your files with a short message and a unique id, like a named save point in a game.",
     "branch": "A separate line of commits where you can work without touching the main line.",
@@ -22,31 +26,63 @@
     "revert": "A new commit that does the exact opposite of an old one. It undoes the change without erasing history.",
     "force push": "Overwriting the history on GitHub with your local version. It can silently delete other people's commits."
   },
+  "metrics": [
+    { "id": "saves", "label": "Save points", "icon": "git" },
+    { "id": "live", "label": "Live app", "icon": "rocket" }
+  ],
   "steps": [
+    {
+      "title": "How a change reaches Notely today",
+      "chapter": "setup",
+      "body": [
+        "Maya builds Notely, our notes app, with Claude Code on her <b>laptop</b>. Finished changes go up to <span class=\"term\">GitHub</span>, a website that stores the project's code.",
+        "Vercel, the company that runs Notely, picks up the new code from GitHub and puts it on the <b>app server</b> (the computer running Notely's code). That live version is called <span class=\"term\">production</span>."
+      ],
+      "metrics": {
+        "saves": 0,
+        "live": { "value": "Working", "tone": "good" }
+      },
+      "scene": {
+        "caption": "Code goes from the laptop to GitHub, and from GitHub to the live app server.",
+        "nodes": [
+          { "id": "laptop", "x": 0.8, "y": 3.6, "label": "Laptop", "icon": "laptop", "kind": "client" },
+          { "id": "github", "x": 4.6, "y": 3.6, "label": "GitHub", "icon": "git", "kind": "external" },
+          { "id": "app", "x": 8.4, "y": 3.6, "label": "App Server", "icon": "server", "kind": "server", "pill": "live" }
+        ],
+        "edges": [
+          { "from": "laptop", "to": "github", "packet": { "kind": "data", "speed": "slow" } },
+          { "from": "github", "to": "app", "packet": { "kind": "data", "speed": "slow" } }
+        ]
+      }
+    },
     {
       "title": "It worked yesterday",
       "chapter": "problem",
       "body": [
-        "Maya asks Claude Code to add tags to Notely. It edits fourteen files and pushes straight to production. Now the <b>AI summary</b> button throws an error.",
-        "Which of the fourteen changes broke it? What did the files look like yesterday? Without a history, Maya can only guess and patch on top of the damage."
+        "Maya asks Claude Code to add tags to notes. It edits fourteen files, and they go straight to production. Now the <b>Summarize</b> button throws an error.",
+        "Which of the fourteen changes broke it? What did the files look like yesterday? Nothing recorded it, so Maya can only guess and patch on top of the damage."
       ],
       "callout": {
         "type": "analogy",
         "text": "Editing a Figma file with version history turned off. One bad hour of changes, and there is no \"restore this version\" button."
       },
+      "changes": [
+        "~ Laptop: fourteen files changed in one go",
+        "~ App Server: Summarize is broken",
+        "~ Live app Working → Broken"
+      ],
+      "metrics": {
+        "live": { "value": "Broken", "tone": "bad" }
+      },
       "scene": {
-        "caption": "Changes go from the laptop straight to the live app. Nothing records what changed.",
+        "extends": "previous",
+        "caption": "Fourteen changed files go live at once, and something in them breaks the app.",
         "nodes": [
-          { "id": "laptop", "x": 2, "y": 4, "label": "Maya's laptop", "sublabel": "14 files changed", "icon": "laptop", "kind": "client" },
-          { "id": "github", "x": 6.4, "y": 4, "label": "GitHub", "sublabel": "notely repo", "icon": "git", "kind": "external" },
-          { "id": "prod", "x": 10.4, "y": 4, "label": "Production", "sublabel": "notely.app", "icon": "rocket", "kind": "server", "status": "error" }
+          { "id": "laptop", "pill": { "text": "14 files", "tone": "warn" }, "status": "warn" },
+          { "id": "app", "status": "error", "pill": { "text": "live", "tone": "bad" } }
         ],
         "edges": [
-          { "from": "laptop", "to": "github", "label": "push to main", "packet": { "label": "changes" } },
-          { "from": "github", "to": "prod", "label": "auto deploy", "status": "error", "packet": { "status": "error" } }
-        ],
-        "notes": [
-          { "id": "which", "x": 11, "y": 2.3, "text": "Which change broke it?", "status": "error" }
+          { "id": "github>app", "status": "error", "packet": { "kind": "error", "speed": "fast" } }
         ]
       }
     },
@@ -54,22 +90,70 @@
       "title": "Commits: save points with names",
       "chapter": "idea",
       "body": [
-        "Git fixes this with <span class=\"term\" data-term=\"commit\">commits</span>. Each commit is a snapshot of the whole project, with a short message and a unique id like <code>7c2e</code>.",
-        "The commits line up into a history. Any snapshot can be opened, compared with another, or restored. The full history lives in the <span class=\"term\">repository</span>, on the laptop and on GitHub."
+        "<span class=\"term\">Git</span>, a program on Maya's laptop, fixes this with <span class=\"term\" data-term=\"commit\">commits</span>. A commit is a snapshot of the whole project, with a short message and an id like <code>7c2e</code>.",
+        "Commits line up into a history, kept in the <span class=\"term\">repository</span> on the laptop and on GitHub. Any snapshot can be opened, compared or restored."
       ],
+      "callout": {
+        "type": "tip",
+        "text": "Claude Code creates commits for you when you ask it to. You still decide when a save point is worth making: after each small, working change."
+      },
+      "changes": [
+        "− Laptop, GitHub and App Server: we zoom into the history",
+        "+ Notes list, AI summary, Add tags: three commits in a row",
+        "~ Save points 0 → 3"
+      ],
+      "metrics": {
+        "saves": { "value": 3, "tone": "good" }
+      },
       "scene": {
-        "caption": "A history of named snapshots. If the newest one is broken, the one before it still exists.",
+        "caption": "Three named snapshots. The newest one is broken; the one before it still exists.",
         "nodes": [
-          { "id": "c1", "x": 1.8, "y": 5.2, "label": "Notes list", "sublabel": "commit a1f3", "icon": "git", "kind": "neutral" },
-          { "id": "c2", "x": 4.6, "y": 5.2, "label": "AI summary", "sublabel": "commit 7c2e", "icon": "git", "kind": "neutral", "status": "ok" },
-          { "id": "c3", "x": 7.8, "y": 5.2, "label": "Add tags", "sublabel": "commit e91b", "icon": "git", "kind": "neutral", "status": "error" }
+          { "id": "c1", "x": 0.8, "y": 3.0, "label": "Notes list", "icon": "git", "shape": "tile", "pill": "a1f3" },
+          { "id": "c2", "x": 4.4, "y": 3.0, "label": "AI summary", "icon": "git", "shape": "tile", "pill": "7c2e", "status": "ok" },
+          { "id": "c3", "x": 8.0, "y": 3.0, "label": "Add tags", "icon": "git", "shape": "tile", "pill": "e91b", "status": "error" }
         ],
         "edges": [
           { "from": "c1", "to": "c2" },
           { "from": "c2", "to": "c3" }
+        ]
+      }
+    },
+    {
+      "title": "Undo with revert, not by hand",
+      "chapter": "how",
+      "body": [
+        "Production is broken. Do not start editing files in a hurry. Use <span class=\"term\">revert</span>.",
+        "<code>git revert</code> creates a <b>new commit</b> that does the exact opposite of the bad one. The history stays complete, the new commit goes live like any other, and the app is back to how it was before tags."
+      ],
+      "code": {
+        "language": "bash",
+        "filename": "Terminal",
+        "code": "git log --oneline -5   # find the bad commit\ngit revert e91b        # new commit that undoes it\ngit push               # send it up, Vercel deploys it",
+        "caption": "Claude Code can run these too. Ask it to revert, not to \"fix it quickly\"."
+      },
+      "changes": [
+        "+ Revert tags: a new commit that undoes Add tags",
+        "+ App Server: runs the newest commit, working again",
+        "~ Save points 3 → 4",
+        "~ Live app Broken → Working"
+      ],
+      "metrics": {
+        "saves": { "value": 4, "tone": "good" },
+        "live": { "value": "Working", "tone": "good" }
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "The revert is one more commit. The broken change is undone, and still in history.",
+        "nodes": [
+          { "id": "c1", "status": "dim" },
+          { "id": "c2", "status": "normal" },
+          { "id": "r4", "x": 11.2, "y": 3.0, "label": "Revert tags", "icon": "refresh", "shape": "tile", "pill": "b07c", "status": "ok" },
+          { "id": "app", "x": 11.2, "y": 6.9, "label": "App Server", "icon": "server", "kind": "server", "pill": "live", "status": "ok" }
         ],
-        "notes": [
-          { "id": "back", "x": 4.6, "y": 7.1, "text": "Last good version: 7c2e", "status": "ok" }
+        "edges": [
+          { "id": "c1>c2", "status": "dim" },
+          { "from": "c3", "to": "r4", "label": "undo" },
+          { "from": "r4", "to": "app", "packet": { "kind": "data" } }
         ]
       }
     },
@@ -77,31 +161,38 @@
       "title": "Branches: work beside the live app",
       "chapter": "how",
       "body": [
-        "A <span class=\"term\">branch</span> is a separate line of commits. <span class=\"term\">Main</span> holds what is live. New work goes on its own branch, like <code>feature/tags</code>.",
-        "Maya can commit half-finished tags all afternoon. Production keeps running the last good commit on main, untouched, until she decides the work is ready."
+        "Now Maya redoes tags, safely. A <span class=\"term\">branch</span> is a separate line of commits. <span class=\"term\">Main</span> holds what is live. New work goes on its own branch, here <code>feature/tags</code>.",
+        "She can commit half-finished tags all afternoon. Production keeps running main, untouched, until she decides the work is ready."
       ],
       "callout": {
         "type": "analogy",
-        "text": "Duplicating a page in Figma to explore a new layout. The original stays clean for the client, and you merge the good ideas back later."
+        "text": "Duplicating a page in Figma to explore a new layout. The original stays clean for the client, and you bring the good ideas back later."
+      },
+      "changes": [
+        "− Notes list, AI summary, Add tags: older history steps back",
+        "+ Tag chips, Tag filter: commits on a new branch",
+        "+ Two lanes: main and feature/tags",
+        "~ Save points 4 → 6"
+      ],
+      "metrics": {
+        "saves": { "value": 6, "tone": "good" }
       },
       "scene": {
-        "extends": "previous",
-        "caption": "Tags live on their own branch. Production still runs main.",
-        "remove": ["back"],
+        "caption": "Tags grow on their own branch. The app server still runs main.",
         "zones": [
-          { "id": "z-branch", "x": 5.6, "y": 1.2, "w": 6.2, "h": 2.4, "label": "feature/tags" },
-          { "id": "z-main", "x": 0.4, "y": 4.2, "w": 11.4, "h": 2.4, "label": "main" }
+          { "id": "z-main", "x": 0.3, "y": 4.7, "w": 4.6, "h": 2.6, "label": "main" },
+          { "id": "z-branch", "x": 4.3, "y": 0.4, "w": 7.4, "h": 2.6, "label": "feature/tags" }
         ],
         "nodes": [
-          { "id": "c2", "status": "normal" },
-          { "id": "c3", "y": 2.5, "status": "normal" },
-          { "id": "c4", "x": 10.2, "y": 2.5, "label": "Tag filter", "sublabel": "commit 3b8d", "icon": "git", "kind": "neutral", "status": "active" },
-          { "id": "prod", "x": 10.2, "y": 5.2, "label": "Production", "sublabel": "runs main", "icon": "rocket", "kind": "server", "status": "ok" }
+          { "id": "r4", "x": 2.6, "y": 6.0, "label": "Revert tags", "icon": "refresh", "shape": "tile", "pill": "b07c", "status": "normal" },
+          { "id": "app", "x": 8.4, "y": 6.0, "label": "App Server", "icon": "server", "kind": "server", "pill": "live", "status": "ok" },
+          { "id": "b1", "x": 6.2, "y": 1.7, "label": "Tag chips", "icon": "git", "shape": "tile", "status": "active" },
+          { "id": "b2", "x": 9.9, "y": 1.7, "label": "Tag filter", "icon": "git", "shape": "tile", "status": "active" }
         ],
         "edges": [
-          { "id": "c2>c3", "label": "branch off" },
-          { "from": "c3", "to": "c4" },
-          { "from": "c2", "to": "prod", "label": "deployed", "style": "dashed", "status": "ok" }
+          { "from": "r4", "to": "app", "style": "dashed" },
+          { "from": "r4", "to": "b1", "label": "branch off" },
+          { "from": "b1", "to": "b2" }
         ]
       }
     },
@@ -109,27 +200,31 @@
       "title": "Small commits, clear messages",
       "chapter": "how",
       "body": [
-        "A good commit does <b>one thing</b>: \"Add tags column\", then \"Show tag chips\", then \"Filter by tag\". When something breaks, small commits point at the cause.",
-        "Before each commit, read the <span class=\"term\">diff</span>. It shows every line added and removed. Then <span class=\"term\">push</span> the branch to GitHub so the work is backed up."
+        "A good commit does <b>one thing</b>: \"Show tag chips\", then \"Filter by tag\". When something breaks, small commits point straight at the cause.",
+        "Before each commit, read the <span class=\"term\">diff</span>: every line added and removed. Then <span class=\"term\">push</span> the branch to GitHub, so the work is backed up off the laptop."
       ],
       "callout": {
         "type": "tip",
-        "text": "When two branches change the same lines, Git stops and asks which version wins. That is a <b>merge conflict</b>. Short-lived branches keep conflicts rare and small. If Claude Code resolves one, read the result: it can quietly drop the other side's change."
+        "text": "When two branches change the same lines, Git stops and asks which version wins: a <b>merge conflict</b>. Short-lived branches keep them rare. If Claude Code resolves one, read the result; it can quietly drop the other side's change."
       },
       "code": {
         "language": "bash",
         "filename": "Terminal",
-        "code": "git switch -c feature/tags      # new branch\ngit status                      # what changed?\ngit diff                        # read every line\ngit add src/components/TagChip.tsx\ngit commit -m \"Show tag chips on notes\"\ngit push -u origin feature/tags",
+        "code": "git switch -c feature/tags      # new branch\ngit diff                        # read every line\ngit add src/components/TagChip.tsx\ngit commit -m \"Show tag chips on notes\"\ngit push -u origin feature/tags",
         "caption": "-u links the local branch to the one on GitHub, so later a plain git push is enough."
       },
+      "changes": [
+        "~ Tag chips, Tag filter: pushed to GitHub as a backup"
+      ],
       "scene": {
         "extends": "previous",
         "caption": "Each small commit on the branch is pushed to GitHub as a backup.",
         "nodes": [
-          { "id": "c4", "status": "ok", "tags": ["pushed"] }
+          { "id": "b1", "status": "ok", "pill": "pushed" },
+          { "id": "b2", "status": "ok", "pill": "pushed" }
         ],
         "edges": [
-          { "id": "c3>c4", "packet": { "label": "commit", "status": "active" } }
+          { "id": "b1>b2", "packet": { "kind": "data", "speed": "slow" } }
         ]
       }
     },
@@ -137,29 +232,33 @@
       "title": "Pull requests: the door to main",
       "chapter": "how",
       "body": [
-        "When the branch is ready, Maya opens a <span class=\"term\">pull request</span> on GitHub. It shows the full diff and invites comments.",
-        "Two useful things happen on their own. Vercel builds a <b>preview URL</b> of this exact branch. Automatic checks run, like tests and type checks. Nothing reaches production until someone presses <b>Merge</b>."
+        "When the branch is ready, Maya opens a <span class=\"term\">pull request</span> on GitHub: a page asking to bring the branch into main, with the full diff.",
+        "Two things happen on their own. <b>Checks</b> run, like tests and type checks. Vercel builds a <b>preview</b>: a copy of this branch at its own web address. Nothing reaches production until someone presses Merge."
       ],
       "callout": {
         "type": "tip",
-        "text": "Working alone? Still use pull requests. The preview link is free QA, and the PR page is a written record a client can read."
+        "text": "Working alone? Still use pull requests. The preview link is free QA, and the pull request page is a written record a client can read."
       },
+      "changes": [
+        "− Revert tags, Tag chips, Tag filter: the branch is now one block",
+        "+ Tags Branch → Pull Request: asks to join main",
+        "+ Checks and Preview: run on their own for the request",
+        "~ App Server waits: nothing is merged yet"
+      ],
       "scene": {
-        "caption": "The pull request gathers a preview, checks and a review before anything goes live.",
+        "caption": "The pull request gathers checks and a preview before anything goes live.",
         "nodes": [
-          { "id": "branch", "x": 2, "y": 4, "label": "feature/tags", "sublabel": "4 commits", "icon": "git", "kind": "client" },
-          { "id": "pr", "x": 6.4, "y": 4, "label": "Pull request", "sublabel": "#12 Add tags", "icon": "code", "kind": "external", "status": "active" },
-          { "id": "checks", "x": 6.4, "y": 1.6, "label": "Checks", "sublabel": "types, tests", "icon": "check", "kind": "server", "status": "ok" },
-          { "id": "preview", "x": 10.4, "y": 1.6, "label": "Preview URL", "sublabel": "this branch only", "icon": "globe", "kind": "server" },
-          { "id": "review", "x": 6.4, "y": 6.4, "label": "Review", "sublabel": "read the diff", "icon": "eye", "kind": "person" },
-          { "id": "prod", "x": 10.4, "y": 4, "label": "Production", "sublabel": "runs main", "icon": "rocket", "kind": "server", "status": "dim" }
+          { "id": "branch", "x": 0.8, "y": 4.2, "label": "Tags Branch", "icon": "git", "kind": "client" },
+          { "id": "pr", "x": 4.6, "y": 4.2, "label": "Pull Request", "icon": "code", "kind": "external", "status": "active" },
+          { "id": "app", "x": 8.4, "y": 4.2, "label": "App Server", "icon": "server", "kind": "server", "pill": "live", "status": "dim" },
+          { "id": "checks", "x": 4.6, "y": 0.6, "label": "Checks", "icon": "check", "kind": "server" },
+          { "id": "preview", "x": 8.4, "y": 0.6, "label": "Preview", "icon": "globe", "kind": "server" }
         ],
         "edges": [
-          { "from": "branch", "to": "pr", "label": "open PR", "packet": { "label": "diff" } },
-          { "from": "pr", "to": "checks", "label": "runs" },
-          { "from": "pr", "to": "preview", "label": "Vercel builds", "style": "dashed" },
-          { "from": "review", "to": "pr", "label": "comments" },
-          { "from": "pr", "to": "prod", "label": "merge", "status": "dim", "style": "dotted" }
+          { "from": "branch", "to": "pr", "packet": { "kind": "request", "speed": "slow" } },
+          { "from": "pr", "to": "checks" },
+          { "from": "checks", "to": "preview", "style": "dashed" },
+          { "from": "pr", "to": "app", "label": "merge", "style": "dotted", "status": "dim" }
         ]
       }
     },
@@ -167,8 +266,8 @@
       "title": "Letting Claude Code drive Git",
       "chapter": "example",
       "body": [
-        "Claude Code can run the whole loop: create the branch, commit in small steps, push, and open the PR with the <code>gh</code> command line tool.",
-        "Your job moves from typing commands to <b>reviewing</b>. Read the PR diff like a design crit: does every changed file belong to this feature? Then click through the preview, and only then <span class=\"term\">merge</span>."
+        "Claude Code can run the whole loop: branch, small commits, push, and open the pull request with <code>gh</code>, GitHub's command line tool.",
+        "Maya's job moves from typing commands to <b>reviewing</b>. She reads the diff like a design crit, clicks through the preview, waits for green checks, and only then lets it <span class=\"term\">merge</span>."
       ],
       "code": {
         "language": "bash",
@@ -177,48 +276,25 @@
       },
       "callout": {
         "type": "claude-code",
-        "text": "Ask it to work on a branch, never on main. Check the diff for files you did not expect: lockfiles, config, migrations, <code>.env</code>. Are commit messages specific? Did it push with <code>--force</code>? If so, ask why."
+        "text": "Ask it to work on a branch, never on main. Check the diff for files you did not expect: lockfiles, config, database changes, <code>.env</code>. Are commit messages specific? Did it push with <code>--force</code>? If so, ask why."
       },
+      "changes": [
+        "+ Maya: reads the diff and clicks through the preview",
+        "~ Checks green, Pull Request merged into main",
+        "~ App Server deploys the new main"
+      ],
       "scene": {
         "extends": "previous",
-        "caption": "Checks are green, the preview looks right, so the PR is merged and main deploys.",
+        "caption": "Checks are green and the preview looks right, so the pull request merges and main goes live.",
         "nodes": [
+          { "id": "maya", "x": 0.8, "y": 0.6, "label": "Maya", "icon": "user", "kind": "person", "status": "active" },
+          { "id": "checks", "status": "ok" },
           { "id": "pr", "status": "ok" },
-          { "id": "review", "status": "ok" },
-          { "id": "prod", "status": "active", "sublabel": "deploying" }
+          { "id": "app", "status": "active" }
         ],
         "edges": [
-          { "id": "pr>prod", "status": "ok", "style": "solid", "packet": { "label": "merge", "status": "ok" } }
-        ]
-      }
-    },
-    {
-      "title": "Undo with revert, not by hand",
-      "chapter": "how",
-      "body": [
-        "A bug slipped through and production breaks. Do not start editing files in a hurry. Use <span class=\"term\">revert</span>.",
-        "<code>git revert</code> creates a <b>new commit</b> that does the exact opposite of the bad one. History stays intact, main deploys again, and the app is back where it was. On GitHub, a merged PR even has a <b>Revert</b> button."
-      ],
-      "code": {
-        "language": "bash",
-        "code": "git switch main && git pull\ngit log --oneline -5        # find the bad commit\ngit revert 9d41a2c          # new commit that undoes it\ngit push",
-        "caption": "Reverting a merge commit needs -m 1. A squash merge avoids that: it is a normal commit."
-      },
-      "scene": {
-        "caption": "The revert is one more commit on main. The broken change is undone, and still in history.",
-        "nodes": [
-          { "id": "c2", "x": 1.8, "y": 4, "label": "AI summary", "sublabel": "commit 7c2e", "icon": "git", "kind": "neutral" },
-          { "id": "m3", "x": 4.6, "y": 4, "label": "Add tags", "sublabel": "commit 9d41", "icon": "git", "kind": "neutral", "status": "error" },
-          { "id": "r4", "x": 7.4, "y": 4, "label": "Revert tags", "sublabel": "commit b07c", "icon": "refresh", "kind": "neutral", "status": "ok" },
-          { "id": "prod", "x": 10.4, "y": 4, "label": "Production", "sublabel": "back to normal", "icon": "rocket", "kind": "server", "status": "ok" }
-        ],
-        "edges": [
-          { "from": "c2", "to": "m3" },
-          { "from": "m3", "to": "r4", "label": "undo" },
-          { "from": "r4", "to": "prod", "label": "deploys", "packet": { "status": "ok" } }
-        ],
-        "zones": [
-          { "id": "z-main", "x": 0.4, "y": 2.9, "w": 11.4, "h": 2.2, "label": "main" }
+          { "from": "maya", "to": "checks", "label": "review", "style": "dashed" },
+          { "id": "pr>app", "status": "ok", "style": "solid", "packet": { "kind": "data" } }
         ]
       }
     },
@@ -226,35 +302,52 @@
       "title": "Secrets in history stay in history",
       "chapter": "watch-out",
       "body": [
-        "Revert has a blind spot. If a commit contained <code>.env.local</code> with Notely's Claude API key, reverting removes the file from the latest version only. The key is still readable in the old commit, forever.",
-        "Treat a committed secret as <b>leaked</b>. Create a new key, delete the old one, then add the file to <code>.gitignore</code>."
+        "Revert has a blind spot. Say a commit included <code>.env.local</code>, the file holding Notely's Claude API key. Reverting removes the file from the latest version only. The key is still readable in the old commit, forever.",
+        "Treat a committed secret as <b>leaked</b>. Create a new key, delete the old one, then list the file in <code>.gitignore</code> so Git skips it."
       ],
       "callout": {
         "type": "warn",
-        "text": "Never rewrite shared history with a <span class=\"term\">force push</span> to hide it. Copies already exist on GitHub and on other laptops, and bots scan public repos for keys within minutes. Rotating the key is the real fix."
+        "text": "Do not rewrite shared history with a <span class=\"term\">force push</span> to hide it. Copies already exist on GitHub and other laptops, and bots scan public repositories for keys within minutes. Rotating the key is the real fix."
       },
+      "changes": [
+        "− Maya, Tags Branch, Pull Request, Checks, Preview, App Server",
+        "+ Add tags, Revert tags: two commits on main",
+        "+ .env.local: a secret file still inside Add tags"
+      ],
       "scene": {
-        "extends": "previous",
         "caption": "The revert removed the file from main, but the old commit still holds the key.",
         "nodes": [
-          { "id": "leak", "x": 4.6, "y": 6.6, "label": ".env.local", "sublabel": "ANTHROPIC_API_KEY", "icon": "key", "kind": "threat", "status": "error" },
-          { "id": "m3", "sublabel": "commit 9d41" }
+          { "id": "c3", "x": 2.4, "y": 2.6, "label": "Add tags", "icon": "git", "shape": "tile", "pill": "e91b", "status": "warn" },
+          { "id": "r4", "x": 6.2, "y": 2.6, "label": "Revert tags", "icon": "refresh", "shape": "tile", "pill": "b07c", "status": "ok" },
+          { "id": "leak", "x": 2.4, "y": 6.4, "label": ".env.local", "icon": "key", "kind": "threat", "status": "error", "pill": { "text": "API key", "tone": "bad" } }
         ],
         "edges": [
-          { "from": "leak", "to": "m3", "label": "still inside", "style": "dashed", "status": "error" }
-        ],
-        "notes": [
-          { "id": "rotate", "x": 8.8, "y": 6.6, "text": "Fix: rotate the key", "status": "warn" }
+          { "from": "c3", "to": "r4" },
+          { "from": "leak", "to": "c3", "label": "still inside", "style": "dashed", "status": "error" }
         ]
       }
     },
     {
-      "title": "Recap: save, branch, review, revert",
+      "title": "Recap: save, undo, branch, review",
       "chapter": "recap",
       "body": [
-        "Commits are named save points. Branches keep new work away from main, and main is what production runs. A pull request adds a preview, checks and a review before merging.",
-        "When something breaks, <code>git revert</code> undoes it with a new commit. A leaked secret is the exception: rotate it."
-      ]
+        "Commits are named save points, and <code>git revert</code> undoes a bad one with a new commit. Branches keep new work away from main, which is what production runs. A pull request adds checks, a preview and a review before merging.",
+        "A leaked secret is the exception: no commit can take it back. Rotate it."
+      ],
+      "changes": [
+        "~ .env.local: key rotated, the old copy is now useless"
+      ],
+      "scene": {
+        "extends": "previous",
+        "caption": "History keeps everything, so a leaked key is replaced, not hidden.",
+        "nodes": [
+          { "id": "leak", "status": "ok", "pill": { "text": "rotated", "tone": "good" } },
+          { "id": "c3", "status": "normal" }
+        ],
+        "edges": [
+          { "id": "leak>c3", "status": "dim" }
+        ]
+      }
     }
   ],
   "quiz": [
@@ -263,31 +356,31 @@
       "options": [
         { "text": "<code>git reset --hard</code> to the old commit, then force push main.", "why": "That rewrites shared history. Your teammate's copy no longer matches GitHub, and their next push can bring the bad commit back or lose work." },
         { "text": "Edit the broken files by hand until the error goes away.", "why": "Patching under pressure often adds new bugs, and the app stays broken while you work." },
-        { "text": "Revert the PR, which adds a new commit that undoes it.", "correct": true, "why": "A revert is a normal commit on top of main. Production returns to the old behavior, history stays intact, and you can fix the bug calmly on a branch." }
+        { "text": "Revert the pull request, which adds a new commit that undoes it.", "correct": true, "why": "A revert is a normal commit on top of main. Production returns to the old behavior, history stays intact, and you can fix the bug calmly on a branch." }
       ]
     },
     {
-      "question": "Claude Code opened a PR called \"Add tags\". The diff also changes <code>supabase/migrations</code>, <code>package-lock.json</code> and <code>middleware.ts</code>. What do you do?",
+      "question": "Claude Code opened a pull request called \"Add tags\". The diff also changes <code>supabase/migrations</code>, <code>package-lock.json</code> and <code>middleware.ts</code>. What do you do?",
       "options": [
         { "text": "Ask why each unexpected file changed before merging.", "correct": true, "why": "A migration changes the live database and middleware runs on every request. Each one needs a reason that fits the feature. The lockfile change may be fine if a package was added on purpose." },
-        { "text": "Merge it. The checks are green, so it must be fine.", "why": "Checks only catch what they test. They cannot tell whether a change belongs in this PR at all." },
-        { "text": "Close the PR and write the feature yourself.", "why": "Unexpected files are a question, not proof of a bad PR. Asking is faster and you learn what changed." }
+        { "text": "Merge it. The checks are green, so it must be fine.", "why": "Checks only catch what they test. They cannot tell whether a change belongs in this pull request at all." },
+        { "text": "Close the pull request and write the feature yourself.", "why": "Unexpected files are a question, not proof of a bad change. Asking is faster and you learn what changed." }
       ]
     },
     {
       "question": "Maya notices she committed <code>.env.local</code> with a live API key and pushed it. She reverts the commit. Is she safe?",
       "options": [
-        { "text": "Yes. The revert removed the file.", "why": "It removed the file from the newest version only. The old commit still contains the key, and anyone with the repo can read it." },
+        { "text": "Yes. The revert removed the file.", "why": "It removed the file from the newest version only. The old commit still contains the key, and anyone with the repository can read it." },
         { "text": "No. She must create a new key, delete the old one, and ignore the file.", "correct": true, "why": "Once a secret is pushed, assume it is leaked. Rotating the key makes the leaked copy worthless, and <code>.gitignore</code> stops it happening again." },
-        { "text": "Yes, as long as the repo is private.", "why": "Private repos still get cloned, shared with tools and opened to collaborators. Private lowers the risk; it does not undo the leak." }
+        { "text": "Yes, as long as the repository is private.", "why": "Private repositories still get cloned, shared with tools and opened to collaborators. Private lowers the risk; it does not undo the leak." }
       ]
     }
   ],
   "takeaways": [
     "A <b>commit</b> is a named snapshot. Small commits with clear messages make bugs quick to find.",
-    "Do new work on a <b>branch</b>. <code>main</code> is what production runs.",
-    "A <b>pull request</b> gives you a preview URL, automatic checks and a diff to review before merging.",
     "Undo a bad change with <code>git revert</code>, never with a force push on shared branches.",
+    "Do new work on a <b>branch</b>. <code>main</code> is what production runs.",
+    "A <b>pull request</b> gives you automatic checks, a preview and a diff to review before merging.",
     "A secret that was ever committed is leaked. <b>Rotate</b> it, then add the file to <code>.gitignore</code>."
   ]
 }

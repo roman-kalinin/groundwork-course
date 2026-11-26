@@ -21,32 +21,68 @@
     "restore drill": "A planned practice run where you restore a backup into a spare database and check the data is really there.",
     "pg_dump": "The standard Postgres tool that exports a database into a file you can store anywhere and load back later."
   },
+  "metrics": [
+    { "id": "notes", "label": "Notes in DB", "icon": "database" },
+    { "id": "lost", "label": "Work lost", "icon": "alert" }
+  ],
   "steps": [
+    {
+      "title": "Where Notely keeps its notes",
+      "chapter": "setup",
+      "body": [
+        "Notely's 5,000 users reach the <b>app server</b>, the computer running Notely's code. It keeps their 200,000 notes in the <b>database</b>: Postgres, run for us by Supabase.",
+        "Maya also works with <b>Claude Code</b>, the AI assistant that writes code on her laptop. It can run commands on that same database when she asks."
+      ],
+      "metrics": {
+        "notes": { "value": 200000, "tone": "good" },
+        "lost": { "value": "None", "tone": "good" }
+      },
+      "scene": {
+        "caption": "Users reach the database through the app server. Claude Code can reach it too.",
+        "nodes": [
+          { "id": "users", "x": 0.8, "y": 2.4, "label": "5,000 users", "icon": "users", "shape": "crowd" },
+          { "id": "app", "x": 4.6, "y": 2.4, "label": "App Server", "icon": "server", "kind": "server" },
+          { "id": "db", "x": 8.4, "y": 2.4, "label": "Database", "icon": "database", "kind": "data" },
+          { "id": "cc", "x": 8.4, "y": 6.2, "label": "Claude Code", "icon": "terminal", "kind": "ai" }
+        ],
+        "edges": [
+          { "from": "users", "to": "app", "packet": { "kind": "request", "direction": "both" } },
+          { "from": "app", "to": "db", "packet": { "kind": "data", "direction": "both", "returns": "data" } },
+          { "from": "cc", "to": "db", "style": "dashed" }
+        ]
+      }
+    },
     {
       "title": "One query, every note gone",
       "chapter": "problem",
       "body": [
-        "Tuesday, 14:05. Maya asks Claude Code to clean up test notes in production. It runs a <code>DELETE</code>, but the filter has a bug. Every note in Notely is gone.",
-        "Undo does not exist in a database. The only way back is a copy made before 14:05. Does she have one, and from when?"
+        "Tuesday, 14:05. Maya asks Claude Code to clean up test notes. It runs a <code>delete</code> on the live database, but the filter has a bug. Every note in Notely is gone.",
+        "A database has no undo button. The only way back is a copy made before 14:05. Does she have one, and from when?"
       ],
       "code": {
         "language": "sql",
         "code": "-- meant: delete notes of the test account\ndelete from notes\nwhere user_id = user_id; -- always true: every row",
         "caption": "Comparing a column with itself matches every row. One wrong word, the whole table."
       },
+      "changes": [
+        "~ Claude Code → Database: a delete that matches every row",
+        "~ Notes in DB 200,000 → 0",
+        "~ Work lost None → All notes"
+      ],
+      "metrics": {
+        "notes": { "value": 0, "tone": "bad" },
+        "lost": { "value": "All notes", "tone": "bad" }
+      },
       "scene": {
-        "caption": "A single query empties the notes table in production.",
+        "extends": "previous",
+        "caption": "One buggy delete empties the notes table.",
         "nodes": [
-          { "id": "claude", "x": 2, "y": 4, "label": "Claude Code", "sublabel": "cleanup script", "icon": "terminal", "kind": "ai" },
-          { "id": "db", "x": 6.4, "y": 4, "label": "Production DB", "sublabel": "notes: 0 rows", "icon": "database", "kind": "data", "status": "error" },
-          { "id": "users", "x": 10.4, "y": 4, "label": "Users", "sublabel": "empty notes list", "icon": "users", "kind": "person", "status": "warn" }
+          { "id": "cc", "status": "warn" },
+          { "id": "db", "status": "error" },
+          { "id": "users", "status": "warn" }
         ],
         "edges": [
-          { "from": "claude", "to": "db", "label": "DELETE", "status": "error", "packet": { "label": "DELETE", "status": "error" } },
-          { "from": "db", "to": "users", "label": "nothing to show" }
-        ],
-        "notes": [
-          { "id": "when", "x": 6.8, "y": 2.2, "text": "Tuesday, 14:05", "status": "error" }
+          { "id": "cc>db", "style": "solid", "status": "error", "packet": { "kind": "error", "speed": "fast" } }
         ]
       }
     },
@@ -55,27 +91,29 @@
       "chapter": "idea",
       "body": [
         "A <span class=\"term\">backup</span> is a copy of the data from a past moment, stored away from the live database. Restoring means going back to that moment.",
-        "The question is always <b>which</b> moments you can go back to. That decides how much work is lost. Picture the timeline: nightly copies, then the last good second, then the bad query."
+        "The question is always <b>which</b> moments you can go back to. That decides how much work is lost. Here is Notely's timeline: nightly copies, the last good second, then the bad query."
       ],
       "callout": {
         "type": "analogy",
         "text": "Figma's version history. Autosaves let you go back to any recent moment. Named versions are fewer, but survive longer. A database has both kinds too."
       },
+      "changes": [
+        "− 5,000 users, App Server, Claude Code, Database: we look at time",
+        "+ Mon 03:00, Tue 03:00: nightly copies",
+        "+ Tue 14:04, Tue 14:05: last good moment, then the bad query"
+      ],
       "scene": {
-        "caption": "Time runs left to right. Which of these moments can Maya restore?",
-        "zones": [
-          { "id": "z-time", "x": 0.4, "y": 2.8, "w": 11.4, "h": 2.4, "label": "Timeline" }
-        ],
+        "caption": "A timeline from left to right. Which moments can Notely go back to?",
         "nodes": [
-          { "id": "mon", "x": 1.9, "y": 4, "label": "Mon 03:00", "sublabel": "nightly backup", "icon": "calendar", "kind": "data" },
-          { "id": "tue", "x": 5.7, "y": 4, "label": "Tue 03:00", "sublabel": "nightly backup", "icon": "calendar", "kind": "data" },
-          { "id": "good", "x": 7.5, "y": 4, "label": "Tue 14:04", "sublabel": "last good second", "icon": "clock", "kind": "neutral", "status": "ok" },
-          { "id": "bad", "x": 10.3, "y": 4, "label": "Tue 14:05", "sublabel": "the DELETE", "icon": "trash", "kind": "threat", "status": "error" }
+          { "id": "mon", "x": 0.8, "y": 3.6, "label": "Mon 03:00", "icon": "database", "shape": "stack", "kind": "data" },
+          { "id": "tue", "x": 4.2, "y": 3.6, "label": "Tue 03:00", "icon": "database", "shape": "stack", "kind": "data" },
+          { "id": "good", "x": 7.6, "y": 3.6, "label": "Tue 14:04", "icon": "check", "shape": "tile", "kind": "neutral", "status": "ok" },
+          { "id": "bad", "x": 11.0, "y": 3.6, "label": "Tue 14:05", "icon": "trash", "shape": "tile", "kind": "threat", "status": "error" }
         ],
         "edges": [
-          { "from": "mon", "to": "tue", "style": "dotted", "arrow": "none" },
-          { "from": "tue", "to": "good", "style": "dotted", "arrow": "none" },
-          { "from": "good", "to": "bad", "style": "dotted", "arrow": "none" }
+          { "from": "mon", "to": "tue", "style": "dotted" },
+          { "from": "tue", "to": "good", "style": "dotted" },
+          { "from": "good", "to": "bad", "status": "error" }
         ]
       }
     },
@@ -90,16 +128,25 @@
         "type": "tip",
         "text": "Check your plan before you need it. Supabase's paid plans include daily backups, and point-in-time recovery is an add-on. On a free plan, do not count on any backup existing."
       },
+      "changes": [
+        "~ Tue 03:00: the copy a nightly backup restores",
+        "~ Tue 14:04: out of reach, eleven hours later",
+        "~ Work lost All notes → 11 hours"
+      ],
+      "metrics": {
+        "lost": { "value": "11 hours", "tone": "warn" }
+      },
       "scene": {
         "extends": "previous",
-        "caption": "Going back to the nightly copy works, but throws away eleven hours of work.",
+        "caption": "A nightly snapshot only reaches back to 03:00.",
         "nodes": [
-          { "id": "tue", "status": "active" },
-          { "id": "good", "status": "dim" },
-          { "id": "bad", "status": "dim" }
+          { "id": "mon", "status": "dim" },
+          { "id": "tue", "status": "active", "pill": "restore" },
+          { "id": "good", "status": "warn", "pill": { "text": "lost", "tone": "bad" } }
         ],
-        "notes": [
-          { "id": "lost", "x": 7.5, "y": 6.2, "text": "Lost: 03:00 to 14:05", "status": "warn" }
+        "edges": [
+          { "id": "mon>tue", "status": "dim" },
+          { "id": "tue>good", "status": "warn" }
         ]
       }
     },
@@ -110,18 +157,26 @@
         "Postgres writes every change to a running diary first: the <span class=\"term\">WAL</span>. Keep the nightly snapshot plus the diary since then, and you can replay changes up to any exact moment.",
         "That is <span class=\"term\">point-in-time recovery</span>. Maya picks 14:04:59: the snapshot is loaded, then every change is replayed until one second before the bad query."
       ],
+      "changes": [
+        "+ WAL: Postgres's diary of every change since 03:00",
+        "~ Tue 14:04: reachable again, by replaying the diary",
+        "~ Work lost 11 hours → 1 second"
+      ],
+      "metrics": {
+        "lost": { "value": "1 second", "tone": "good" }
+      },
       "scene": {
         "extends": "previous",
-        "caption": "Snapshot plus the change log, replayed up to 14:04:59. Only seconds are lost.",
-        "remove": ["lost"],
+        "caption": "Snapshot plus diary: replay every change up to 14:04:59.",
         "nodes": [
-          { "id": "good", "status": "ok", "tags": ["restore here"] },
-          { "id": "bad", "status": "error" },
-          { "id": "wal", "x": 5.7, "y": 6.5, "label": "WAL", "sublabel": "every change, in order", "icon": "log", "kind": "data", "status": "active" }
+          { "id": "tue", "status": "normal", "pill": null },
+          { "id": "wal", "x": 4.2, "y": 7.2, "label": "WAL", "icon": "log", "shape": "stack", "kind": "data", "status": "active" },
+          { "id": "good", "status": "ok", "pill": { "text": "14:04:59", "tone": "good" } }
         ],
         "edges": [
-          { "from": "tue", "to": "wal", "label": "start", "style": "dashed" },
-          { "from": "wal", "to": "good", "label": "replay", "packet": { "label": "changes", "speed": "fast" } }
+          { "id": "tue>good", "status": "dim" },
+          { "from": "tue", "to": "wal" },
+          { "from": "wal", "to": "good", "label": "replay", "route": "x-first", "packet": { "kind": "data" } }
         ]
       }
     },
@@ -130,25 +185,29 @@
       "chapter": "idea",
       "body": [
         "Before choosing a backup setup, ask two questions. How much recent data can we lose? That is the <span class=\"term\">RPO</span>. How long can the app be down while we restore? That is the <span class=\"term\">RTO</span>.",
-        "Nightly snapshots give an RPO of up to a day. Point-in-time gets it down to seconds or minutes, and costs more."
+        "Nightly snapshots give an RPO of up to a day. Point-in-time gets it down to seconds, and costs more."
       ],
       "callout": {
         "type": "tip",
-        "text": "For Sam's salon, ask: \"If we lost today's bookings, how bad is that?\" A lost day of bookings means no-shows and angry customers. That answer justifies paying for point-in-time recovery, in writing."
+        "text": "Building for a client, like a salon's booking app? Ask: \"If we lost today's bookings, how bad is that?\" No-shows and angry customers justify paying for point-in-time recovery. Agree it in writing."
       },
+      "changes": [
+        "~ Tue 03:00: nightly copies, RPO up to a day",
+        "~ WAL: point-in-time, RPO of seconds",
+        "~ Tue 14:04 and Tue 14:05 step back"
+      ],
       "scene": {
         "extends": "previous",
-        "caption": "RPO: how far back you land. RTO: how long the restore takes.",
+        "caption": "Two setups, two very different amounts of lost work.",
         "nodes": [
-          { "id": "wal", "status": "normal" },
-          { "id": "good", "tags": ["RPO: seconds"] },
-          { "id": "tue", "status": "normal", "tags": ["RPO: up to 1 day"] }
+          { "id": "tue", "pill": { "text": "RPO: 1 day", "tone": "warn" } },
+          { "id": "wal", "status": "ok", "pill": { "text": "RPO: seconds", "tone": "good" } },
+          { "id": "good", "status": "dim", "pill": null },
+          { "id": "bad", "status": "dim" }
         ],
         "edges": [
-          { "id": "wal>good", "packet": false }
-        ],
-        "notes": [
-          { "id": "rto", "x": 10.3, "y": 6.5, "text": "RTO: restore time", "status": "active" }
+          { "id": "wal>good", "status": "dim", "packet": false },
+          { "id": "good>bad", "status": "dim" }
         ]
       }
     },
@@ -156,7 +215,7 @@
       "title": "Restore beside, then copy back",
       "chapter": "example",
       "body": [
-        "Restoring over the live database also erases everything since 14:05: new sign-ups, new notes. If your provider allows it, restore into a <b>separate</b> project or database instead.",
+        "Restoring over the live database would also erase everything since 14:05: new sign-ups, new notes. If your provider allows it, restore into a <b>separate</b> database instead.",
         "Then copy back only what was lost. Export the restored <code>notes</code> table, load it next to the live one as <code>restored_notes</code>, and insert the missing rows."
       ],
       "code": {
@@ -165,19 +224,23 @@
         "code": "insert into notes\nselect r.* from restored_notes r\nwhere not exists (\n  select 1 from notes n where n.id = r.id\n);\n\n-- check before you drop the helper table\nselect count(*) from notes;",
         "caption": "Rows that still exist are skipped, so nothing written after 14:05 is overwritten."
       },
+      "changes": [
+        "− Mon 03:00, Tue 03:00, Tue 14:04, Tue 14:05, WAL",
+        "+ Restored DB: a separate copy as of 14:04:59",
+        "+ Database: the live one, back in view",
+        "~ Notes in DB 0 → 200,000"
+      ],
+      "metrics": {
+        "notes": { "value": 200000, "tone": "good" }
+      },
       "scene": {
-        "caption": "The backup is restored next to production. Only the missing rows are copied back.",
+        "caption": "Only the missing rows travel from the restored copy into the live database.",
         "nodes": [
-          { "id": "backup", "x": 2, "y": 4, "label": "Restored copy", "sublabel": "as of 14:04:59", "icon": "database", "kind": "data", "status": "ok" },
-          { "id": "sql", "x": 6.4, "y": 4, "label": "Copy missing rows", "sublabel": "insert … not exists", "icon": "code", "kind": "neutral", "status": "active" },
-          { "id": "db", "x": 10.4, "y": 4, "label": "Production DB", "sublabel": "keeps new rows", "icon": "database", "kind": "data", "status": "ok" }
+          { "id": "restored", "x": 1.4, "y": 3.6, "label": "Restored DB", "icon": "database", "kind": "data", "status": "active", "pill": "14:04:59" },
+          { "id": "db", "x": 6.6, "y": 3.6, "label": "Database", "icon": "database", "kind": "data", "status": "ok" }
         ],
         "edges": [
-          { "from": "backup", "to": "sql", "label": "old notes", "packet": { "label": "rows" } },
-          { "from": "sql", "to": "db", "label": "insert", "status": "ok", "packet": { "label": "rows", "status": "ok" } }
-        ],
-        "notes": [
-          { "id": "new", "x": 10.4, "y": 6, "text": "Notes after 14:05 untouched", "status": "ok" }
+          { "from": "restored", "to": "db", "label": "missing rows", "packet": { "kind": "data" } }
         ]
       }
     },
@@ -185,29 +248,32 @@
       "title": "What the database backup misses",
       "chapter": "watch-out",
       "body": [
-        "Database backups cover database rows. Files users upload to Supabase Storage are not inside them; the database only holds their metadata. Neither are your environment variables or provider settings.",
-        "A <span class=\"term\">replica</span> is not a backup either. It copies every change within seconds, including the <code>DELETE</code>. Keep one extra copy outside your provider too, made with <span class=\"term\">pg_dump</span>."
+        "Database backups cover database rows. Files users upload are not inside them; the database only holds their names. Neither are your settings or keys.",
+        "A <span class=\"term\">replica</span>, a live copy that follows every change, is not a backup either: it copies the <code>delete</code> within seconds. Keep one extra copy outside your provider too, made with <span class=\"term\">pg_dump</span>."
       ],
       "code": {
         "language": "bash",
         "code": "pg_dump \"$DATABASE_URL\" --format=custom \\\n  --file=\"notely-$(date +%F).dump\"\n# later: pg_restore --dbname=\"$SCRATCH_DB_URL\" notely-2026-11-24.dump",
         "caption": "Run it on a schedule (a GitHub Action works) and store the file encrypted, somewhere else."
       },
+      "changes": [
+        "− Restored DB",
+        "+ Replica: a live copy, so it copies the delete too",
+        "+ Files: uploads, not inside database backups",
+        "+ Extra Copy: a pg_dump file kept somewhere else"
+      ],
       "scene": {
-        "extends": "previous",
-        "caption": "Uploaded files and a replica are not covered by the database backup.",
-        "remove": ["new"],
+        "caption": "A replica copies mistakes, files sit outside the backup, and an extra copy lives elsewhere.",
         "nodes": [
-          { "id": "backup", "status": "normal" },
-          { "id": "sql", "status": "dim" },
-          { "id": "db", "status": "normal", "sublabel": "rows only" },
-          { "id": "files", "x": 10.4, "y": 1.6, "label": "Storage files", "sublabel": "not in DB backup", "icon": "folder", "kind": "data", "status": "warn" },
-          { "id": "replica", "x": 10.4, "y": 6.4, "label": "Replica", "sublabel": "copies the DELETE", "icon": "layers", "kind": "data", "status": "error" }
+          { "id": "dump", "x": 0.8, "y": 3.6, "label": "Extra Copy", "icon": "download", "shape": "stack", "kind": "data", "status": "ok" },
+          { "id": "db", "x": 4.6, "y": 3.6, "label": "Database", "icon": "database", "kind": "data", "status": "normal" },
+          { "id": "replica", "x": 8.4, "y": 3.6, "label": "Replica", "icon": "layers", "kind": "data", "status": "error", "pill": { "text": "0 notes", "tone": "bad" } },
+          { "id": "files", "x": 4.6, "y": 7.2, "label": "Files", "icon": "folder", "kind": "data", "status": "warn", "pill": { "text": "no backup", "tone": "warn" } }
         ],
         "edges": [
-          { "id": "backup>sql", "packet": false, "status": "dim" },
-          { "id": "sql>db", "packet": false, "status": "dim" },
-          { "from": "db", "to": "replica", "label": "every change", "status": "error", "packet": { "label": "DELETE", "status": "error" } }
+          { "from": "db", "to": "dump", "packet": { "kind": "data", "speed": "slow" } },
+          { "from": "db", "to": "replica", "status": "error", "packet": { "kind": "error", "speed": "fast" } },
+          { "from": "db", "to": "files", "style": "dotted" }
         ]
       }
     },
@@ -216,22 +282,28 @@
       "chapter": "watch-out",
       "body": [
         "Backups fail quietly: a job that stopped months ago, a dump with no data, a password nobody remembers. You find out on the worst day.",
-        "Run a <span class=\"term\">restore drill</span> every few months. Restore into a spare database, count the rows, open a few notes, and time it. That time is your real RTO. Write the steps down while you do it."
+        "Run a <span class=\"term\">restore drill</span> every few months. Restore into a spare database, count the rows, open a few notes, and time it. That time is your real RTO. Write the steps down."
       ],
       "callout": {
         "type": "claude-code",
-        "text": "Before Claude Code runs any <code>delete</code>, <code>update</code> or migration on production, ask: is there a backup from the last hour? Run a <code>select count(*)</code> with the same <code>where</code> first. Run it inside <code>begin;</code>, check the row count, then <code>commit;</code> or <code>rollback;</code>. Ask it to write a restore runbook, then follow it on a scratch project."
+        "text": "Before Claude Code runs any <code>delete</code>, <code>update</code> or migration on production, ask: is there a backup from the last hour? Run a <code>select count(*)</code> with the same <code>where</code> first. Wrap it in <code>begin;</code>, check the count, then <code>commit;</code> or <code>rollback;</code>."
       },
+      "changes": [
+        "− Replica, Files",
+        "+ Scratch DB: a spare database for practice restores",
+        "~ Database steps back"
+      ],
       "scene": {
-        "caption": "A drill restores last night's backup into a scratch database and checks the result.",
+        "extends": "previous",
+        "caption": "The extra copy is restored into a spare database, counted and timed.",
+        "remove": ["replica", "files"],
         "nodes": [
-          { "id": "backup", "x": 2, "y": 4, "label": "Last backup", "sublabel": "Tue 03:00", "icon": "database", "kind": "data" },
-          { "id": "scratch", "x": 6.4, "y": 4, "label": "Scratch DB", "sublabel": "drill only", "icon": "flask", "kind": "data", "status": "active", "tags": ["12,804 notes"] },
-          { "id": "checks", "x": 10.4, "y": 4, "label": "Checks", "sublabel": "rows, logins, time", "icon": "check", "kind": "neutral", "status": "ok", "tags": ["RTO: 38 min"] }
+          { "id": "db", "status": "dim" },
+          { "id": "scratch", "x": 0.8, "y": 7.2, "label": "Scratch DB", "icon": "flask", "kind": "data", "status": "ok", "pill": { "text": "12 min", "icon": "clock", "tone": "good" } }
         ],
         "edges": [
-          { "from": "backup", "to": "scratch", "label": "restore", "packet": { "label": "restore" } },
-          { "from": "scratch", "to": "checks", "label": "verify", "status": "ok" }
+          { "id": "db>dump", "status": "dim", "packet": false },
+          { "from": "dump", "to": "scratch", "label": "restore drill", "packet": { "kind": "data" } }
         ]
       }
     },
@@ -240,8 +312,21 @@
       "chapter": "recap",
       "body": [
         "Nightly snapshots lose up to a day. Point-in-time recovery replays the WAL to the second before the mistake. Agree on RPO and RTO with the client and pick the setup to match.",
-        "Restore beside production and copy back, remember files and replicas are not backups, and practice the restore before you need it."
-      ]
+        "Restore beside production and copy back. Files and replicas are not backups. Practice the restore before you need it."
+      ],
+      "changes": [
+        "~ Database back in focus, with a tested copy beside it"
+      ],
+      "scene": {
+        "extends": "previous",
+        "caption": "A live database, an extra copy, and proof that the copy restores.",
+        "nodes": [
+          { "id": "db", "status": "ok" }
+        ],
+        "edges": [
+          { "id": "db>dump", "status": "normal", "packet": { "kind": "data", "speed": "slow" } }
+        ]
+      }
     }
   ],
   "quiz": [
@@ -258,11 +343,11 @@
       "options": [
         { "text": "Correct, a replica is a full copy of the data.", "why": "It is a copy, but a live one. It follows the original within seconds, mistakes included." },
         { "text": "A replica is only useful for analytics.", "why": "Replicas help with read load and failover, as you saw in system design. They do not protect against bad writes." },
-        { "text": "A replica copies a bad <code>DELETE</code> within seconds. You still need backups.", "correct": true, "why": "Replicas protect against a server dying, not against a wrong query. Backups let you go back in time; replicas cannot." }
+        { "text": "A replica copies a bad <code>delete</code> within seconds. You still need backups.", "correct": true, "why": "Replicas protect against a server dying, not against a wrong query. Backups let you go back in time; replicas cannot." }
       ]
     },
     {
-      "question": "Claude Code proposes <code>delete from bookings where status = 'test';</code> on Sam's production database. What do you do first?",
+      "question": "Claude Code proposes <code>delete from bookings where status = 'test';</code> on a client's production database. What do you do first?",
       "options": [
         { "text": "Run <code>select count(*) from bookings where status = 'test';</code> and confirm a recent backup exists.", "correct": true, "why": "The count shows exactly how many rows the delete will hit, before anything changes. A fresh backup means a mistake is recoverable." },
         { "text": "Run it. The <code>where</code> clause makes it safe.", "why": "The query in this lesson also had a <code>where</code> clause. A filter can still match far more rows than you expect." },
