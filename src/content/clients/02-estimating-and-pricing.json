@@ -90,8 +90,8 @@
       "title": "Small tasks, three numbers each",
       "chapter": "idea",
       "body": [
-        "Big things are hard to guess. Small things are easier. So split each Must story into tasks of half a day to two days, and give each task three numbers: best, likely and worst case.",
-        "This <span class=\"term\">three-point estimate</span> makes you think about what could go wrong. The widest gap shows where the risk lives."
+        "Split each Must story into small tasks, half a day to two days each: small things are easier to guess. Give each a <span class=\"term\">three-point estimate</span>: best, likely and worst case.",
+        "Online Booking needs a slot picker, a bookings table, and a booking guard that stops two clients taking one slot. Its 1-to-4-day gap shows the risk."
       ],
       "code": {
         "language": "ts",
@@ -103,7 +103,7 @@
         "− Sam, Scope Doc, You: we zoom into one story",
         "+ Online Booking: one Must story from the scope",
         "+ Slot Picker, Bookings Table, Booking Guard: its tasks",
-        "~ Estimate ? → 4.1 days for this story"
+        "~ Estimate ? → 4.1 days: coding this one story"
       ],
       "metrics": {
         "est": { "value": 4.1, "tone": "neutral" }
@@ -138,7 +138,7 @@
         "− Online Booking, Slot Picker, Bookings Table, Booking Guard",
         "+ Coding, Testing, Calls: the three kinds of work",
         "+ Buffer: extra time for problems you cannot see yet",
-        "~ Estimate 4.1 → 7 days"
+        "~ Estimate 4.1 → 7 days: the same story, all work plus buffer"
       ],
       "metrics": {
         "est": { "value": 7, "tone": "neutral" }
@@ -212,7 +212,7 @@
           { "id": "m3", "x": 8.4, "y": 4.4, "label": "Launch", "icon": "rocket", "pill": "30%" }
         ],
         "edges": [
-          { "from": "m1", "to": "m2", "packet": { "kind": "job", "speed": "slow" } },
+          { "from": "m1", "to": "m2" },
           { "from": "m2", "to": "m3", "style": "dashed" }
         ]
       }
@@ -221,8 +221,8 @@
       "title": "AI costs grow with every click",
       "chapter": "how",
       "body": [
-        "Say Sam later approves AI rebooking. The app server (the computer running the salon's code) sends each call to the Claude API, Anthropic's AI. It bills in <span class=\"term\" data-term=\"token\">tokens</span>, in and out, at different rates.",
-        "Hosting stays flat; AI usage does not. Estimate it like a utility bill: calls × tokens × price, using the provider's price page."
+        "Say Sam later approves AI rebooking. The app server (the computer running the salon's code) asks the Claude API, Anthropic's AI, for each suggestion. It bills per <span class=\"term\">token</span>: text sent in and text written back, priced separately.",
+        "Hosting stays flat; AI usage does not. Estimate it like a utility bill: calls × tokens × price."
       ],
       "code": {
         "language": "ts",
@@ -297,12 +297,12 @@
       },
       "callout": {
         "type": "claude-code",
-        "text": "When Claude Code writes an AI call, check: is <code>max_tokens</code> sized to the feature? Is the model id in one env var, not in five files? Does it log the <code>usage</code> numbers? Is there a retry cap and a rate limit in front of it?"
+        "text": "When Claude Code writes an AI call, check: is <code>max_tokens</code> sized to the feature? Is the model name set in one place, not in five files? Does it log the <code>usage</code> numbers? Is there a retry cap, and a limit on calls per user?"
       },
       "changes": [
         "− Hosting, SMS Service",
         "+ Retry Loop: a bug that calls the AI again and again",
-        "~ AI calls 3,000 → 300,000 a month",
+        "~ Claude API flooded: AI calls 3,000 → 300,000 a month",
         "~ Sam's Card: a spend limit stops the damage"
       ],
       "metrics": {
@@ -332,7 +332,8 @@
       ],
       "changes": [
         "− Retry Loop: fixed, with a retry cap",
-        "~ AI calls 300,000 → 3,000 a month"
+        "~ AI calls 300,000 → 3,000 a month",
+        "~ Claude API and Sam's Card back to normal"
       ],
       "metrics": {
         "calls": { "value": 3000, "tone": "good" }

@@ -71,7 +71,8 @@
       "changes": [
         "+ App Idea: Sam's wish, in one sentence",
         "~ Wish list 0 → 4: book, pay, remind, AI",
-        "~ Size guess unknown → 2 weeks to 6 months"
+        "~ Size guess unknown → 2 weeks to 6 months",
+        "~ Salon Clients and Paper Diary fade back"
       ],
       "metrics": {
         "wish": { "value": 4, "tone": "warn" },
@@ -132,7 +133,7 @@
       },
       "changes": [
         "+ No-shows: about 1 client in 10 forgets",
-        "~ Salon Clients → Sam: calls missed during haircuts",
+        "~ Salon Clients back: their calls to Sam get missed",
         "~ MVP fades back while you listen"
       ],
       "scene": {
@@ -155,8 +156,8 @@
       "title": "User stories make features testable",
       "chapter": "how",
       "body": [
-        "Now zoom into the plan. Turn each need into a <span class=\"term\">user story</span>: as a [who], I want [what], so that [why]. Then add <span class=\"term\">acceptance criteria</span>: checks that prove it is done.",
-        "Criteria end arguments. \"Reminders work\" is a feeling. \"A text goes out 24 hours before each booking\" is a test you and Sam can both run."
+        "Zoom in. Write each need as a <span class=\"term\">user story</span>: as a [who], I want [what], so that [why]. Missed calls become Book Online, no-shows become Get Reminders, the paper diary becomes Owner Calendar.",
+        "Add <span class=\"term\">acceptance criteria</span>: checks that prove it is done. \"Reminders work\" is a feeling. \"A text 24 hours before each booking\" is a test."
       ],
       "code": {
         "language": "text",
@@ -166,7 +167,7 @@
       },
       "changes": [
         "− Salon Clients, Sam, Paper Diary, Discovery, MVP, No-shows",
-        "+ Book Online, Get Reminders, Owner Calendar: user stories",
+        "+ Book Online, Get Reminders, Owner Calendar: one story per need",
         "+ Checks: four criteria that prove Book Online is done"
       ],
       "scene": {
@@ -195,9 +196,9 @@
       },
       "changes": [
         "− Checks",
-        "+ AI Rebooking, Loyalty Points, Native App: won't have",
-        "~ Wish list 4 → 7, and In the MVP 0 → 3",
-        "~ Size guess → 3 to 4 weeks"
+        "+ Must have: the three stories, now the MVP",
+        "+ Won't have: AI Rebooking, Loyalty Points, Native App",
+        "~ Wish list 4 → 7, In the MVP 0 → 3, Size guess → 3–4 weeks"
       ],
       "metrics": {
         "wish": { "value": 7, "tone": "neutral" },
@@ -216,9 +217,9 @@
           { "id": "s-book", "status": "ok" },
           { "id": "s-remind", "status": "ok" },
           { "id": "s-cal", "status": "ok" },
-          { "id": "w-ai", "x": 7.8, "y": 1.7, "label": "AI Rebooking", "icon": "sparkle", "shape": "tile", "status": "dim" },
-          { "id": "w-loyal", "x": 7.8, "y": 4.0, "label": "Loyalty Points", "icon": "cart", "shape": "tile", "status": "dim" },
-          { "id": "w-app", "x": 7.8, "y": 6.3, "label": "Native App", "icon": "phone", "shape": "tile", "status": "dim" }
+          { "id": "w-ai", "x": 7.8, "y": 1.7, "label": "AI Rebooking", "icon": "sparkle", "shape": "tile" },
+          { "id": "w-loyal", "x": 7.8, "y": 4.0, "label": "Loyalty Points", "icon": "cart", "shape": "tile" },
+          { "id": "w-app", "x": 7.8, "y": 6.3, "label": "Native App", "icon": "phone", "shape": "tile" }
         ]
       }
     },
@@ -226,12 +227,13 @@
       "title": "Sketch the parts behind the stories",
       "chapter": "how",
       "body": [
-        "Each Must story needs parts. Clients book in a <b>browser</b> on their phone. The app server, the computer running the salon's code, saves bookings in a database.",
-        "Reminders hide more: a <span class=\"term\">scheduler</span> wakes the app every hour, and an SMS service, an outside company, sends the texts. One word, three parts. This is where hidden size shows up."
+        "Each Must story needs parts. Clients book in a <b>browser</b> on their phone. The <b>app server</b>, the computer running the salon's code, saves each booking in a <b>database</b> (its storage).",
+        "Reminders hide more: a <span class=\"term\">scheduler</span> wakes the app server every hour, and an <b>SMS service</b>, an outside company, sends the texts. One word on the list, two extra parts."
       ],
       "code": {
         "language": "sql",
         "filename": "sketch: bookings table",
+        "caption": "One row per booking. reminder_sent_at stays empty until the text goes out, so nobody gets it twice.",
         "code": "create table bookings (\n  id uuid primary key default gen_random_uuid(),\n  client_id uuid not null references clients(id),\n  stylist_id uuid not null references stylists(id),\n  starts_at timestamptz not null,\n  reminder_sent_at timestamptz\n);",
         "caption": "A first sketch, not the final design. It is enough to see the work and spot the unknowns."
       },
@@ -268,7 +270,7 @@
       "code": {
         "language": "text",
         "filename": "scope/salon-mvp.md",
-        "code": "Problem:  missed calls, ~1 in 10 no-shows\nSuccess:  bookings online, fewer no-shows in 3 months\n\nMust:     online booking, SMS reminders, owner calendar\nWon't v1: AI rebooking, loyalty points, native app\n\nAssumptions:\n- One location, 4 stylists, English only\n- Sam supplies services, prices and photos\n- The salon pays SMS costs directly"
+        "code": "Problem:  missed calls, ~1 in 10 no-shows\nSuccess:  bookings online, fewer no-shows in 3 months\n\nMust:     online booking, SMS reminders, owner calendar\nShould:   online payment, right after launch\nWon't v1: AI rebooking, loyalty points, native app\n\nAssumptions:\n- One location, 4 stylists, English only\n- Sam supplies services, prices and photos\n- The salon pays SMS costs directly"
       },
       "callout": {
         "type": "claude-code",

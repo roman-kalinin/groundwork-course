@@ -59,8 +59,8 @@
       "title": "Saturday: \"Nobody can book\"",
       "chapter": "problem",
       "body": [
-        "A Saturday text from Sam: \"Nobody can book.\" Your code did not change. The world around it did: the SMS service retired an old version, a package needed a security fix, a card expired.",
-        "An app is less like a finished painting and more like a garden. Agree who tends it, how fast and for how much before that Saturday."
+        "A Saturday text from Sam: \"Nobody can book.\" Your code did not change. The world around it did: the hosting card expired, the SMS service retired an old version, a package needed a security fix.",
+        "An app is less a finished painting, more a garden. Agree who tends it, how fast and for how much before that Saturday."
       ],
       "changes": [
         "~ Booking App: broken, though its code did not change",
@@ -77,7 +77,7 @@
           { "id": "sam", "status": "warn" },
           { "id": "app", "status": "error" },
           { "id": "pkgs", "status": "warn", "pill": { "text": "security fix", "tone": "warn" } },
-          { "id": "sms", "status": "error", "pill": { "text": "old API off", "tone": "bad" } },
+          { "id": "sms", "status": "error", "pill": { "text": "old version", "tone": "bad" } },
           { "id": "card", "status": "warn", "pill": { "text": "card expired", "tone": "warn" } }
         ],
         "edges": [
@@ -112,7 +112,7 @@
         ],
         "edges": [
           { "from": "launch", "to": "warranty" },
-          { "from": "warranty", "to": "retainer", "packet": { "kind": "job", "speed": "slow" } }
+          { "from": "warranty", "to": "retainer" }
         ]
       }
     },
@@ -127,7 +127,7 @@
         "language": "text",
         "filename": "retainer.md",
         "code": "Included:  monitoring, monthly updates, backup check,\n           4 hours of small changes per month\nResponse:  P1 site down       reply within 4 business hours\n           P2 feature broken  next business day\n           P3 small change    planned for next month\nExcluded:  new features (quoted separately),\n           provider fees (paid by the salon)\nUnused hours do not roll over.",
-        "caption": "Write \"reply within\", not \"fixed within\". You control your reply, not every outside provider."
+        "caption": "P1 is the most urgent. Write \"reply within\", not \"fixed within\": you control your reply, not every outside provider."
       },
       "callout": {
         "type": "tip",
@@ -188,8 +188,8 @@
       "title": "Updates arrive as small pull requests",
       "chapter": "how",
       "body": [
-        "Packages get fixes all the time. Updating once a year means one huge, scary jump. Small, regular updates are boring, which is the goal.",
-        "<span class=\"term\">Dependabot</span>, a GitHub feature, opens a <span class=\"term\">pull request</span> (a proposed change) for each update. The hosting builds a preview copy of the site from it. You check the preview, run the tests, and merge."
+        "Packages get fixes all the time. Yearly updates are one huge, scary jump. Boring, small, regular updates are the goal.",
+        "<span class=\"term\">Dependabot</span>, a GitHub feature, opens a <span class=\"term\">pull request</span> (a proposed change) for each update. The hosting builds a preview copy of the site from it. You check the preview, run the tests, and merge: the update goes live."
       ],
       "code": {
         "language": "yaml",
@@ -221,8 +221,8 @@
       "title": "AI models get retired",
       "chapter": "how",
       "body": [
-        "Say Sam later added AI rebooking: her app server (the computer running her code) asks a Claude model for suggestions. Old models get retired, and the feature stops.",
-        "Two cheap habits: keep the model id in one env var (a setting outside the code), and an <span class=\"term\">eval set</span> of about 20 real cases. Run it before every switch."
+        "Say Sam later added AI rebooking: her app server (the computer running her code) asks a Claude model for ideas. Old models get retired, and then the feature breaks.",
+        "Two cheap habits: the model's name in one env var (a setting outside the code), and an <span class=\"term\">eval set</span>: about 20 real cases with good answers, run before every switch."
       ],
       "code": {
         "language": "ts",
@@ -261,7 +261,7 @@
       "chapter": "example",
       "body": [
         "Price it from the time it really takes. Count a typical month: updates, checking monitors and backups, a few hours of changes, and a short monthly report.",
-        "Being reachable has a cost even in quiet months, so include it. Offer two tiers, for example \"Care\" and \"Care Plus\", and let Sam choose which one fits."
+        "Being reachable costs you time even in quiet months, so include it. Then offer two tiers: <b>Care</b> keeps the app healthy, <b>Care Plus</b> adds change hours and faster replies. Sam picks."
       ],
       "callout": {
         "type": "tip",
@@ -295,7 +295,7 @@
       ],
       "callout": {
         "type": "claude-code",
-        "text": "A monthly check with Claude Code: run <code>npm audit</code> and <code>npm outdated</code>, list the AI model ids in use, and summarize the month's commits for Sam's report. Read the summary before sending: it must not claim work you did not do."
+        "text": "A monthly check with Claude Code: run <code>npm audit</code> (known security holes) and <code>npm outdated</code> (old packages), list the AI models in use, and summarize the month's changes for Sam's report. Read the summary before sending: it must not claim work you did not do."
       },
       "changes": [
         "− Monitoring, Updates, Change Hours, Faster Reply",

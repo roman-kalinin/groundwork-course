@@ -45,7 +45,7 @@
           { "id": "sam", "x": 8.4, "y": 6.3, "label": "Sam", "icon": "user", "kind": "person" }
         ],
         "edges": [
-          { "from": "you", "to": "app", "packet": { "kind": "job", "speed": "slow" } },
+          { "from": "you", "to": "app" },
           { "from": "sam", "to": "app", "packet": { "kind": "request", "direction": "both", "speed": "slow" } }
         ]
       }
@@ -54,8 +54,8 @@
       "title": "Launched, but it lives in your head",
       "chapter": "problem",
       "body": [
-        "Only you know how to deploy the app, where the reminder job runs, and why there is a test booking in the database.",
-        "That is a <span class=\"term\">bus factor</span> of one. If you get sick, or Sam hires a new developer, they start by reverse-engineering your work. Your reputation travels with that experience."
+        "Only you know how to deploy the app (put a new version live), where the reminder timer runs, and why a test booking sits in the database.",
+        "That is a <span class=\"term\">bus factor</span> of one. If you get sick, or Sam hires a new developer, they must dig through your code to guess how it works. That reflects on you."
       ],
       "changes": [
         "+ New Developer: someone Sam may hire later",
@@ -122,10 +122,10 @@
         "language": "bash",
         "filename": "the stranger test",
         "code": "git clone git@github.com:sams-salon/booking.git\ncd booking\ncp .env.example .env.local   # fill in dev keys\nnpm install\nnpx supabase start           # local database (needs Docker)\nnpx supabase db reset        # runs migrations, then seed\nnpm run dev",
-        "caption": "If these steps fail on a fresh laptop, the repo is not ready to hand over."
+        "caption": "Copy the code, add dev keys, install the packages, start a local database with fake data, run the app. If any step fails on a fresh laptop, the repo is not ready."
       },
       "changes": [
-        "~ Clean Repo: passes the stranger test",
+        "~ Clean Repo → New Developer: passes the stranger test",
         "~ Handoff ready 0 of 4 → 1 of 4",
         "~ Docs, Access, Training and Sam fade back"
       ],
@@ -166,7 +166,7 @@
       "changes": [
         "~ Docs: short answers and one diagram",
         "~ Handoff ready 1 → 2 of 4",
-        "~ Bus factor 1 → 2: someone else can run it now"
+        "~ Bus factor 1 → 2: someone else can run and understand it"
       ],
       "metrics": {
         "ready": "2 of 4",
@@ -197,7 +197,7 @@
         "text": "Make sure at least two people on Sam's side can log in to every account, each with two-factor login. One owner with one phone is a single point of failure."
       },
       "changes": [
-        "~ Access: shared through a vault, two admins on Sam's side",
+        "~ Access: secrets via a password manager, two admins for Sam",
         "~ Handoff ready 2 → 3 of 4",
         "~ New Developer fades back, Sam comes forward"
       ],
@@ -206,7 +206,7 @@
       },
       "scene": {
         "extends": "previous",
-        "caption": "Third part: secrets go through a vault, and Sam has two admins.",
+        "caption": "Third part: secrets go through a password manager, and Sam has two admins.",
         "nodes": [
           { "id": "docs", "status": "ok" },
           { "id": "access", "status": "active", "pill": "2 admins" },
@@ -257,7 +257,7 @@
       "chapter": "example",
       "body": [
         "Before the last invoice comes <span class=\"term\">UAT</span>, user acceptance testing: Sam checks each acceptance criterion from discovery on the live app, on real phones.",
-        "Each check passes or becomes a bug ticket. When all pass, she gives a written <span class=\"term\">sign-off</span>. That triggers the final payment and starts the warranty period from your contract."
+        "Each check passes or becomes a bug ticket, a written to-do for the fix. When all pass, she gives a written <span class=\"term\">sign-off</span>. That triggers the final payment and starts the warranty period from your contract."
       ],
       "changes": [
         "− Clean Repo, Docs, Access, Training, New Developer",
@@ -290,22 +290,24 @@
       ],
       "code": {
         "language": "bash",
+        "filename": "handoff checks",
+        "caption": "Find debug prints, TODO notes, old branches (side copies of the code) and database changes missing from migrations.",
         "code": "git grep -n \"console.log\"     # stray debug logs\ngit grep -nE \"TODO|FIXME\"     # unowned work\ngit branch -r                  # old branches\nnpx supabase db diff           # schema changes not in migrations"
       },
       "callout": {
         "type": "claude-code",
-        "text": "Ask Claude Code for a handoff audit: unused files and routes, TODOs, logs that print personal data, env vars missing from <code>.env.example</code>. Review its list before fixing. Rewrite <code>CLAUDE.md</code> for the next person: it is their map of the project."
+        "text": "Ask Claude Code for a handoff audit: unused files and pages, TODOs, logs that print personal data, env vars missing from <code>.env.example</code>. Review its list before fixing. Update <code>CLAUDE.md</code>, the notes file Claude Code reads first: it is the next developer's map."
       },
       "changes": [
         "− Book Online, No Double-Book, Reminder Text, Sam, Sign-off",
-        "+ Repo: the code, just before handoff",
+        "+ Code Repo: Sam's code, before your cleanup pass",
         "+ Debug Logs, TODOs, Test Page: leftovers in it",
         "+ Claude Code: runs a handoff audit"
       ],
       "scene": {
         "caption": "Leftovers point into the repo. A Claude Code audit finds them; you decide what goes.",
         "nodes": [
-          { "id": "repo2", "x": 4.6, "y": 4.0, "label": "Repo", "icon": "git", "status": "warn" },
+          { "id": "repo2", "x": 4.6, "y": 4.0, "label": "Code Repo", "icon": "git", "status": "warn" },
           { "id": "logs", "x": 0.8, "y": 4.0, "label": "Debug Logs", "icon": "log", "kind": "threat", "status": "error", "pill": { "text": "leaks data", "tone": "bad" } },
           { "id": "todo", "x": 4.6, "y": 0.6, "label": "TODOs", "icon": "list", "status": "warn" },
           { "id": "page", "x": 4.6, "y": 7.4, "label": "Test Page", "icon": "file", "status": "warn" },
@@ -323,12 +325,13 @@
       "title": "Recap in one breath",
       "chapter": "recap",
       "body": [
-        "A handoff is a package: a repo a stranger can run, short docs with one diagram, access through a vault with your keys rotated, and a runbook so Sam can operate without you.",
+        "A handoff is a package: a repo a stranger can run, short docs with one diagram, access through a password manager with your keys rotated, and a runbook so Sam can operate without you.",
         "Clean up AI leftovers first. Close with UAT against the original criteria and a written sign-off."
       ],
       "changes": [
         "− Debug Logs, TODOs, Test Page: cleaned up",
-        "~ Repo: ready to hand over"
+        "~ Code Repo: ready to hand over",
+        "~ Claude Code: audit done"
       ],
       "scene": {
         "extends": "previous",
@@ -358,7 +361,7 @@
       "options": [
         { "text": "Send it by email, then ask them to delete the email.", "why": "Email keeps copies on several servers and devices. Asking someone to delete it does not remove those." },
         { "text": "Paste it into the README so it is easy to find.", "why": "The README is in the repo. Anyone with repo access, now or later, would have the key." },
-        { "text": "Share it through a password manager, or have Sam create a dev key for them.", "correct": true, "why": "The vault shares it without leaving copies in chat or email. A separate dev key per developer is even better: it can be switched off on its own." }
+        { "text": "Share it through a password manager, or have Sam create a dev key for them.", "correct": true, "why": "A password manager shares it without leaving copies in chat or email. A separate dev key per developer is even better: it can be switched off on its own." }
       ]
     },
     {

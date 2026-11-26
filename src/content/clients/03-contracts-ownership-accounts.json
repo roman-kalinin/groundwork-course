@@ -15,7 +15,7 @@
     "statement of work": "The part of a contract that describes exactly what will be delivered. Often it points to the signed scope doc.",
     "IP": "Intellectual property: legal ownership of creative work such as code, designs and text.",
     "IP assignment": "A contract clause that moves ownership of the work from the person who made it to the client, usually once paid in full.",
-    "pre-existing IP": "Tools, templates or code you made before this project and reuse across clients. You keep it and grant the client a licence to use it.",
+    "pre-existing IP": "Tools, templates or code you made before this project and reuse across clients. You keep it and grant the client a license to use it.",
     "warranty": "A promise to fix defects in your own work for free, for a set period after launch.",
     "registrar": "The company where a domain name is registered and renewed, and whose account controls it.",
     "DNS": "The internet's address book: records that point a domain name to the servers that host the site.",
@@ -30,7 +30,7 @@
       "title": "Sam's app runs on four accounts",
       "chapter": "setup",
       "body": [
-        "<b>Sam</b> owns a small hair salon, and <b>you</b> are building her booking app. It rests on four things: the <span class=\"term\">code repo</span> (the stored code), <b>hosting</b> (servers that run it), the <b>domain</b> (the salon's web address) and an <b>AI key</b> (a password that lets the app use Claude).",
+        "<b>Sam</b> owns a small hair salon; <b>you</b> are building her booking app. It rests on four things: the <span class=\"term\">code repo</span> (the stored code), <b>hosting</b> (servers that run it and its data), the <b>domain</b> (the salon's web address) and an <b>AI key</b> (a password for Claude, the AI).",
         "To move fast, you set all four up in your own accounts."
       ],
       "metrics": {
@@ -98,7 +98,8 @@
       "changes": [
         "~ Your accounts → Sam's accounts",
         "~ You: an invited member",
-        "~ Owned by Sam 0 of 4 → 4 of 4"
+        "~ Owned by Sam 0 of 4 → 4 of 4",
+        "− Sam's \"please?\" arrow: she no longer has to ask"
       ],
       "metrics": {
         "owned": { "value": "4 of 4", "tone": "good" }
@@ -119,8 +120,7 @@
           { "id": "domain", "status": "ok" }
         ],
         "edges": [
-          { "id": "you>host", "style": "dashed" },
-          { "from": "sam", "to": "domain", "status": "ok" }
+          { "id": "you>host", "style": "dashed" }
         ]
       }
     },
@@ -166,7 +166,7 @@
       "chapter": "how",
       "body": [
         "In many countries, whoever writes code owns its copyright, even when someone else paid. So the contract needs an <span class=\"term\">IP assignment</span>: ownership of the custom work moves to Sam on full payment.",
-        "Two things stay outside it: your <span class=\"term\">pre-existing IP</span>, like a starter kit you reuse and license to her, and open-source packages, which keep their own licences."
+        "Two things stay outside it: your <span class=\"term\">pre-existing IP</span>, like a starter kit you reuse, and open-source packages (free code others publish), which keep their own licenses."
       ],
       "callout": {
         "type": "tip",
@@ -199,8 +199,8 @@
       "title": "Sam signs up, you get invited",
       "chapter": "how",
       "body": [
-        "At kickoff, Sam creates each account with a shared business email and her card: GitHub (where code is stored), Vercel (hosting), Supabase (the database), the AI provider, the domain. Then she invites you.",
-        "It takes one screen-share call. Bills land with her from day one, which is the pass-through from lesson 2."
+        "At kickoff, Sam creates each account with her business email and card: GitHub for the code repo, Vercel and Supabase for hosting (the app and its database), the AI provider for the key, a registrar for the domain. Then she invites you.",
+        "It takes one screen-share call. Bills land with her from day one (the pass-through from lesson 2)."
       ],
       "callout": {
         "type": "warn",
@@ -226,7 +226,6 @@
           { "id": "sam", "x": 11.0, "y": 5.4, "label": "Sam", "icon": "user", "kind": "person", "status": "active" }
         ],
         "edges": [
-          { "from": "sam", "to": "domain", "status": "ok" },
           { "from": "host", "to": "you", "label": "invite", "packet": { "kind": "request" } }
         ]
       }
@@ -249,9 +248,10 @@
         "text": "Turn on auto-renew and the transfer lock, and give a second person on Sam's side access to the registrar. Lapsed domains get registered by someone else and resold."
       },
       "changes": [
-        "~ Domain: in Sam's name, auto-renew on",
+        "+ Sam → Domain: the domain is in her name",
+        "~ Domain: auto-renew on",
         "~ You: may edit only its DNS records",
-        "~ Code Repo and AI Key fade back"
+        "− Invite arrow; Code Repo and AI Key fade back"
       ],
       "scene": {
         "extends": "previous",
@@ -265,7 +265,7 @@
           { "id": "aikey", "status": "dim" }
         ],
         "edges": [
-          { "id": "sam>domain", "label": "owns", "status": "active" }
+          { "from": "sam", "to": "domain", "label": "owns", "status": "active" }
         ]
       }
     },
@@ -284,12 +284,13 @@
       },
       "callout": {
         "type": "claude-code",
-        "text": "Ask Claude Code: \"List every env var the app reads, and where.\" Check: does any secret start with <code>NEXT_PUBLIC_</code>? Is <code>.env*</code> in <code>.gitignore</code>? <code>git log -p -S \"sk-ant\"</code> finds an Anthropic key ever committed. Found one? Rotate it."
+        "text": "Ask Claude Code: \"List every env var the app reads.\" No secret may start with <code>NEXT_PUBLIC_</code>: that prefix ships the value to every visitor's browser. Check <code>.env*</code> is in <code>.gitignore</code> (files Git never saves). A key ever committed? Rotate it: new key, old one deleted."
       },
       "changes": [
         "+ AI Key → Hosting: stored there as an env var",
         "~ Code Repo: holds no secrets",
-        "~ Domain fades back, AI Key comes forward"
+        "~ Domain fades back, AI Key comes forward",
+        "~ You: DNS only → member"
       ],
       "scene": {
         "extends": "previous",
@@ -315,13 +316,13 @@
       ],
       "callout": {
         "type": "warn",
-        "text": "After a transfer, rotate the keys you created or saw: the AI key, database secrets, webhook secrets. A project should not leave your hands while you still hold working credentials to it."
+        "text": "After a transfer, rotate the keys you created or saw: the AI key, the SMS key, the database secrets. A project should not leave your hands while you still hold working credentials to it."
       },
       "changes": [
         "− Sam, You, AI Key, Domain",
-        "+ Code Repo, Hosting, Database: copies in your prototype",
-        "+ Database: moves into Sam's accounts too",
-        "~ Code Repo and Hosting: the moved copies, on Sam's side"
+        "+ Your prototype: a Code Repo, Hosting and Database in your name",
+        "+ Database: the salon's data, moving across to Sam too",
+        "~ Code Repo and Hosting slide into Sam's accounts on the right"
       ],
       "scene": {
         "caption": "Each piece moves from your prototype accounts into Sam's, before launch.",
@@ -391,7 +392,7 @@
       "question": "Claude Code put <code>NEXT_PUBLIC_ANTHROPIC_API_KEY</code> in the env file so the browser can call the Claude API directly. What do you change?",
       "options": [
         { "text": "Nothing, env vars are always secret.", "why": "Not with this prefix. Next.js bundles <code>NEXT_PUBLIC_</code> variables into the browser code, where anyone can read them." },
-        { "text": "Drop the prefix and call the API from a server route.", "correct": true, "why": "The key stays on the server. The browser calls your route, which can check the user, rate-limit and then call the Claude API." },
+        { "text": "Drop the prefix and let the app server call the Claude API.", "correct": true, "why": "The key stays on the server. The browser asks your app server, which can check the user, limit their calls and then call the Claude API." },
         { "text": "Keep it, but rotate the key every month.", "why": "A key visible in the browser can be copied within minutes of launch. Rotating monthly still leaves it exposed." }
       ]
     }
