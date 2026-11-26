@@ -11,37 +11,71 @@
     "How <code>git bisect</code> finds the exact commit that broke something"
   ],
   "glossary": {
+    "app server": "A computer that runs the app's own code and answers the browser. While you build, it runs on your laptop.",
     "reproduce": "To find exact steps that make the bug happen every time you follow them.",
     "isolate": "To test one part of the system on its own, so a result can only be explained by that part.",
+    "curl": "A command-line tool that sends one request to a server, exactly as written, without a browser.",
     "binary search": "Finding something by checking the middle, keeping the half that contains it, and repeating. Each check halves what is left.",
     "probe": "A temporary log line placed at one point in the code to check whether the data is still correct there.",
     "commit": "A saved snapshot of the code in git, with an id like <code>9f2e1aa</code> and a message describing the change.",
-    "git bisect": "A git command that runs a binary search through your commit history to find the first commit where a bug appears.",
-    "regression": "A bug in something that used to work, introduced by a later change."
+    "git bisect": "A git command that runs a binary search through your commits to find the first one where a bug appears.",
+    "regression": "A bug in something that used to work, brought in by a later change."
   },
+  "metrics": [
+    { "id": "suspects", "label": "Suspects", "icon": "search" },
+    { "id": "tests", "label": "Tests run", "icon": "flask" },
+    { "id": "commits", "label": "Commits left", "icon": "git" }
+  ],
   "steps": [
+    {
+      "title": "Notely's Summarize button, last week",
+      "chapter": "setup",
+      "body": [
+        "Last week, Notely's <b>Summarize</b> button worked. Maya's browser (the screen she uses) asks the <span class=\"term\">app server</span>, the computer running Notely's code.",
+        "The app server loads the note from the database, sends its text to the Claude API, Anthropic's AI, and sends a three-line summary back to the browser."
+      ],
+      "metrics": {
+        "suspects": { "value": 0, "tone": "good" },
+        "tests": 0
+      },
+      "scene": {
+        "caption": "The browser asks the app server, which uses the database and the Claude API.",
+        "nodes": [
+          { "id": "browser", "x": 0.8, "y": 3.0, "label": "Browser", "icon": "browser", "kind": "client" },
+          { "id": "app", "x": 4.6, "y": 3.0, "label": "App Server", "icon": "server", "kind": "server" },
+          { "id": "llm", "x": 8.4, "y": 3.0, "label": "Claude API", "icon": "sparkle", "kind": "ai" },
+          { "id": "db", "x": 4.6, "y": 6.6, "label": "Database", "icon": "database", "kind": "data" }
+        ],
+        "edges": [
+          { "from": "browser", "to": "app", "packet": { "kind": "request", "direction": "both" } },
+          { "from": "app", "to": "llm", "packet": { "kind": "request", "direction": "both", "speed": "slow" } },
+          { "from": "app", "to": "db", "packet": { "kind": "data", "direction": "both", "returns": "data" } }
+        ]
+      }
+    },
     {
       "title": "Blank summaries, and no error anywhere",
       "chapter": "problem",
       "body": [
-        "Since sometime this week, Notely's AI summaries come back blank. No red in the Console. Network shows a <code>200</code>. The Vercel logs show no errors.",
-        "Nothing to read, so the last three lessons do not point anywhere. The bug could be in the page, the route, the database or the Claude call. You need a method, not a guess."
+        "Since sometime this week, summaries come back blank. The Console is empty, Network shows <code>200</code> (success), and the server logs show no errors.",
+        "With nothing to read, the last three lessons point nowhere. The bug could be in the page, the app server, the database or the Claude call. You need a method, not a guess."
       ],
+      "changes": [
+        "~ Browser shows a blank summary",
+        "~ App Server, Database and Claude API: all suspects",
+        "~ Suspects 0 → 4"
+      ],
+      "metrics": {
+        "suspects": { "value": 4, "tone": "bad" }
+      },
       "scene": {
-        "caption": "No errors anywhere. Every part of the system is a suspect.",
+        "extends": "previous",
+        "caption": "No errors anywhere. Every part of Notely is a suspect.",
         "nodes": [
-          { "id": "browser", "x": 2, "y": 4, "label": "Notely tab", "sublabel": "summary is blank", "icon": "browser", "kind": "client", "status": "warn" },
-          { "id": "api", "x": 5.8, "y": 4, "label": "Summary route", "sublabel": "/api/summary", "icon": "function", "kind": "server", "status": "warn" },
-          { "id": "db", "x": 10.4, "y": 1.8, "label": "notes table", "sublabel": "Supabase", "icon": "database", "kind": "data", "status": "warn" },
-          { "id": "claude", "x": 10.4, "y": 6.2, "label": "Claude API", "sublabel": "summaries", "icon": "sparkle", "kind": "ai", "status": "warn" }
-        ],
-        "edges": [
-          { "from": "browser", "to": "api", "label": "200 OK", "packet": true },
-          { "from": "api", "to": "db", "label": "load note" },
-          { "from": "api", "to": "claude", "label": "summarize" }
-        ],
-        "notes": [
-          { "id": "where", "x": 4.2, "y": 1.6, "text": "Where is the bug?", "status": "warn" }
+          { "id": "browser", "status": "warn", "pill": { "text": "blank", "tone": "bad" } },
+          { "id": "app", "status": "warn" },
+          { "id": "llm", "status": "warn" },
+          { "id": "db", "status": "warn" }
         ]
       }
     },
@@ -50,22 +84,21 @@
       "chapter": "idea",
       "body": [
         "Do not search for the bug. Search for where it is <em>not</em>. Pick a test whose answer rules out a big part of the system, ideally half.",
-        "Each test cuts the suspects down. A handful of good tests corners almost any bug, even in a codebase you did not write yourself, which with Claude Code is often the case."
+        "Each test cuts the suspects down. A handful of good tests corners almost any bug, even in code you did not write yourself, which with Claude Code is often the case."
       ],
       "callout": {
         "type": "analogy",
         "text": "A string of fairy lights goes dark. You do not test every bulb. You check the middle of the string: power there? Then the fault is in the second half. Check its middle. Repeat."
       },
+      "changes": [
+        "+ Two halves: the page, and the server side"
+      ],
       "scene": {
         "extends": "previous",
         "caption": "One test at the right point clears half the suspects at once.",
-        "remove": ["where"],
         "zones": [
-          { "id": "z-front", "x": 0.4, "y": 2.6, "w": 3.6, "h": 2.8, "label": "Half A" },
-          { "id": "z-back", "x": 4.4, "y": 0.6, "w": 7.4, "h": 6.8, "label": "Half B" }
-        ],
-        "notes": [
-          { "id": "split", "x": 2.2, "y": 6.6, "text": "Test here first", "status": "active" }
+          { "id": "page", "x": 0.0, "y": 1.6, "w": 2.2, "h": 3.0, "label": "The page" },
+          { "id": "server", "x": 3.2, "y": 1.4, "w": 8.6, "h": 6.4, "label": "Server side" }
         ]
       }
     },
@@ -73,24 +106,26 @@
       "title": "Step one: make it fail on demand",
       "chapter": "how",
       "body": [
-        "A bug you cannot <span class=\"term\">reproduce</span> is a bug you cannot prove fixed. Write down the exact steps, and vary one thing at a time: another note, another user, another browser, local instead of production.",
-        "Maya finds it fails for <b>every</b> note, for every user, locally too. Good news: not about data, not about Vercel settings, and she can test on her laptop."
+        "A bug you cannot <span class=\"term\">reproduce</span> is a bug you cannot prove fixed. Write down the exact steps, and vary one thing at a time: another note, another user, your laptop instead of the live site.",
+        "It fails for <b>every</b> note and every user, on your laptop too. So it is not one odd note, and you can test locally."
       ],
       "code": {
         "language": "text",
         "filename": "Repro notes",
-        "code": "1. Log in as maya@example.com (local or prod)\n2. Open any note, e.g. n_81\n3. Click \"AI summary\"\nExpected: 3-line summary\nActual:   empty box, status 200, no error\nSince:    worked last Monday"
+        "code": "1. Log in as maya@example.com (local or live)\n2. Open any note, e.g. n_81\n3. Click \"Summarize\"\nExpected: 3-line summary\nActual:   empty box, status 200, no error\nSince:    worked last Monday"
+      },
+      "changes": [
+        "~ Browser: fails for every note, locally too",
+        "~ Tests run 0 → 1"
+      ],
+      "metrics": {
+        "tests": 1
       },
       "scene": {
         "extends": "previous",
-        "caption": "Reliable repro: every note, every user, locally too. Data and hosting settings are ruled out.",
-        "remove": ["split"],
+        "caption": "A reliable repro: every note, every user, on your laptop too.",
         "nodes": [
-          { "id": "browser", "status": "active", "tags": ["any note", "local + prod"] },
-          { "id": "db", "status": "dim" }
-        ],
-        "edges": [
-          { "id": "api>db", "status": "dim" }
+          { "id": "browser", "status": "active", "pill": { "text": "every note", "tone": "bad" } }
         ]
       }
     },
@@ -98,37 +133,46 @@
       "title": "Isolate: skip the page entirely",
       "chapter": "how",
       "body": [
-        "Now <span class=\"term\">isolate</span>: test half A without half B. Call the route directly from the terminal, with no page involved. If the raw answer is already wrong, the page is innocent.",
-        "It is: the route returns <code>{}</code>, with no <code>summary</code> field at all. The page was faithfully showing nothing. The bug lives on the server side."
+        "Now <span class=\"term\">isolate</span>: test the server side without the page. From the terminal, call the app server directly with <span class=\"term\">curl</span>, a tool that sends one request. If the raw answer is already wrong, the page is innocent.",
+        "It is: the answer is <code>{}</code>, with no <code>summary</code> at all. The page was faithfully showing nothing."
       ],
       "code": {
         "language": "bash",
         "filename": "Terminal",
         "code": "curl -s -X POST http://localhost:3000/api/summary \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"noteId\":\"n_81\"}'\n\n# {}",
-        "caption": "If the route needs a login, add your local cookie from DevTools with -H \"Cookie: …\". Never share that command."
+        "caption": "If the route needs a login, add your local cookie with -H \"Cookie: …\". Never share that command."
+      },
+      "changes": [
+        "+ Terminal: sends the request without the page",
+        "~ App Server answers {}: the bug is server side",
+        "~ Suspects 4 → 3: the page (Browser) is cleared",
+        "~ Tests run 1 → 2"
+      ],
+      "metrics": {
+        "suspects": { "value": 3, "tone": "warn" },
+        "tests": 2
       },
       "scene": {
         "extends": "previous",
-        "caption": "Called directly, the route already returns an empty object. The page is cleared.",
-        "remove": ["z-front"],
+        "caption": "Called directly, the app server already answers an empty object. The page is cleared.",
+        "remove": ["page", "server"],
         "nodes": [
-          { "id": "browser", "status": "ok", "tags": null, "sublabel": "innocent" },
-          { "id": "api", "status": "error", "tags": ["returns {}"] }
+          { "id": "browser", "status": "ok", "pill": null },
+          { "id": "app", "status": "error", "pill": { "text": "returns {}", "tone": "bad" } },
+          { "id": "term", "x": 0.8, "y": 6.6, "label": "Terminal", "icon": "terminal", "kind": "client", "status": "active" }
         ],
         "edges": [
-          { "id": "browser>api", "status": "dim", "packet": false, "label": null }
-        ],
-        "notes": [
-          { "id": "curl", "x": 6.4, "y": 6.6, "text": "curl → {}", "status": "error" }
+          { "id": "browser>app", "status": "dim", "packet": false },
+          { "from": "term", "to": "app", "packet": { "kind": "request", "direction": "both" } }
         ]
       }
     },
     {
-      "title": "Binary search inside the route",
+      "title": "Binary search inside the app server",
       "chapter": "how",
       "body": [
-        "The route has three stages: load the note, call Claude, build the reply. Put a <span class=\"term\">probe</span> in the middle: log the raw Claude response, then run the same curl.",
-        "The response has <code>content[0].text</code> with a full summary. So loading and calling work. The bug is in the last stage. That is <span class=\"term\">binary search</span>: test the middle, keep the bad half."
+        "The summary code has three stages: load the note, call Claude, build the reply. Put a <span class=\"term\">probe</span> in the middle: log the raw Claude answer, then run the same curl.",
+        "The answer holds a full summary. Loading and calling work; the bug is in the last stage. That is <span class=\"term\">binary search</span>: test the middle, keep the bad half."
       ],
       "code": {
         "language": "ts",
@@ -136,22 +180,29 @@
         "code": "const data = await res.json();\nconsole.log(\"PROBE claude raw\", JSON.stringify(data.content));\n// PROBE claude raw [{\"type\":\"text\",\"text\":\"Maya plans...\"}]",
         "caption": "Mark probes with PROBE so they are easy to find. This one prints note content: run it locally only and delete it before committing."
       },
+      "changes": [
+        "− Browser, Terminal, Database, Claude API, App Server: we zoom in",
+        "+ Load note, Call Claude, Build reply: the code's three stages",
+        "~ Suspects 3 → 1",
+        "~ Tests run 2 → 3"
+      ],
+      "metrics": {
+        "suspects": { "value": 1, "tone": "warn" },
+        "tests": 3
+      },
       "scene": {
         "caption": "A probe after the Claude call shows good data, so the bug is in building the reply.",
         "zones": [
-          { "id": "z-route", "x": 0.4, "y": 2, "w": 11.2, "h": 4, "label": "Summary route" }
+          { "id": "route", "x": 0.2, "y": 2.2, "w": 11.6, "h": 3.4, "label": "App Server" }
         ],
         "nodes": [
-          { "id": "load", "x": 2.2, "y": 4, "label": "Load note", "sublabel": "Supabase", "icon": "database", "kind": "data", "status": "ok" },
-          { "id": "call", "x": 6.2, "y": 4, "label": "Call Claude", "sublabel": "fetch /v1/messages", "icon": "sparkle", "kind": "ai", "status": "ok", "tags": ["text present"] },
-          { "id": "reply", "x": 10, "y": 4, "label": "Build reply", "sublabel": "Response.json", "icon": "code", "kind": "server", "status": "error" }
+          { "id": "load", "x": 1.4, "y": 3.9, "label": "Load note", "icon": "database", "kind": "data", "status": "ok" },
+          { "id": "call", "x": 5.8, "y": 3.9, "label": "Call Claude", "icon": "sparkle", "kind": "ai", "status": "ok", "pill": { "text": "PROBE: ok", "icon": "eye", "tone": "good" } },
+          { "id": "reply", "x": 10.2, "y": 3.9, "label": "Build reply", "icon": "code", "kind": "server", "status": "error" }
         ],
         "edges": [
-          { "from": "load", "to": "call", "packet": { "label": "note" } },
-          { "from": "call", "to": "reply", "packet": { "label": "text", "status": "ok" } }
-        ],
-        "notes": [
-          { "id": "probe", "x": 6.2, "y": 1.2, "text": "PROBE: data is fine here", "status": "ok" }
+          { "from": "load", "to": "call", "packet": { "kind": "data" } },
+          { "from": "call", "to": "reply", "packet": { "kind": "response" } }
         ]
       }
     },
@@ -160,7 +211,7 @@
       "chapter": "how",
       "body": [
         "It worked last Monday, so this is a <span class=\"term\">regression</span>: some <span class=\"term\">commit</span> since then broke it. <span class=\"term\">Git bisect</span> finds which one.",
-        "You name one good commit and one bad one. Git checks out the commit halfway between. You test it and say <code>good</code> or <code>bad</code>. Git halves again. Even 100 commits take only about 7 tests."
+        "You name one good commit and one bad one. Git checks out the commit halfway between. You test it and say <code>good</code> or <code>bad</code>. Git halves again. Even 100 commits take about 7 tests."
       ],
       "code": {
         "language": "bash",
@@ -168,24 +219,28 @@
         "code": "git bisect start\ngit bisect bad              # the current commit is broken\ngit bisect good a1b2c3d     # last Monday's commit worked\n# git checks out a commit in the middle. Test it, then:\ngit bisect good             # or: git bisect bad\n# ...repeat until git prints \"is the first bad commit\"\ngit bisect reset            # back to where you started",
         "caption": "If a script can tell good from bad, git bisect run &lt;script&gt; does the testing for you."
       },
+      "changes": [
+        "− Load note, Call Claude, Build reply",
+        "+ Commits a1b2c3d, 5d0e7b2, c48f019, 9f2e1aa, e77a3d4",
+        "+ Commits left: 4 could be the first bad one"
+      ],
+      "metrics": {
+        "commits": { "value": 4, "tone": "warn" }
+      },
       "scene": {
-        "caption": "The commits since Monday. Git checks out the one in the middle for you to test.",
+        "caption": "The commits since Monday, oldest first. Git checks out the middle one for you to test.",
         "nodes": [
-          { "id": "c1", "x": 1.4, "y": 4, "label": "a1b2c3d", "sublabel": "Monday", "icon": "git", "status": "ok" },
-          { "id": "c2", "x": 3.8, "y": 4, "label": "5d0e7b2", "icon": "git" },
-          { "id": "c3", "x": 6.2, "y": 4, "label": "c48f019", "icon": "git", "status": "active", "tags": ["test me"] },
-          { "id": "c4", "x": 8, "y": 4, "label": "9f2e1aa", "icon": "git" },
-          { "id": "c5", "x": 11, "y": 4, "label": "e77a3d4", "sublabel": "today", "icon": "git", "status": "error" }
+          { "id": "c1", "x": 0.8, "y": 3.8, "label": "a1b2c3d", "icon": "git", "kind": "neutral", "shape": "token", "status": "ok", "pill": { "text": "Monday", "tone": "good" } },
+          { "id": "c2", "x": 3.4, "y": 3.8, "label": "5d0e7b2", "icon": "git", "kind": "neutral", "shape": "token" },
+          { "id": "c3", "x": 6.0, "y": 3.8, "label": "c48f019", "icon": "git", "kind": "neutral", "shape": "token", "status": "active", "pill": "test me" },
+          { "id": "c4", "x": 8.6, "y": 3.8, "label": "9f2e1aa", "icon": "git", "kind": "neutral", "shape": "token" },
+          { "id": "c5", "x": 11.2, "y": 3.8, "label": "e77a3d4", "icon": "git", "kind": "neutral", "shape": "token", "status": "error", "pill": { "text": "today", "tone": "bad" } }
         ],
         "edges": [
           { "from": "c1", "to": "c2" },
           { "from": "c2", "to": "c3" },
           { "from": "c3", "to": "c4" },
           { "from": "c4", "to": "c5" }
-        ],
-        "notes": [
-          { "id": "good", "x": 1.4, "y": 2.4, "text": "good", "status": "ok" },
-          { "id": "bad", "x": 11, "y": 2.4, "text": "bad", "status": "error" }
         ]
       }
     },
@@ -193,30 +248,37 @@
       "title": "The first bad commit, found",
       "chapter": "example",
       "body": [
-        "<code>c48f019</code> works: mark it good. Git jumps to <code>9f2e1aa</code>. Blank summary: mark it bad. Git prints: <em>9f2e1aa is the first bad commit</em>, \"refactor summary types\".",
-        "The diff is one line. The refactor read <code>.value</code>, a field that does not exist. <code>undefined</code> silently drops out of JSON, so the route sent <code>{}</code>."
+        "<code>c48f019</code> works: mark it good. Git jumps to <code>9f2e1aa</code>. Blank summary: mark it bad. Git prints <em>9f2e1aa is the first bad commit</em>, \"refactor summary types\".",
+        "Its diff is tiny. The refactor reads <code>.value</code>, a field the Claude API never sends. An undefined value silently drops out of JSON, so the app server sent <code>{}</code>."
       ],
-      "callout": {
-        "type": "tip",
-        "text": "Vercel keeps every deployment at its own URL. Opening an older deployment is a quick way to confirm which commit was still good before you start bisecting."
-      },
       "code": {
         "language": "diff",
         "filename": "9f2e1aa  refactor summary types",
         "code": "- return Response.json({ summary: data.content[0].text });\n+ const block = data.content[0] as SummaryBlock;\n+ return Response.json({ summary: block.value });",
-        "caption": "SummaryBlock said value, but the API sends text. res.json() gives untyped data, so TypeScript trusts whatever shape the as cast claims."
+        "caption": "SummaryBlock said value, but the API sends text. The as cast tells TypeScript to trust that wrong shape."
+      },
+      "changes": [
+        "~ c48f019 tests good; 5d0e7b2 before it is good too",
+        "~ 9f2e1aa tests bad: the first bad commit",
+        "~ Tests run 3 → 5",
+        "~ Commits left 4 → 1"
+      ],
+      "metrics": {
+        "tests": 5,
+        "commits": { "value": 1, "tone": "good" }
       },
       "scene": {
         "extends": "previous",
         "caption": "Two tests later, git names the first bad commit: 9f2e1aa.",
         "nodes": [
           { "id": "c2", "status": "ok" },
-          { "id": "c3", "status": "ok", "tags": null },
-          { "id": "c4", "status": "error", "tags": ["first bad"], "sublabel": "refactor types" },
+          { "id": "c3", "status": "ok", "pill": { "text": "good", "tone": "good" } },
+          { "id": "c4", "status": "error", "pill": { "text": "first bad", "tone": "bad" } },
           { "id": "c5", "status": "dim" }
         ],
         "edges": [
-          { "id": "c3>c4", "status": "error", "packet": { "label": "bug in", "status": "error" } }
+          { "id": "c3>c4", "status": "error" },
+          { "id": "c4>c5", "status": "dim" }
         ]
       }
     },
@@ -225,22 +287,26 @@
       "chapter": "watch-out",
       "body": [
         "Narrowing only works if each test changes <b>one</b> thing. Edit three files, restart, and it works? You no longer know which edit fixed it, or whether one of them broke something else.",
-        "Same while bisecting: no fixes until git has named the commit. Then run <code>git bisect reset</code>, make the fix on your normal branch, and re-run the repro steps from the start."
+        "Same while bisecting: no fixes until git has named the commit. Then run <code>git bisect reset</code>, make the fix on today's code, and re-run the repro steps."
       ],
       "callout": {
         "type": "claude-code",
-        "text": "Claude Code likes to change several files at once. Ask it to reproduce first, then propose <b>one</b> change and say what result would prove it right. Check <code>git diff --stat</code>: a one-line bug should get a small diff. And ask it to remove every <code>PROBE</code> line before committing."
+        "text": "Ask Claude Code to reproduce first, then propose <b>one</b> change and say what result would prove it right. Check <code>git diff --stat</code>: a one-line bug deserves a small diff. And ask it to remove every <code>PROBE</code> line before committing."
       },
+      "changes": [
+        "+ Fix: one line on top of today's code",
+        "~ e77a3d4 back in view: the fix builds on it"
+      ],
       "scene": {
         "extends": "previous",
         "caption": "One small fix on top of today's code, tested with the same repro steps.",
         "nodes": [
           { "id": "c5", "status": "normal" },
-          { "id": "fix", "x": 11, "y": 6.8, "label": "Fix", "sublabel": "1 line: .text", "icon": "check", "kind": "neutral", "status": "ok" }
+          { "id": "fix", "x": 11.2, "y": 7.2, "label": "Fix", "icon": "check", "kind": "neutral", "status": "active", "pill": ".text" }
         ],
         "edges": [
-          { "id": "c3>c4", "packet": false },
-          { "from": "c5", "to": "fix", "label": "one change", "status": "ok" }
+          { "id": "c4>c5", "status": "normal" },
+          { "from": "c5", "to": "fix", "label": "one change" }
         ]
       }
     },
@@ -248,9 +314,26 @@
       "title": "Recap: a method beats a hunch",
       "chapter": "recap",
       "body": [
-        "<b>Reproduce</b> until it fails every time. <b>Isolate</b> by testing one half of the system, like calling the route without the page. <b>Binary search</b> inside the code with probes.",
+        "<b>Reproduce</b> until it fails every time. <b>Isolate</b> by testing one half of the system, like calling the app server without the page. <b>Binary search</b> inside the code with probes.",
         "When it used to work, let <code>git bisect</code> find the first bad commit. Change one thing per test, and prove the fix with the same repro steps."
-      ]
+      ],
+      "changes": [
+        "~ Fix passes the repro steps: summaries are back",
+        "~ Suspects 1 → 0"
+      ],
+      "metrics": {
+        "suspects": { "value": 0, "tone": "good" }
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "The same repro that showed the bug now passes.",
+        "nodes": [
+          { "id": "fix", "status": "ok", "pill": { "text": "repro passes", "tone": "good" } }
+        ],
+        "edges": [
+          { "id": "c5>fix", "status": "ok" }
+        ]
+      }
     }
   ],
   "quiz": [
@@ -263,11 +346,11 @@
       ]
     },
     {
-      "question": "The page shows a wrong price. You call the API route with <code>curl</code> and the price in the response is correct. What have you learned?",
+      "question": "The page shows a wrong price. You call the app server with <code>curl</code> and the price in its answer is correct. What have you learned?",
       "options": [
         { "text": "The bug is on the server side, in how the price is calculated.", "why": "The server sent the right price, so its calculation is fine." },
-        { "text": "Nothing, since curl and the browser behave differently.", "why": "The route's answer does not depend on who asks, unless login or headers differ. A matching request is a fair test." },
-        { "text": "The bug is in the page: how it reads or displays the price.", "correct": true, "why": "The server half is cleared. Whatever goes wrong happens after the response arrives in the browser." }
+        { "text": "Nothing, since curl and the browser behave differently.", "why": "The server's answer does not depend on who asks, unless login or headers differ. A matching request is a fair test." },
+        { "text": "The bug is in the page: how it reads or displays the price.", "correct": true, "why": "The server half is cleared. Whatever goes wrong happens after the answer arrives in the browser." }
       ]
     },
     {
@@ -281,7 +364,7 @@
   ],
   "takeaways": [
     "First <b>reproduce</b>: exact steps that fail every time. Without them you cannot prove a fix.",
-    "<b>Isolate</b> by testing one half of the system, for example <code>curl</code> the route to skip the page.",
+    "<b>Isolate</b> by testing one half of the system, for example <code>curl</code> the app server to skip the page.",
     "Inside the code, place a <code>PROBE</code> log in the middle and keep the half where the data goes wrong.",
     "When it used to work, <code>git bisect</code> finds the first bad commit in a handful of tests.",
     "Change one thing per test, and remove probes before you commit."

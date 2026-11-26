@@ -11,41 +11,77 @@
     "What must never end up in a log"
   ],
   "glossary": {
+    "Cloudflare": "A service that sits in front of a website, passes good traffic on, and blocks attacks and bots.",
+    "app server": "A computer that runs the app's own code and answers the browser. Notely's runs on Vercel.",
+    "database": "A program built to store data safely and find it again fast. Notely's is Postgres, run by Supabase.",
     "log": "A line of text a program writes down while it runs, with a timestamp, so you can read later what happened.",
-    "runtime logs": "Logs written while your deployed code handles real requests, as opposed to logs written while the app was being built.",
+    "runtime logs": "Logs written while your live code handles real requests, as opposed to logs written while the app was being built.",
     "build logs": "The output of turning your code into a deployment: installing packages, compiling, bundling. A failed build never goes live.",
-    "structured logging": "Writing each log line as small JSON with fixed fields, so you can filter by a field like noteId instead of reading everything.",
-    "WAF": "Web Application Firewall: rules at the edge that block suspicious requests before they reach your app.",
+    "structured logging": "Writing each log line as a small JSON object with fixed fields, so you can filter by a field like noteId instead of reading everything.",
+    "WAF": "Web Application Firewall: rules at Cloudflare that block suspicious requests before they reach your app.",
     "Ray ID": "Cloudflare's id for one request. It appears on Cloudflare error pages and in the <code>cf-ray</code> response header.",
-    "environment variable": "A setting, such as an API key, given to your app by the platform at run time instead of being written in the code.",
+    "environment variable": "A setting, such as an API key, that the platform hands to your app when it starts, instead of it being written in the code.",
     "PII": "Personally identifiable information: names, emails, addresses, or content a user wrote. Treat it as private."
   },
+  "metrics": [
+    { "id": "status", "label": "Status code", "icon": "globe" },
+    { "id": "suspects", "label": "Suspects", "icon": "search" }
+  ],
   "steps": [
+    {
+      "title": "Notely in production, with Cloudflare in front",
+      "chapter": "setup",
+      "body": [
+        "Notely is live. Maya's browser (the screen she uses) sends each request first to <span class=\"term\">Cloudflare</span>, a service in front of the app that blocks bad traffic, then to the <span class=\"term\">app server</span>: Notely's code, running on Vercel.",
+        "The app server loads notes from the <span class=\"term\">database</span>, run by Supabase, and asks the Claude API, Anthropic's AI, for summaries."
+      ],
+      "metrics": {
+        "status": { "value": "200", "tone": "good" },
+        "suspects": { "value": 0, "tone": "good" }
+      },
+      "scene": {
+        "caption": "A request passes Cloudflare, reaches the app server, which uses the database and the Claude API.",
+        "nodes": [
+          { "id": "browser", "x": 0.6, "y": 2.4, "label": "Browser", "icon": "browser", "kind": "client" },
+          { "id": "cf", "x": 4.2, "y": 2.4, "label": "Cloudflare", "icon": "shield", "kind": "external" },
+          { "id": "app", "x": 7.8, "y": 2.4, "label": "App Server", "icon": "server", "kind": "server" },
+          { "id": "llm", "x": 11.3, "y": 2.4, "label": "Claude API", "icon": "sparkle", "kind": "ai" },
+          { "id": "db", "x": 7.8, "y": 6.0, "label": "Database", "icon": "database", "kind": "data" }
+        ],
+        "edges": [
+          { "from": "browser", "to": "cf", "packet": { "kind": "request", "direction": "both" } },
+          { "from": "cf", "to": "app", "packet": { "kind": "request", "direction": "both" } },
+          { "from": "app", "to": "llm", "packet": { "kind": "request", "direction": "both", "speed": "slow" } },
+          { "from": "app", "to": "db", "packet": { "kind": "data", "direction": "both", "returns": "data" } }
+        ]
+      }
+    },
     {
       "title": "The browser only knows it was a 500",
       "chapter": "problem",
       "body": [
-        "In production, Maya's summary fails. Network shows <code>POST /api/summary</code> → <code>500</code>, and the response body explains nothing.",
-        "That is on purpose. In production, servers do not send stack traces to browsers, because they can reveal secrets. The real error was written down somewhere else: in a <span class=\"term\">log</span> on the server side."
+        "On the live site, Maya's summary fails. DevTools' Network panel shows the request came back <code>500</code>: the server broke. The response body explains nothing.",
+        "That is on purpose. Live servers do not send error details to browsers, because they can reveal secrets. The real error was written down on the server side, in a <span class=\"term\">log</span>."
       ],
+      "changes": [
+        "~ App Server fails; Browser gets a bare 500",
+        "~ Status code 200 → 500",
+        "~ Suspects 0 → 4: any part behind the browser"
+      ],
+      "metrics": {
+        "status": { "value": "500", "tone": "bad" },
+        "suspects": { "value": 4, "tone": "bad" }
+      },
       "scene": {
-        "caption": "Maya's request passes through Cloudflare to a Vercel function, which talks to Supabase and Claude. The browser only gets 500.",
+        "extends": "previous",
+        "caption": "Something behind the browser broke. The browser only gets 500.",
         "nodes": [
-          { "id": "browser", "x": 1.4, "y": 4, "label": "Browser", "sublabel": "Maya", "icon": "browser", "kind": "client", "status": "warn" },
-          { "id": "cf", "x": 3.9, "y": 4, "label": "Cloudflare", "sublabel": "in front", "icon": "shield", "kind": "external" },
-          { "id": "vercel", "x": 9.8, "y": 4, "label": "Vercel function", "sublabel": "/api/summary", "icon": "function", "kind": "server", "status": "error" },
-          { "id": "supabase", "x": 10.6, "y": 1.8, "label": "Supabase", "sublabel": "notes + auth", "icon": "database", "kind": "data" },
-          { "id": "claude", "x": 11, "y": 7.8, "label": "Claude API", "sublabel": "summaries", "icon": "sparkle", "kind": "ai" }
+          { "id": "app", "status": "error" },
+          { "id": "browser", "status": "warn", "pill": { "text": "500", "tone": "bad" } }
         ],
         "edges": [
-          { "from": "browser", "to": "cf", "packet": { "label": "POST" } },
-          { "from": "cf", "to": "vercel", "packet": true },
-          { "from": "vercel", "to": "supabase", "label": "load note" },
-          { "from": "vercel", "to": "claude", "label": "summarize" },
-          { "from": "vercel", "to": "browser", "label": "500", "status": "error", "bend": 1.6, "packet": { "label": "500", "status": "error" } }
-        ],
-        "notes": [
-          { "id": "only500", "x": 4.3, "y": 7.2, "text": "Browser sees: Internal Server Error", "status": "warn" }
+          { "id": "browser>cf", "packet": { "kind": "request", "direction": "both", "returns": "error" } },
+          { "id": "cf>app", "packet": { "kind": "request", "direction": "both", "returns": "error" } }
         ]
       }
     },
@@ -53,53 +89,59 @@
       "title": "Every hop keeps a diary",
       "chapter": "idea",
       "body": [
-        "Each platform on the request's path writes its own logs. Cloudflare logs what it let through or blocked. Vercel logs what your function printed and how it ended. Supabase logs the queries and logins it handled.",
-        "Debugging a 500 means walking that path in order, checking each diary at the same timestamp, until one of them says what broke."
+        "Each platform on the request's path writes its own logs. Cloudflare logs what it let through or blocked. Vercel logs what your app server printed. Supabase logs the database's queries and logins.",
+        "Debugging a 500 means walking that path in order, checking each log at the same moment, until one of them says what broke."
       ],
       "callout": {
         "type": "analogy",
-        "text": "Parcel tracking. \"Left the depot, arrived at the hub, out for delivery.\" When a parcel goes missing, you find the last scan that worked and the first one that did not."
+        "text": "Parcel tracking: \"left the depot, arrived at the hub, out for delivery\". When a parcel goes missing, you find the last scan that worked and the first one that did not."
       },
+      "changes": [
+        "~ Cloudflare, App Server, Database: each keeps its own logs",
+        "~ Claude API fades back"
+      ],
       "scene": {
         "extends": "previous",
         "caption": "Three platforms, three sets of logs. Read them in the order the request travelled.",
-        "remove": ["only500"],
         "nodes": [
-          { "id": "browser", "status": "normal" },
-          { "id": "cf", "tags": ["security events"] },
-          { "id": "vercel", "status": "active", "tags": ["runtime logs"] },
-          { "id": "supabase", "tags": ["Postgres, Auth, API"] }
+          { "id": "cf", "pill": { "text": "logs", "icon": "log" } },
+          { "id": "app", "pill": { "text": "logs", "icon": "log" } },
+          { "id": "db", "pill": { "text": "logs", "icon": "log" } },
+          { "id": "llm", "status": "dim" }
         ],
         "edges": [
-          { "id": "vercel>browser", "status": "dim", "packet": false }
+          { "id": "app>llm", "status": "dim", "packet": false }
         ]
       }
     },
     {
-      "title": "Vercel: what your function printed",
+      "title": "Vercel: what your app server printed",
       "chapter": "how",
       "body": [
-        "In your Vercel project, the <b>Logs</b> tab shows <span class=\"term\">runtime logs</span>: one row per request, with path, status and time. Filter by route or by 5xx. Expand a row to see everything that request printed with <code>console.log</code> or <code>console.error</code>, including thrown errors and their stack traces.",
-        "<span class=\"term\">Build logs</span> live on each deployment instead. Look there when a deploy fails, not when a request does."
+        "In your Vercel project, the <b>Logs</b> tab shows <span class=\"term\">runtime logs</span>: one row per request, with address, status and time. Filter by 5xx. Expand a row to see everything that request printed, including errors and their stack traces.",
+        "<span class=\"term\">Build logs</span> are separate. Look there when a deploy fails, not when a request does."
       ],
       "callout": {
         "type": "tip",
         "text": "Platforms keep runtime logs only for a limited time, shorter on free plans. For a client app, send them to a log service so last week's incident is still readable."
       },
+      "changes": [
+        "~ App Server in focus: Vercel's Logs tab",
+        "~ Browser, Cloudflare and Database fade back"
+      ],
       "scene": {
         "extends": "previous",
-        "caption": "Start at your own code: the Vercel function's runtime logs.",
+        "caption": "Start at your own code: the app server's runtime logs.",
         "nodes": [
+          { "id": "app", "status": "active", "pill": { "text": "Logs tab", "icon": "log" } },
+          { "id": "browser", "status": "dim" },
           { "id": "cf", "status": "dim" },
-          { "id": "supabase", "status": "dim" },
-          { "id": "claude", "status": "dim" },
-          { "id": "vercel", "tags": ["Logs tab", "filter: 5xx"] }
+          { "id": "db", "status": "dim" }
         ],
         "edges": [
           { "id": "browser>cf", "status": "dim", "packet": false },
-          { "id": "cf>vercel", "status": "dim", "packet": false },
-          { "id": "vercel>supabase", "status": "dim" },
-          { "id": "vercel>claude", "status": "dim" }
+          { "id": "cf>app", "status": "dim", "packet": false },
+          { "id": "app>db", "status": "dim", "packet": false }
         ]
       }
     },
@@ -108,7 +150,7 @@
       "chapter": "how",
       "body": [
         "A log only helps if the right line exists. Log where a step starts and how it ends, with the ids you would search for: which note, which user.",
-        "<span class=\"term\">Structured logging</span> means one small JSON object per line. Then you can filter for <code>\"noteId\":\"n_81\"</code> and see that note's whole story, instead of scrolling through \"here\" and \"got data\"."
+        "<span class=\"term\">Structured logging</span> means one small JSON object per line. Then you can filter for <code>\"noteId\":\"n_81\"</code> and see that note's whole story."
       ],
       "code": {
         "language": "ts",
@@ -116,34 +158,37 @@
         "code": "const log = (at: string, data: object) =>\n  console.log(JSON.stringify({ at, ...data }));\n\nlog(\"summary:start\", { noteId, userId: user.id });\ntry {\n  const text = await summarize(note.body);\n  log(\"summary:done\", { noteId, chars: text.length });\n  return Response.json({ summary: text });\n} catch (err) {\n  log(\"summary:failed\", { noteId, error: String(err) });\n  return new Response(\"Summary failed\", { status: 500 });\n}",
         "caption": "Ids and outcomes, not content. The note's text never goes into the log."
       },
+      "changes": [
+        "~ App Server writes a start and an end line per request"
+      ],
       "scene": {
         "extends": "previous",
         "caption": "Each request now leaves a start line and an end line, tagged with the note's id.",
         "nodes": [
-          { "id": "vercel", "tags": ["summary:start", "summary:failed"] }
+          { "id": "app", "pill": { "text": "JSON lines", "icon": "log", "tone": "good" } }
         ]
       }
     },
     {
-      "title": "Supabase: queries, logins and the API",
+      "title": "Supabase: queries, logins and its API",
       "chapter": "how",
       "body": [
-        "Supabase's dashboard has a <b>Logs</b> section split by source. <b>API</b>: every REST call with its status. <b>Postgres</b>: database errors such as <code>permission denied for table notes</code> or a failed constraint. <b>Auth</b>: sign-ins, failed passwords, expired links. Edge Functions have their own logs too.",
-        "If your function says \"Supabase returned an error\", this is where the database says why."
+        "Supabase's dashboard has a <b>Logs</b> section split by source. <b>API</b>: every call to the database, with its status. <b>Postgres</b>: database errors, such as a refused row. <b>Auth</b>: sign-ins, wrong passwords, expired links.",
+        "If your app server's log says \"Supabase returned an error\", this is where the database says why."
       ],
-      "callout": {
-        "type": "tip",
-        "text": "The Network lesson showed an RLS refusal from the browser's side. Supabase's API logs record that same request with its 403, whether it came from the browser or from your server. That helps most when the query runs server-side and the browser never sees it."
-      },
+      "changes": [
+        "~ Database in focus: API, Postgres and Auth logs",
+        "~ App Server steps back"
+      ],
       "scene": {
         "extends": "previous",
-        "caption": "Supabase keeps separate logs for its API, the database and Auth.",
+        "caption": "Supabase keeps separate logs for its API, the database and logins.",
         "nodes": [
-          { "id": "vercel", "status": "normal", "tags": null },
-          { "id": "supabase", "status": "active" }
+          { "id": "app", "status": "normal" },
+          { "id": "db", "status": "active", "pill": { "text": "3 log types", "icon": "log" } }
         ],
         "edges": [
-          { "id": "vercel>supabase", "status": "active", "packet": { "label": "query" } }
+          { "id": "app>db", "status": "normal", "packet": { "kind": "data", "direction": "both", "returns": "data" } }
         ]
       }
     },
@@ -151,28 +196,30 @@
       "title": "Cloudflare: the request that never arrived",
       "chapter": "how",
       "body": [
-        "Cloudflare sits in front of everything. If a <span class=\"term\">WAF</span> rule or bot check blocks a request, it never reaches Vercel, so Vercel has no log line at all.",
-        "Empty Vercel logs plus a user who sees an error? Check Cloudflare's security events. Its error pages show a <span class=\"term\">Ray ID</span> you can search for. If you run Cloudflare Workers, <code>npx wrangler tail</code> streams their logs live."
+        "Cloudflare sits in front of everything. If a <span class=\"term\">WAF</span> rule or a bot check blocks a request, it never reaches Vercel, so the app server has no log line at all.",
+        "A user sees an error but Vercel's logs are empty? Check Cloudflare's security events. Its error pages show a <span class=\"term\">Ray ID</span> you can search for."
       ],
       "callout": {
         "type": "tip",
-        "text": "A Cloudflare-branded error page with a code from <code>520</code> to <code>524</code> means Cloudflare could not get a good answer from Vercel. The request did leave the edge, so check Vercel's logs at the same time."
+        "text": "A Cloudflare error page with a code from <code>520</code> to <code>524</code> means Cloudflare could not get a good answer from Vercel. The request did leave Cloudflare, so check Vercel's logs at the same time."
       },
+      "changes": [
+        "~ Cloudflare in focus: it can block a request",
+        "~ Database and App Server fade back"
+      ],
       "scene": {
         "extends": "previous",
-        "caption": "A request blocked at the edge leaves a trace in Cloudflare only. Vercel never sees it.",
+        "caption": "A request blocked at Cloudflare leaves a trace there only. The app server never sees it.",
         "nodes": [
-          { "id": "supabase", "status": "dim" },
-          { "id": "cf", "status": "warn" },
-          { "id": "vercel", "status": "dim" }
+          { "id": "db", "status": "dim" },
+          { "id": "app", "status": "dim" },
+          { "id": "browser", "status": "normal" },
+          { "id": "cf", "status": "warn", "pill": { "text": "blocked", "icon": "ban", "tone": "warn" } }
         ],
         "edges": [
-          { "id": "vercel>supabase", "status": "dim", "packet": false },
-          { "id": "browser>cf", "status": "warn", "packet": { "label": "POST", "status": "warn" } },
-          { "id": "cf>vercel", "status": "error", "label": "blocked" }
-        ],
-        "notes": [
-          { "id": "nothing", "x": 7.4, "y": 6.4, "text": "Blocked here = no Vercel log", "status": "warn" }
+          { "id": "app>db", "status": "dim", "packet": false },
+          { "id": "browser>cf", "status": "normal", "packet": { "kind": "request", "direction": "both", "returns": "error" } },
+          { "id": "cf>app", "status": "error" }
         ]
       }
     },
@@ -180,29 +227,40 @@
       "title": "Maya's 500, hop by hop",
       "chapter": "example",
       "body": [
-        "Cloudflare: request passed. Vercel: <code>summary:start</code>, then <code>summary:failed</code> with <em>Claude API 401: authentication_error</em>. Supabase API log: the note loaded with a <code>200</code>.",
-        "So the key is wrong in production only. The cause: <code>ANTHROPIC_API_KEY</code> was set as an <span class=\"term\">environment variable</span> for Preview, not for Production. After adding it, a new deploy is needed, since a running deployment keeps the values it started with."
+        "Cloudflare: the request passed. Database: the note loaded fine. App Server: <code>summary:failed</code>, <em>Claude API 401</em>. The Claude API did not accept the key.",
+        "The cause: <code>ANTHROPIC_API_KEY</code>, an <span class=\"term\">environment variable</span>, was set only for Vercel's Preview copies (test versions of the site), not for Production, the live one."
       ],
       "code": {
         "language": "text",
         "filename": "Vercel → Logs, POST /api/summary 500",
         "code": "{\"at\":\"summary:start\",\"noteId\":\"n_81\",\"userId\":\"u_42\"}\n{\"at\":\"summary:failed\",\"noteId\":\"n_81\",\n \"error\":\"Error: Claude API 401: authentication_error\"}"
       },
+      "callout": {
+        "type": "tip",
+        "text": "After adding the key for Production, deploy again. A running deployment keeps the values it started with."
+      },
+      "changes": [
+        "~ Cloudflare and Database: fine in their logs",
+        "~ App Server log: the Claude API answered 401",
+        "~ Suspects 4 → 1"
+      ],
+      "metrics": {
+        "suspects": { "value": 1, "tone": "warn" }
+      },
       "scene": {
         "extends": "previous",
-        "caption": "Cloudflare and Supabase are fine. The Vercel log points at the Claude API call.",
-        "remove": ["nothing"],
+        "caption": "Cloudflare and the database are fine. The app server's log points at the Claude API call.",
         "nodes": [
-          { "id": "cf", "status": "ok" },
-          { "id": "supabase", "status": "ok" },
-          { "id": "vercel", "status": "error", "tags": ["key missing in Prod"] },
-          { "id": "claude", "status": "normal" }
+          { "id": "cf", "status": "ok", "pill": null },
+          { "id": "db", "status": "ok", "pill": null },
+          { "id": "app", "status": "error", "pill": { "text": "Claude 401", "tone": "bad" } },
+          { "id": "llm", "status": "normal" }
         ],
         "edges": [
-          { "id": "browser>cf", "status": "normal", "packet": false },
-          { "id": "cf>vercel", "status": "ok", "label": null },
-          { "id": "vercel>supabase", "status": "ok", "label": "200" },
-          { "id": "vercel>claude", "status": "error", "label": "401", "packet": { "label": "no key", "status": "error" } }
+          { "id": "browser>cf", "packet": false },
+          { "id": "cf>app", "status": "ok" },
+          { "id": "app>db", "status": "ok" },
+          { "id": "app>llm", "status": "error", "packet": { "kind": "request", "direction": "both", "returns": "error", "speed": "slow" } }
         ]
       }
     },
@@ -210,29 +268,30 @@
       "title": "Logs are not a safe place for secrets",
       "chapter": "watch-out",
       "body": [
-        "Debug logging tempts you to print everything: <code>req.headers</code>, <code>process.env</code>, the full prompt. Logs are kept for days, readable by everyone on the team, and often copied to other services.",
-        "One <code>console.log(req.headers)</code> writes users' cookies to disk. A logged prompt writes their private notes. Log ids and outcomes, never keys, tokens or <span class=\"term\">PII</span>."
+        "Debug logging tempts you to print everything: <code>req.headers</code>, <code>process.env</code>, the full prompt. Logs are kept for days, readable by the whole team, and often copied to other services.",
+        "One <code>console.log(req.headers)</code> writes users' login cookies to disk. A logged prompt writes their private notes. Log ids and outcomes, never keys, tokens or <span class=\"term\">PII</span>."
       ],
       "callout": {
         "type": "claude-code",
-        "text": "After Claude Code adds logging, search the diff for <code>headers</code>, <code>process.env</code>, <code>token</code>, <code>prompt</code> and <code>body</code>. Ask it to log ids and status codes instead. And ask it to remove temporary debug logs once the bug is fixed."
+        "text": "After Claude Code adds logging, search the diff for <code>headers</code>, <code>process.env</code>, <code>token</code>, <code>prompt</code> and <code>body</code>. Ask it to log ids and status codes instead, and to remove temporary debug logs once the bug is fixed."
       },
+      "changes": [
+        "~ App Server: a careless line logs cookies",
+        "~ Cloudflare, Database and Claude API fade back"
+      ],
       "scene": {
         "extends": "previous",
         "caption": "A careless log line copies secrets and private notes into a place many people can read.",
         "nodes": [
-          { "id": "vercel", "status": "warn", "tags": ["console.log(headers)"] },
+          { "id": "app", "status": "warn", "pill": { "text": "logs cookies", "icon": "cookie", "tone": "bad" } },
           { "id": "cf", "status": "dim" },
-          { "id": "supabase", "status": "dim" },
-          { "id": "claude", "status": "dim" }
+          { "id": "db", "status": "dim" },
+          { "id": "llm", "status": "dim" }
         ],
         "edges": [
-          { "id": "vercel>claude", "status": "dim", "packet": false, "label": null },
-          { "id": "vercel>supabase", "status": "dim", "label": null },
-          { "id": "cf>vercel", "status": "dim" }
-        ],
-        "notes": [
-          { "id": "leak", "x": 6.8, "y": 6.6, "text": "Cookies and notes, now in the logs", "status": "error" }
+          { "id": "app>llm", "status": "dim", "packet": false },
+          { "id": "app>db", "status": "dim" },
+          { "id": "cf>app", "status": "dim" }
         ]
       }
     },
@@ -240,9 +299,35 @@
       "title": "Recap: follow the request",
       "chapter": "recap",
       "body": [
-        "A 500 is explained on the server, never in the browser. Walk the path in order: Cloudflare (blocked?), Vercel runtime logs (what did my code print?), Supabase logs (what did the database or Auth say?).",
-        "Log start and end of each step with ids, as JSON. Never log secrets or user content."
-      ]
+        "A 500 is explained on the server, never in the browser. Walk the path in order: Cloudflare (blocked?), Vercel's runtime logs (what did my code print?), Supabase's logs (what did the database say?).",
+        "Log the start and end of each step with ids, as JSON. Never log secrets or user content. Here, adding the key and redeploying fixed Maya's summary."
+      ],
+      "changes": [
+        "~ Status code 500 → 200: key added, app redeployed",
+        "~ Suspects 1 → 0",
+        "~ Every part back to normal"
+      ],
+      "metrics": {
+        "status": { "value": "200", "tone": "good" },
+        "suspects": { "value": 0, "tone": "good" }
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Every hop is fine again, and each one keeps a log you know how to read.",
+        "nodes": [
+          { "id": "browser", "status": "ok", "pill": null },
+          { "id": "cf", "status": "normal" },
+          { "id": "app", "status": "normal", "pill": null },
+          { "id": "db", "status": "normal" },
+          { "id": "llm", "status": "normal" }
+        ],
+        "edges": [
+          { "id": "browser>cf", "packet": { "kind": "request", "direction": "both" } },
+          { "id": "cf>app", "status": "normal", "packet": { "kind": "request", "direction": "both" } },
+          { "id": "app>db", "status": "normal", "packet": { "kind": "data", "direction": "both", "returns": "data" } },
+          { "id": "app>llm", "status": "normal", "packet": { "kind": "request", "direction": "both", "speed": "slow" } }
+        ]
+      }
     }
   ],
   "quiz": [
@@ -267,7 +352,7 @@
       "options": [
         { "text": "The running deployment started with the old values. It needs a new deploy.", "correct": true, "why": "Environment variables are read into a deployment when it is created. Redeploy so the new value is used." },
         { "text": "Vercel can only hold one API key per project.", "why": "A project can hold many environment variables, each set per environment." },
-        { "text": "The key must also be added to Cloudflare.", "why": "Cloudflare only forwards the request. The key is used by your function on Vercel when it calls the Claude API." }
+        { "text": "The key must also be added to Cloudflare.", "why": "Cloudflare only passes the request on. The key is used by your app server on Vercel when it calls the Claude API." }
       ]
     }
   ],

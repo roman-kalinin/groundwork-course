@@ -11,41 +11,81 @@
     "Why <code>?.</code> can hide a bug instead of fixing it"
   ],
   "glossary": {
+    "browser": "The program Maya uses to open websites, like Chrome or Safari. It shows Notely's screens and sends her clicks on.",
+    "app server": "A computer that runs the app's own code and answers the browser. While you build, it runs on your laptop.",
+    "Claude API": "Anthropic's AI, reached over the internet: Notely sends it a note, it sends a summary back.",
+    "terminal": "A plain text window where you type commands and where a running program prints its messages.",
     "error": "A message the program produces when it cannot continue, telling you what went wrong and where.",
     "TypeError": "An error that means a value was used the wrong way, most often reading a field of something that is undefined.",
-    "undefined": "JavaScript's word for 'there is no value here', for example a field that does not exist on an object.",
+    "undefined": "JavaScript's word for 'there is no value here', for example a field that does not exist.",
+    "JSON": "A plain text format apps use to send data to each other, made of names and values in curly braces.",
     "stack trace": "The list of function calls that were running when the error happened, most recent call at the top.",
     "frame": "One line of a stack trace: one function call, with its file, line and column.",
     "node_modules": "The folder where installed packages live. Code in it belongs to libraries and frameworks, not to you.",
-    "source map": "A file that maps compressed production code back to your original files and line numbers.",
-    "optional chaining": "The <code>?.</code> operator: it returns undefined instead of crashing when the value before it is missing."
+    "source map": "A file that maps the compressed code a live site runs back to your original files and line numbers.",
+    "optional chaining": "The <code>?.</code> operator: it gives back undefined instead of crashing when the value before it is missing."
   },
+  "metrics": [
+    { "id": "error", "label": "The error", "icon": "alert" },
+    { "id": "lines", "label": "Lines to check", "icon": "search" }
+  ],
   "steps": [
     {
-      "title": "The summary button shows a red wall",
+      "title": "Notely's Summarize button, on your laptop",
+      "chapter": "setup",
+      "body": [
+        "Notely is our notes app. Maya clicks <b>Summarize</b>: her <span class=\"term\">browser</span> (the screen she types into) sends the note to the <span class=\"term\">app server</span> (the computer running Notely's code), which asks the <span class=\"term\">Claude API</span>, Anthropic's AI, for a summary.",
+        "While you build, the app server runs on your laptop and prints messages in a <span class=\"term\">terminal</span>, a text window."
+      ],
+      "metrics": {
+        "error": { "value": "none", "tone": "good" },
+        "lines": { "value": 0, "tone": "good" }
+      },
+      "scene": {
+        "caption": "A click goes from the browser to the app server and on to the Claude API. The terminal shows what the server prints.",
+        "nodes": [
+          { "id": "browser", "x": 0.8, "y": 3.0, "label": "Browser", "icon": "browser", "kind": "client" },
+          { "id": "app", "x": 4.6, "y": 3.0, "label": "App Server", "icon": "server", "kind": "server" },
+          { "id": "llm", "x": 8.4, "y": 3.0, "label": "Claude API", "icon": "sparkle", "kind": "ai" },
+          { "id": "term", "x": 4.6, "y": 6.6, "label": "Terminal", "icon": "terminal", "kind": "neutral" }
+        ],
+        "edges": [
+          { "from": "browser", "to": "app", "packet": { "kind": "request", "direction": "both" } },
+          { "from": "app", "to": "llm", "packet": { "kind": "request", "direction": "both", "speed": "slow" } },
+          { "from": "app", "to": "term", "style": "dashed" }
+        ]
+      }
+    },
+    {
+      "title": "The summary never comes back",
       "chapter": "problem",
       "body": [
-        "Maya clicks <b>AI summary</b> in Notely. Nothing appears. In the terminal running the app, a block of red text scrolls past.",
-        "The reflex is to copy all of it into Claude Code and type \"fix\". But an <span class=\"term\">error</span> is not noise. Its first few lines usually say exactly what broke and where. Reading them takes thirty seconds."
+        "Maya clicks Summarize. Nothing appears. The terminal fills with red text, and the bug could be anywhere in Notely's 3,000 lines.",
+        "The reflex is to paste all of it into Claude Code and type \"fix\". But an <span class=\"term\">error</span> is not noise. Its first lines usually say what broke and where. Reading them takes thirty seconds."
       ],
       "callout": {
         "type": "tip",
         "text": "This module is about finding causes yourself. Not to replace Claude Code, but so you can tell it where to look and judge whether its fix is real."
       },
+      "changes": [
+        "~ App Server crashes and answers with an error",
+        "~ Terminal fills with red text",
+        "~ The error none → red wall",
+        "~ Lines to check 0 → 3,000"
+      ],
+      "metrics": {
+        "error": { "value": "red wall", "tone": "bad" },
+        "lines": { "value": 3000, "tone": "bad" }
+      },
       "scene": {
-        "caption": "Maya's request reaches the Notely API, which crashes and answers 500.",
+        "extends": "previous",
+        "caption": "The app server crashes. The terminal fills with red text.",
         "nodes": [
-          { "id": "browser", "x": 2, "y": 4, "label": "Browser", "sublabel": "Maya clicks Summary", "icon": "browser", "kind": "client" },
-          { "id": "api", "x": 7.2, "y": 4, "label": "Notely API", "sublabel": "/api/summary", "icon": "function", "kind": "server", "status": "error" },
-          { "id": "claude", "x": 10.8, "y": 4, "label": "Claude API", "sublabel": "writes the summary", "icon": "sparkle", "kind": "ai" }
+          { "id": "app", "status": "error" },
+          { "id": "term", "status": "error", "pill": { "text": "red text", "tone": "bad" } }
         ],
         "edges": [
-          { "from": "browser", "to": "api", "label": "POST /api/summary", "packet": { "label": "note" } },
-          { "from": "api", "to": "browser", "label": "500", "status": "error", "packet": { "label": "500", "status": "error" } },
-          { "from": "api", "to": "claude", "style": "dashed" }
-        ],
-        "notes": [
-          { "id": "wall", "x": 6.4, "y": 6.2, "text": "Terminal: a wall of red text", "status": "error" }
+          { "id": "browser>app", "status": "error", "packet": { "kind": "request", "direction": "both", "returns": "error" } }
         ]
       }
     },
@@ -53,32 +93,36 @@
       "title": "Every error has three parts",
       "chapter": "idea",
       "body": [
-        "Strip away the noise and every error answers three questions.",
-        "<b>Type</b>: what kind of mistake. <b>Message</b>: what exactly happened, in one sentence. <b>Location</b>: the file, line and column where it happened.",
+        "Look only at the first two lines of the red text. Every error answers three questions. <b>Type</b>: what kind of mistake. <b>Message</b>: what happened, in one sentence. <b>Location</b>: the file, line and column.",
         "Read them in that order. Most of the time you know the cause before you reach the end."
       ],
       "callout": {
         "type": "analogy",
-        "text": "A delivery note on your door: \"Parcel not delivered (type). Nobody answered the bell (message). 14 Elm St, side door (location).\" You would not ignore it and call the courier to ask what happened."
+        "text": "A note on your door: \"Parcel not delivered (type). Nobody answered the bell (message). 14 Elm St, side door (location).\" You would not call the courier before reading it."
       },
       "code": {
         "language": "text",
         "filename": "Terminal",
         "code": "TypeError: Cannot read properties of undefined (reading '0')\n    at summarize (app/api/summary/route.ts:14:32)",
-        "caption": "Type, then message, then location: line 14, column 32."
+        "caption": "Type, then message, then location: file route.ts, line 14, column 32."
       },
+      "changes": [
+        "− Browser, App Server, Claude API, Terminal: we zoom in",
+        "+ Error: the first two lines of the red text",
+        "+ Type, Message, Location: the three parts it carries"
+      ],
       "scene": {
         "caption": "One error, split into the three answers it always carries.",
         "nodes": [
-          { "id": "err", "x": 6.4, "y": 1.6, "label": "The error", "sublabel": "first lines only", "icon": "alert", "status": "error" },
-          { "id": "type", "x": 2, "y": 4.6, "label": "Type", "sublabel": "TypeError", "icon": "list" },
-          { "id": "msg", "x": 6.4, "y": 4.6, "label": "Message", "sublabel": "reading '0'", "icon": "chat" },
-          { "id": "where", "x": 10.4, "y": 4.6, "label": "Location", "sublabel": "route.ts:14:32", "icon": "file" }
+          { "id": "err", "x": 1.6, "y": 4.0, "label": "Error", "icon": "alert", "kind": "neutral", "status": "error" },
+          { "id": "type", "x": 5.8, "y": 1.4, "label": "Type", "icon": "list", "kind": "neutral", "pill": "TypeError" },
+          { "id": "msg", "x": 5.8, "y": 4.0, "label": "Message", "icon": "chat", "kind": "neutral", "pill": "reading '0'" },
+          { "id": "loc", "x": 5.8, "y": 6.6, "label": "Location", "icon": "file", "kind": "neutral", "pill": "route.ts:14" }
         ],
         "edges": [
-          { "from": "err", "to": "type", "label": "what kind" },
-          { "from": "err", "to": "msg", "label": "what happened" },
-          { "from": "err", "to": "where", "label": "where" }
+          { "from": "err", "to": "type" },
+          { "from": "err", "to": "msg" },
+          { "from": "err", "to": "loc" }
         ]
       }
     },
@@ -86,50 +130,53 @@
       "title": "The type names the kind of mistake",
       "chapter": "how",
       "body": [
-        "A few types cover most bugs in a Next.js app.",
-        "<span class=\"term\">TypeError</span>: a value was used the wrong way, very often because it was <span class=\"term\">undefined</span>. <code>ReferenceError</code>: a name that does not exist, like a typo in a variable. <code>SyntaxError</code>: text that cannot be parsed, like broken JSON."
+        "A few types cover most bugs. <span class=\"term\">TypeError</span>: a value was used the wrong way, very often because it was <span class=\"term\">undefined</span> (empty). <code>ReferenceError</code>: a name that does not exist, like a typo. <code>SyntaxError</code>: text that cannot be read, like broken <span class=\"term\">JSON</span>.",
+        "Ours is a TypeError. So something had no value."
       ],
       "callout": {
         "type": "tip",
-        "title": "A classic you will see weekly",
-        "text": "<code>SyntaxError: Unexpected token '&lt;' ... is not valid JSON</code>. Your code expected JSON but received an HTML page, usually an error or login page. The real problem is the request, not the parsing."
+        "text": "<code>Unexpected token '&lt;' ... is not valid JSON</code> means your code expected data but received a web page, usually an error or login page. The real problem is the request, not the reading."
       },
+      "changes": [
+        "~ Type in focus: TypeError",
+        "~ Message and Location fade back for now"
+      ],
       "scene": {
         "extends": "previous",
         "caption": "First stop: the type. It narrows the search before you read anything else.",
         "nodes": [
-          { "id": "err", "status": "normal" },
-          { "id": "type", "status": "active", "tags": ["TypeError", "ReferenceError", "SyntaxError"] },
+          { "id": "type", "status": "active" },
           { "id": "msg", "status": "dim" },
-          { "id": "where", "status": "dim" }
+          { "id": "loc", "status": "dim" }
         ],
         "edges": [
           { "id": "err>msg", "status": "dim" },
-          { "id": "err>where", "status": "dim" },
-          { "id": "err>type", "status": "active", "packet": true }
+          { "id": "err>loc", "status": "dim" },
+          { "id": "err>type", "status": "active", "packet": { "kind": "error", "speed": "slow" } }
         ]
       }
     },
     {
-      "title": "The message: read it as a sentence",
+      "title": "The message, read as a sentence",
       "chapter": "how",
       "body": [
-        "<em>Cannot read properties of undefined (reading '0')</em> means: the code asked for item <code>[0]</code> of something, and that something was <code>undefined</code>.",
+        "<em>Cannot read properties of undefined (reading '0')</em> means: the code asked for item <code>[0]</code>, the first item, of something. And that something was <code>undefined</code>.",
         "So the bug is not the <code>[0]</code>. It is whatever came right before it. The real question becomes: <b>why was that value empty?</b>"
+      ],
+      "changes": [
+        "~ Message in focus: reading item 0 of nothing",
+        "~ Type fades back"
       ],
       "scene": {
         "extends": "previous",
         "caption": "The message points at the value before [0]. That value was empty.",
         "nodes": [
-          { "id": "type", "status": "dim", "tags": null },
-          { "id": "msg", "status": "active", "tags": ["x[0], x = undefined"] }
+          { "id": "type", "status": "dim" },
+          { "id": "msg", "status": "active" }
         ],
         "edges": [
           { "id": "err>type", "status": "dim", "packet": false },
-          { "id": "err>msg", "status": "active", "packet": true }
-        ],
-        "notes": [
-          { "id": "why", "x": 6, "y": 6.8, "text": "Why was it undefined?", "status": "active" }
+          { "id": "err>msg", "status": "active", "packet": { "kind": "error", "speed": "slow" } }
         ]
       }
     },
@@ -137,34 +184,35 @@
       "title": "A stack trace is a trail of calls",
       "chapter": "how",
       "body": [
-        "Under the message comes the <span class=\"term\">stack trace</span>: the chain of function calls that led to the crash.",
-        "Each line is one <span class=\"term\">frame</span>: a function name, a file, a line and a column. The top frame is where the error was thrown. Each line below it is the function that called the one above."
+        "The location is the top line of a <span class=\"term\">stack trace</span>: the chain of function calls that led to the crash.",
+        "Each line is one <span class=\"term\">frame</span>: a function, its file, line and column. The top frame is where the error was thrown. Each frame below it called the one above, back to where the request started."
       ],
       "code": {
         "language": "text",
         "filename": "Terminal (simplified)",
         "code": "TypeError: Cannot read properties of undefined (reading '0')\n    at summarize (app/api/summary/route.ts:14:32)\n    at async POST (app/api/summary/route.ts:6:18)\n    at async node_modules/next/dist/server/...\n    at async node:internal/process/...",
-        "caption": "Real paths often carry extra prefixes from the bundler. The file name and line still match yours."
+        "caption": "Real paths often carry extra prefixes. The file name and line still match yours."
       },
+      "changes": [
+        "− Error, Type, Message, Location: we read further down",
+        "+ summarize, POST: two functions in Notely's code",
+        "+ Next.js, Node.js: the tools that run that code"
+      ],
       "scene": {
         "caption": "The stack, top to bottom: where it broke, then who called it, back to where it started.",
         "zones": [
-          { "id": "z-stack", "x": 1.2, "y": 0.6, "w": 5.6, "h": 7, "label": "Stack trace" }
+          { "id": "stack", "x": 0.1, "y": 2.4, "w": 11.8, "h": 2.6, "label": "Stack trace" }
         ],
         "nodes": [
-          { "id": "f1", "x": 4, "y": 1.6, "label": "summarize", "sublabel": "route.ts:14:32", "icon": "code", "status": "error" },
-          { "id": "f2", "x": 4, "y": 3.4, "label": "POST", "sublabel": "route.ts:6:18", "icon": "code" },
-          { "id": "f3", "x": 4, "y": 5.2, "label": "Next.js server", "sublabel": "node_modules/next", "icon": "layers" },
-          { "id": "f4", "x": 4, "y": 7, "label": "Node.js", "sublabel": "node:internal", "icon": "gear" }
+          { "id": "f1", "x": 1.0, "y": 3.7, "label": "summarize", "icon": "code", "kind": "server", "shape": "tile", "status": "error", "pill": "route.ts:14" },
+          { "id": "f2", "x": 4.4, "y": 3.7, "label": "POST", "icon": "code", "kind": "server", "shape": "tile", "pill": "route.ts:6" },
+          { "id": "f3", "x": 7.8, "y": 3.7, "label": "Next.js", "icon": "layers", "kind": "neutral", "shape": "tile", "pill": "node_modules" },
+          { "id": "f4", "x": 11.1, "y": 3.7, "label": "Node.js", "icon": "gear", "kind": "neutral", "shape": "tile", "pill": "internal" }
         ],
         "edges": [
-          { "from": "f4", "to": "f3", "label": "called" },
-          { "from": "f3", "to": "f2", "label": "called" },
-          { "from": "f2", "to": "f1", "label": "called", "packet": true }
-        ],
-        "notes": [
-          { "id": "top", "x": 9.4, "y": 1.6, "text": "Top: where it broke", "status": "error" },
-          { "id": "bottom", "x": 9.4, "y": 7, "text": "Bottom: where it started" }
+          { "from": "f4", "to": "f3" },
+          { "from": "f3", "to": "f2" },
+          { "from": "f2", "to": "f1", "packet": { "kind": "request", "speed": "slow" } }
         ]
       }
     },
@@ -172,29 +220,32 @@
       "title": "Find the first line that is yours",
       "chapter": "how",
       "body": [
-        "Long traces are mostly framework code. Skip every frame in <span class=\"term\">node_modules</span> or <code>node:internal</code>. The bug is almost never in Next.js or React.",
-        "Read from the top and stop at the first file you or Claude Code wrote. Open it at that line. That is where you start looking, and usually where the bad value shows up."
+        "Long traces are mostly framework code: installed tools such as Next.js, the toolkit Notely is written with. Skip every frame in <span class=\"term\">node_modules</span> or <code>node:internal</code>. The bug is almost never there.",
+        "Read from the top and stop at the first file you or Claude Code wrote. Here that is <code>route.ts</code>, line 14. Open it there."
       ],
       "callout": {
         "type": "tip",
-        "text": "In production, browser traces can point at compressed files like <code>chunk-8f2a.js:1:48213</code>. A <span class=\"term\">source map</span> translates that back to your file and line. Error trackers such as Sentry use them to show readable traces."
+        "text": "On a live site, browser traces can point at compressed files like <code>chunk-8f2a.js:1:48213</code>. A <span class=\"term\">source map</span> translates that back to your file and line. Error trackers such as Sentry use them."
+      },
+      "changes": [
+        "~ Next.js and Node.js fade: not your code",
+        "~ summarize: the first frame in your own code",
+        "~ Lines to check 3,000 → 1"
+      ],
+      "metrics": {
+        "lines": { "value": 1, "tone": "good" }
       },
       "scene": {
         "extends": "previous",
-        "caption": "Framework frames fade out. The top frame in your own code is where to start.",
-        "remove": ["bottom"],
+        "caption": "Framework frames fade. The top frame in your own code is where to start.",
         "nodes": [
-          { "id": "f1", "status": "active", "tags": ["your code"] },
-          { "id": "f2", "tags": ["your code"] },
+          { "id": "f1", "status": "active", "pill": { "text": "open line 14", "tone": "good" } },
           { "id": "f3", "status": "dim" },
           { "id": "f4", "status": "dim" }
         ],
         "edges": [
           { "id": "f4>f3", "status": "dim" },
           { "id": "f3>f2", "status": "dim" }
-        ],
-        "notes": [
-          { "id": "top", "text": "Open line 14 first", "status": "active" }
         ]
       }
     },
@@ -202,29 +253,36 @@
       "title": "Notely's bug, read line by line",
       "chapter": "example",
       "body": [
-        "Line 14 is <code>data.content[0].text</code>. So <code>data.content</code> was undefined. Maya logs <code>data</code> and sees the answer: the Claude API replied with a <code>429</code> rate limit error. Error replies have no <code>content</code> field.",
-        "The code never checked the status. The fix: check <code>res.ok</code> first, and throw an error that says what really happened."
+        "Line 14 is <code>data.content[0].text</code>, so <code>data.content</code> was undefined. You log <code>data</code> and see why: the Claude API answered <code>429</code>, \"too many requests\". Error answers have no <code>content</code>.",
+        "The code never checked. The fix: check <code>res.ok</code> (true only for a successful answer) first, and throw an error that says what really happened."
       ],
       "code": {
         "language": "ts",
         "filename": "app/api/summary/route.ts",
         "code": "const res = await fetch(\"https://api.anthropic.com/v1/messages\", {\n  method: \"POST\", headers, body: JSON.stringify(payload),\n});\nif (!res.ok) {\n  throw new Error(`Claude API ${res.status}: ${await res.text()}`);\n}\nconst data = await res.json();\nconst text = data.content[0].text;",
-        "caption": "Now the log starts with \"Claude API 429\" and names rate_limit_error, instead of a puzzle about undefined."
+        "caption": "Now the terminal starts with \"Claude API 429\" instead of a puzzle about undefined."
+      },
+      "changes": [
+        "+ Browser, App Server, Claude API, Terminal: back to Notely",
+        "− summarize, POST, Next.js, Node.js",
+        "~ The error TypeError → Claude 429: too many requests",
+        "~ App Server now checks the answer before reading it"
+      ],
+      "metrics": {
+        "error": { "value": "Claude 429", "tone": "warn" }
       },
       "scene": {
-        "caption": "The real cause sat one step earlier: an error reply from the Claude API.",
+        "caption": "The real cause sat one step earlier: an error answer from the Claude API.",
         "nodes": [
-          { "id": "browser", "x": 2, "y": 4, "label": "Browser", "sublabel": "Maya clicks Summary", "icon": "browser", "kind": "client" },
-          { "id": "api", "x": 7.2, "y": 4, "label": "Notely API", "sublabel": "/api/summary", "icon": "function", "kind": "server", "status": "ok", "tags": ["checks res.ok"] },
-          { "id": "claude", "x": 10.8, "y": 4, "label": "Claude API", "sublabel": "writes the summary", "icon": "sparkle", "kind": "ai", "status": "warn" }
+          { "id": "browser", "x": 0.8, "y": 3.0, "label": "Browser", "icon": "browser", "kind": "client" },
+          { "id": "app", "x": 4.6, "y": 3.0, "label": "App Server", "icon": "server", "kind": "server", "status": "ok", "pill": "res.ok check" },
+          { "id": "llm", "x": 8.4, "y": 3.0, "label": "Claude API", "icon": "sparkle", "kind": "ai", "status": "warn" },
+          { "id": "term", "x": 4.6, "y": 6.6, "label": "Terminal", "icon": "terminal", "kind": "neutral", "pill": { "text": "Claude 429", "tone": "warn" } }
         ],
         "edges": [
-          { "from": "browser", "to": "api", "label": "POST /api/summary" },
-          { "from": "api", "to": "claude", "label": "fetch /v1/messages", "packet": { "label": "prompt" } },
-          { "from": "claude", "to": "api", "label": "429, no content", "status": "warn", "packet": { "label": "429", "status": "warn" } }
-        ],
-        "notes": [
-          { "id": "clear", "x": 6.4, "y": 6.4, "text": "Clear error, not a riddle", "status": "ok" }
+          { "from": "browser", "to": "app", "packet": { "kind": "request", "direction": "both" } },
+          { "from": "app", "to": "llm", "status": "warn", "packet": { "kind": "request", "direction": "both", "returns": "error", "speed": "slow" } },
+          { "from": "app", "to": "term", "style": "dashed" }
         ]
       }
     },
@@ -232,26 +290,33 @@
       "title": "Optional chaining hides, it does not fix",
       "chapter": "watch-out",
       "body": [
-        "A common \"fix\" for this error is <code>data?.content?.[0]?.text</code>. <span class=\"term\">Optional chaining</span> stops the crash. It also turns a loud, readable error into a silent blank summary.",
-        "Now Maya sees an empty box, the logs show nothing, and the rate limit problem is still there. Use <code>?.</code> only when a missing value is truly normal, not to make an error go away."
+        "A common \"fix\" for this crash is <code>data?.content?.[0]?.text</code>. <span class=\"term\">Optional chaining</span> (<code>?.</code>) stops the crash. It also turns a loud, readable error into a silent blank summary.",
+        "Maya sees an empty box, the terminal shows nothing, and the 429 is still there. Use <code>?.</code> only when a missing value is truly normal."
       ],
       "callout": {
         "type": "claude-code",
-        "text": "When Claude Code says \"fixed\", ask: which line of the trace was it, and <b>why</b> was the value undefined? Search its diff for new <code>?.</code>, <code>|| \"\"</code> and empty <code>catch {}</code> blocks. Each one may be hiding the error rather than removing its cause."
+        "text": "When Claude Code says \"fixed\", ask: which line of the trace was it, and <b>why</b> was the value undefined? Search its diff for new <code>?.</code>, <code>|| \"\"</code> and empty <code>catch {}</code>. Each may hide the error instead of removing its cause."
+      },
+      "changes": [
+        "~ App Server: ?. hides the crash",
+        "~ Browser shows a blank box; Terminal goes quiet",
+        "~ The error Claude 429 → hidden",
+        "~ Lines to check 1 → 3,000: the clue is gone"
+      ],
+      "metrics": {
+        "error": { "value": "hidden", "tone": "bad" },
+        "lines": { "value": 3000, "tone": "bad" }
       },
       "scene": {
         "extends": "previous",
-        "caption": "With ?. everywhere, nothing crashes and Maya gets an empty box. The 429 is still there.",
-        "remove": ["clear"],
+        "caption": "With ?. everywhere, nothing crashes, Maya gets a blank box, and the terminal is silent.",
         "nodes": [
-          { "id": "api", "status": "warn", "tags": ["data?.content?.[0]"] },
-          { "id": "browser", "sublabel": "empty summary", "status": "warn" }
+          { "id": "app", "status": "warn", "pill": { "text": "?. added", "tone": "warn" } },
+          { "id": "browser", "status": "warn", "pill": { "text": "blank", "tone": "bad" } },
+          { "id": "term", "status": "dim", "pill": null }
         ],
         "edges": [
-          { "from": "api", "to": "browser", "label": "200, blank", "status": "warn", "packet": { "label": "\"\"", "status": "warn" } }
-        ],
-        "notes": [
-          { "id": "silent", "x": 6.4, "y": 6.4, "text": "No crash. No log. Still broken.", "status": "warn" }
+          { "id": "app>term", "status": "dim" }
         ]
       }
     },
@@ -261,7 +326,29 @@
       "body": [
         "Read the <b>type</b>, then the <b>message</b> as a plain sentence, then the <b>location</b>. In the stack trace, skip framework frames and open the first line of your own code.",
         "Then ask why the value was wrong, one step earlier. Fix that cause, and keep errors loud enough to read next time."
-      ]
+      ],
+      "changes": [
+        "~ App Server: ?. removed, res.ok check back",
+        "~ Browser and Terminal back to normal",
+        "~ The error hidden → Claude 429, loud and clear",
+        "~ Lines to check 3,000 → 1"
+      ],
+      "metrics": {
+        "error": { "value": "Claude 429", "tone": "good" },
+        "lines": { "value": 1, "tone": "good" }
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "A loud, specific error points straight at the real cause.",
+        "nodes": [
+          { "id": "app", "status": "ok", "pill": "res.ok check" },
+          { "id": "browser", "status": "normal", "pill": null },
+          { "id": "term", "status": "normal", "pill": { "text": "Claude 429", "tone": "warn" } }
+        ],
+        "edges": [
+          { "id": "app>term", "status": "normal" }
+        ]
+      }
     }
   ],
   "quiz": [
@@ -294,7 +381,7 @@
     "Every error has a <b>type</b>, a <b>message</b> and a <b>location</b>. Read all three before you ask anyone for help.",
     "<code>Cannot read properties of undefined (reading 'x')</code> means the thing <em>before</em> <code>.x</code> had no value. Find out why.",
     "In a <b>stack trace</b>, skip <code>node_modules</code> and internals. Start at the first line of your own code.",
-    "Check <code>res.ok</code> before reading an API response, and throw errors that say what really happened.",
+    "Check <code>res.ok</code> before reading an API answer, and throw errors that say what really happened.",
     "Be suspicious of fixes made of <code>?.</code>, <code>|| \"\"</code> and empty <code>catch</code> blocks: they hide errors."
   ]
 }

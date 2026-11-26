@@ -11,6 +11,7 @@
     "How to verify a fix yourself instead of trusting \"Fixed\""
   ],
   "glossary": {
+    "Claude Code": "Anthropic's coding assistant: it reads your project's files, runs commands and edits code when you ask it to.",
     "context": "Everything the model can see when it answers: your messages, the files it has read, and the earlier turns of the conversation.",
     "hypothesis": "A possible cause stated so it can be tested: \"if X is the cause, then Y should be true\".",
     "plan mode": "A Claude Code mode where it reads and plans but does not edit files, so you can review its reasoning first.",
@@ -18,28 +19,63 @@
     "diff": "The exact lines a change added and removed, shown with <code>+</code> and <code>-</code>.",
     "hallucination": "A confident answer from a model that is not true, such as a function or setting that does not exist."
   },
+  "metrics": [
+    { "id": "attempts", "label": "Attempts", "icon": "refresh" },
+    { "id": "files", "label": "Files changed", "icon": "file" },
+    { "id": "repro", "label": "Repro steps", "icon": "flask" }
+  ],
   "steps": [
+    {
+      "title": "You, Claude Code and Notely's code",
+      "chapter": "setup",
+      "body": [
+        "You build Notely with <span class=\"term\">Claude Code</span>, an AI assistant that reads Notely's code and edits it for you. The code is the set of files that make Notely run.",
+        "Today Maya, one of Notely's users, reports that her summaries come back blank. You open Claude Code to fix it."
+      ],
+      "metrics": {
+        "attempts": 0,
+        "files": 0,
+        "repro": { "value": "fails", "tone": "bad" }
+      },
+      "scene": {
+        "caption": "You ask Claude Code; Claude Code edits Notely's code.",
+        "nodes": [
+          { "id": "you", "x": 0.8, "y": 4.0, "label": "You", "icon": "user", "kind": "person" },
+          { "id": "cc", "x": 4.8, "y": 4.0, "label": "Claude Code", "icon": "robot", "kind": "ai" },
+          { "id": "code", "x": 8.8, "y": 4.0, "label": "Notely code", "icon": "code", "kind": "neutral", "shape": "stack" }
+        ],
+        "edges": [
+          { "from": "you", "to": "cc", "packet": { "kind": "request", "direction": "both" } },
+          { "from": "cc", "to": "code", "packet": { "kind": "request", "speed": "slow" } }
+        ]
+      }
+    },
     {
       "title": "\"Fixed!\" Still broken. \"Fixed!\"",
       "chapter": "problem",
       "body": [
-        "Maya types \"the summary is blank, fix it\". Claude Code edits two files and says it is fixed. Still blank. It tries again, then again, and the fourth attempt undoes the first.",
-        "Twenty minutes later, six files are changed and nobody knows why. This is the loop. It is not that the model is weak. It was given a <span class=\"term\">symptom</span> and no evidence, so it guessed."
+        "You type \"the summary is blank, fix it\". Claude Code edits two files: \"Fixed.\" Still blank. It tries again and again; the fourth try undoes the first.",
+        "Twenty minutes later, six files have changed and nobody knows why. That is the loop. The model is not weak. It got a <span class=\"term\">symptom</span> and no evidence, so it guessed."
       ],
+      "changes": [
+        "~ Claude Code guesses, again and again",
+        "~ Notely code: edits pile up",
+        "~ Attempts 0 → 4",
+        "~ Files changed 0 → 6"
+      ],
+      "metrics": {
+        "attempts": { "value": 4, "tone": "bad" },
+        "files": { "value": 6, "tone": "bad" }
+      },
       "scene": {
+        "extends": "previous",
         "caption": "A vague request goes in. Guesses come out. The loop keeps turning.",
         "nodes": [
-          { "id": "you", "x": 0.8, "y": 4, "label": "Maya", "sublabel": "\"fix it\"", "icon": "user", "kind": "person" },
-          { "id": "cc", "x": 6.4, "y": 4, "label": "Claude Code", "sublabel": "guessing", "icon": "robot", "kind": "ai", "status": "warn" },
-          { "id": "repo", "x": 10.4, "y": 4, "label": "Notely code", "sublabel": "6 files changed", "icon": "code", "status": "error" }
+          { "id": "cc", "status": "warn", "pill": { "text": "guessing", "tone": "warn" } },
+          { "id": "code", "status": "error" }
         ],
         "edges": [
-          { "from": "you", "to": "cc", "label": "it's blank, fix it", "packet": true },
-          { "from": "cc", "to": "repo", "label": "edit", "packet": { "label": "try 4", "speed": "fast" } },
-          { "from": "repo", "to": "cc", "label": "still blank", "status": "error" }
-        ],
-        "notes": [
-          { "id": "loop", "x": 8.4, "y": 6.4, "text": "Round 4. Undoing round 1.", "status": "error" }
+          { "id": "cc>code", "status": "error", "packet": { "kind": "request", "direction": "both", "returns": "error", "speed": "fast" } }
         ]
       }
     },
@@ -48,24 +84,56 @@
       "chapter": "idea",
       "body": [
         "Split the work. <b>You</b> own the evidence and the verdict: the error, the request, the logs, the repro, the bad commit. <b>Claude Code</b> owns speed: reading many files, proposing causes, typing the fix.",
-        "Everything in this module so far was about gathering that evidence. Now it pays off: a model with the facts rarely needs more than one or two tries."
+        "This whole module was about gathering that evidence. With the facts, a model rarely needs more than one or two tries."
       ],
       "callout": {
         "type": "analogy",
-        "text": "A doctor gets far more from \"sharp pain on the left side since Tuesday, worse after eating\" than from \"I feel bad\". Same doctor, very different diagnosis."
+        "text": "A doctor gets far more from \"sharp pain on the left since Tuesday, worse after eating\" than from \"I feel bad\". Same doctor, very different diagnosis."
+      },
+      "changes": [
+        "~ You: owner of the evidence and the verdict",
+        "~ Claude Code: owner of the speed"
+      ],
+      "scene": {
+        "extends": "previous",
+        "caption": "You bring the facts. Claude Code works from them instead of guessing.",
+        "nodes": [
+          { "id": "you", "status": "active", "pill": { "text": "evidence", "icon": "search" } },
+          { "id": "cc", "pill": { "text": "speed", "icon": "bolt" } }
+        ]
+      }
+    },
+    {
+      "title": "Spot the loop and break it",
+      "chapter": "how",
+      "body": [
+        "Signs of a loop: the same fix comes back, the <span class=\"term\">diff</span> keeps growing, earlier changes get undone, or the fixes add <code>try/catch</code> and <code>?.</code> everywhere.",
+        "Stop after two failed tries. Throw the attempts away with git, write down what you know, and start a fresh session with <code>/clear</code>. A long failed chat is <span class=\"term\">context</span> full of wrong ideas."
+      ],
+      "callout": {
+        "type": "warn",
+        "text": "Commit before you start debugging with AI. Then <code>git stash -u</code> puts every attempt aside, new files included, and takes you back to a known state in one command."
+      },
+      "changes": [
+        "~ Notely code: every attempt thrown away with git",
+        "~ Claude Code: a fresh session",
+        "~ Attempts 4 → 0",
+        "~ Files changed 6 → 0"
+      ],
+      "metrics": {
+        "attempts": { "value": 0, "tone": "neutral" },
+        "files": { "value": 0, "tone": "neutral" }
       },
       "scene": {
         "extends": "previous",
-        "caption": "Maya brings the facts. Claude Code works from them instead of guessing.",
-        "remove": ["loop", "repo>cc"],
+        "caption": "After two failed tries: reset the code, keep the facts, start a clean session.",
         "nodes": [
-          { "id": "you", "sublabel": "brings evidence", "status": "active", "tags": ["error + trace", "request + logs", "repro + commit"] },
-          { "id": "cc", "sublabel": "fast pair", "status": "normal" },
-          { "id": "repo", "sublabel": "untouched", "status": "normal" }
+          { "id": "you", "status": "normal" },
+          { "id": "cc", "status": "ok", "pill": { "text": "fresh start", "icon": "refresh", "tone": "good" } },
+          { "id": "code", "status": "normal" }
         ],
         "edges": [
-          { "id": "you>cc", "label": "evidence", "packet": { "label": "facts", "status": "active" } },
-          { "id": "cc>repo", "label": "reads", "style": "dashed", "packet": false }
+          { "id": "cc>code", "status": "normal", "packet": false }
         ]
       }
     },
@@ -79,21 +147,28 @@
       "code": {
         "language": "text",
         "filename": "Prompt to Claude Code",
-        "code": "Bug: AI summary is blank for every note since Monday.\nRepro: open any note, click \"AI summary\" (local + prod).\nExpected: a 3-line summary. Actual: empty box, no error.\nEvidence:\n- POST /api/summary -> 200, body {}\n- PROBE: Claude response has content[0].text\n- git bisect: first bad commit 9f2e1aa\nDo not edit yet. Explain the cause and how to prove it.\nOnly app/api/summary/route.ts should need changes."
+        "code": "Bug: summary is blank for every note since Monday.\nRepro: open any note, click \"Summarize\" (local + live).\nExpected: a 3-line summary. Actual: empty box, no error.\nEvidence:\n- POST /api/summary -> 200, body {}\n- PROBE: Claude response has content[0].text\n- git bisect: first bad commit 9f2e1aa\nDo not edit yet. Explain the cause and how to prove it.\nOnly app/api/summary/route.ts should need changes."
       },
       "callout": {
         "type": "tip",
-        "text": "Each evidence line comes from this module: the request from Network or curl, the probe and the bad commit from narrowing down. For a crash, add the error and first trace line that is yours; for a 500, the log line. If you cannot fill a line, that is the next thing to find."
+        "text": "Each evidence line comes from this module: the request from Network or curl, the probe and the bad commit from narrowing down. If you cannot fill a line, that is the next thing to find."
       },
+      "changes": [
+        "+ Bug report: repro, expected, actual, evidence, limits",
+        "~ You send the report instead of \"fix it\""
+      ],
       "scene": {
         "extends": "previous",
-        "caption": "A structured report: repro, expected, actual, evidence, limits.",
+        "caption": "A structured report goes in: repro, expected, actual, evidence, limits.",
+        "remove": ["you>cc"],
         "nodes": [
-          { "id": "you", "status": "normal" },
-          { "id": "cc", "status": "active", "sublabel": "has the facts" }
+          { "id": "you", "pill": null },
+          { "id": "cc", "status": "normal", "pill": null },
+          { "id": "report", "x": 4.8, "y": 0.6, "label": "Bug report", "icon": "list", "kind": "neutral", "shape": "tile", "status": "active" }
         ],
         "edges": [
-          { "id": "you>cc", "label": "bug report", "bend": 0.95, "packet": { "label": "report", "status": "active" } }
+          { "from": "you", "to": "report", "packet": { "kind": "request" } },
+          { "from": "report", "to": "cc", "packet": { "kind": "request" } }
         ]
       }
     },
@@ -101,50 +176,66 @@
       "title": "Diagnosis first, fix second",
       "chapter": "how",
       "body": [
-        "Ask for the cause before any code. \"List the likely causes, the evidence for each, and one check that would prove or rule it out.\" Each answer is a <span class=\"term\">hypothesis</span> you can test.",
-        "In <span class=\"term\">plan mode</span>, Claude Code reads and reasons but cannot edit files. You read its explanation like a crit: does it match the evidence? Only then let it change code."
+        "Ask for the cause first: the likely causes, the evidence for each, and one check that would prove or rule it out. Each answer is a <span class=\"term\">hypothesis</span> you can test.",
+        "In <span class=\"term\">plan mode</span>, Claude Code reads and reasons but cannot edit files. Read its answer like a crit: does it match the evidence? Then let it edit."
       ],
       "callout": {
         "type": "claude-code",
-        "text": "Before approving a plan, ask: which file and line is the cause? Does the explanation account for <em>every</em> piece of evidence, like why there was no error? What single check would prove it? A cause that cannot be pointed at in the code is still a guess."
+        "text": "Before approving a plan, ask: which file and line is the cause? Does it explain <em>every</em> piece of evidence, like why there was no error? What single check would prove it? A cause nobody can point at in the code is still a guess."
       },
+      "changes": [
+        "~ Claude Code in plan mode: reads, does not edit",
+        "~ Notely code and Bug report fade back",
+        "+ Arrow back to You: causes, with a check for each"
+      ],
       "scene": {
         "extends": "previous",
-        "caption": "No edits yet. Claude Code returns causes and checks, and Maya judges them.",
+        "caption": "No edits yet. Claude Code returns causes and checks, and you judge them.",
         "nodes": [
-          { "id": "cc", "sublabel": "plan mode", "tags": ["no edits"] },
-          { "id": "repo", "status": "dim" }
+          { "id": "cc", "status": "active", "pill": { "text": "plan mode", "icon": "eye" } },
+          { "id": "code", "status": "dim" },
+          { "id": "report", "status": "dim" }
         ],
         "edges": [
-          { "id": "you>cc", "packet": false },
-          { "from": "cc", "to": "you", "label": "3 hypotheses", "status": "active", "packet": { "label": "causes", "status": "active" } }
+          { "id": "you>report", "status": "dim", "packet": false },
+          { "id": "report>cc", "status": "dim", "packet": false },
+          { "id": "cc>code", "status": "dim" },
+          { "from": "cc", "to": "you", "label": "causes", "packet": { "kind": "response" } }
         ]
       }
     },
     {
-      "title": "Spot the loop and break it",
-      "chapter": "how",
+      "title": "Notely's blank summary, the good way",
+      "chapter": "example",
       "body": [
-        "Signs of a loop: the same fix comes back, the diff keeps growing, earlier changes get undone, or the fixes add <code>try/catch</code> and <code>?.</code> everywhere.",
-        "Stop after two failed attempts. Throw the attempts away with git, write down what you now know, and start a fresh session with <code>/clear</code>. A long, failed conversation is <span class=\"term\">context</span> full of wrong ideas."
+        "With the report, Claude Code answers in plan mode: the <code>SummaryBlock</code> type names a <code>value</code> field, the Claude API sends <code>text</code>, and an <code>as</code> cast told TypeScript to trust the wrong shape.",
+        "You approve. The fix is three lines in one file, and it fails loudly if the first block is ever not text."
       ],
-      "callout": {
-        "type": "warn",
-        "text": "Commit before you start debugging with AI. Then <code>git stash -u</code> puts every attempt aside, new files included, and takes you back to a known state in one command. <code>git restore .</code> also works, but leaves new files behind."
+      "code": {
+        "language": "diff",
+        "filename": "app/api/summary/route.ts",
+        "code": "-type SummaryBlock = { type: \"text\"; value: string };\n+type SummaryBlock = { type: \"text\"; text: string };\n\n   const block = data.content[0] as SummaryBlock;\n-  return Response.json({ summary: block.value });\n+  if (block.type !== \"text\") throw new Error(\"No text block\");\n+  return Response.json({ summary: block.text });"
+      },
+      "changes": [
+        "~ Claude Code names the cause: value instead of text",
+        "~ Notely code: one small fix",
+        "~ Attempts 0 → 1",
+        "~ Files changed 0 → 1"
+      ],
+      "metrics": {
+        "attempts": { "value": 1, "tone": "good" },
+        "files": { "value": 1, "tone": "good" }
       },
       "scene": {
         "extends": "previous",
-        "caption": "After two failed tries: reset the code, keep the facts, start a clean session.",
-        "remove": ["cc>you"],
+        "caption": "One cause, one small diff in one file.",
         "nodes": [
-          { "id": "cc", "status": "error", "sublabel": "2 failed tries", "tags": null },
-          { "id": "repo", "status": "normal", "sublabel": "git stash -u" },
-          { "id": "fresh", "x": 6.4, "y": 6.6, "label": "New session", "sublabel": "/clear + known facts", "icon": "refresh", "kind": "ai", "status": "ok" }
+          { "id": "cc", "status": "normal", "pill": null },
+          { "id": "code", "status": "active", "pill": { "text": "3 lines", "icon": "code" } }
         ],
         "edges": [
-          { "id": "cc>repo", "status": "dim", "label": null },
-          { "id": "you>cc", "status": "dim", "label": null },
-          { "from": "you", "to": "fresh", "label": "what we know", "packet": { "label": "facts", "status": "ok" } }
+          { "id": "cc>you", "status": "dim", "packet": false },
+          { "id": "cc>code", "status": "normal", "packet": { "kind": "request" } }
         ]
       }
     },
@@ -152,8 +243,8 @@
       "title": "\"Fixed\" is a claim. Verify it",
       "chapter": "how",
       "body": [
-        "A fix is proven when <b>your repro steps</b> now pass, not when the model says so. Run them yourself.",
-        "Then read the <span class=\"term\">diff</span>. Does it change the cause it named, or only quiet the <span class=\"term\">symptom</span>? Is it about the size the bug deserves? Do the type check and tests still pass? After deploying, check the logs for the success line."
+        "A fix is proven when <b>your repro steps</b> pass, not when the model says so. Run them yourself.",
+        "Then read the diff. Does it change the cause it named, or only quiet the <span class=\"term\">symptom</span>? Is it the size the bug deserves? Do the type check and tests still pass? After deploying, check the logs for the success line."
       ],
       "code": {
         "language": "bash",
@@ -162,43 +253,26 @@
       },
       "callout": {
         "type": "tip",
-        "text": "Even better: before the fix, ask Claude Code for a small test that fails because of the bug. The fix is proven when that test passes, and the test keeps the bug from quietly coming back."
+        "text": "Even better: before the fix, ask Claude Code for a small test that fails because of the bug. The fix is proven when that test passes, and the test keeps the bug from coming back."
+      },
+      "changes": [
+        "+ Checks: repro, diff, types and tests",
+        "~ Repro steps fails → passes"
+      ],
+      "metrics": {
+        "repro": { "value": "passes", "tone": "good" }
       },
       "scene": {
         "extends": "previous",
-        "caption": "Maya checks the change herself: repro, diff, types, logs.",
-        "remove": ["fresh"],
+        "caption": "You check the change yourself: repro, diff, types, tests.",
         "nodes": [
-          { "id": "cc", "status": "normal", "sublabel": "fast pair" },
-          { "id": "repo", "status": "active", "sublabel": "1 file changed" },
-          { "id": "checks", "x": 10.4, "y": 1.4, "label": "Checks", "sublabel": "repro, diff, types", "icon": "flask", "status": "ok" }
+          { "id": "code", "status": "normal" },
+          { "id": "checks", "x": 8.8, "y": 7.4, "label": "Checks", "icon": "flask", "kind": "neutral", "status": "ok", "pill": { "text": "all pass", "tone": "good" } }
         ],
         "edges": [
-          { "id": "cc>repo", "status": "normal", "label": "small fix", "style": "solid", "packet": { "label": "diff" } },
-          { "id": "you>cc", "status": "normal" },
-          { "from": "repo", "to": "checks", "label": "verify" },
-          { "from": "checks", "to": "you", "label": "proof", "status": "ok", "packet": { "label": "pass", "status": "ok" } }
-        ]
-      }
-    },
-    {
-      "title": "Notely's blank summary, the good way",
-      "chapter": "example",
-      "body": [
-        "With the report from step 3, Claude Code answers in plan mode: the <code>SummaryBlock</code> type names a <code>value</code> field, the API sends <code>text</code>, and the <code>as</code> cast told TypeScript to trust the wrong shape.",
-        "Maya approves. The fix is three lines in one file, and it now fails loudly if the first block is ever not text. The curl from the repro returns a summary again."
-      ],
-      "code": {
-        "language": "diff",
-        "filename": "app/api/summary/route.ts",
-        "code": "-type SummaryBlock = { type: \"text\"; value: string };\n+type SummaryBlock = { type: \"text\"; text: string };\n\n   const block = data.content[0] as SummaryBlock;\n-  return Response.json({ summary: block.value });\n+  if (block.type !== \"text\") throw new Error(\"No text block\");\n+  return Response.json({ summary: block.text });"
-      },
-      "scene": {
-        "extends": "previous",
-        "caption": "One cause, one small diff, proven by the same repro that showed the bug.",
-        "nodes": [
-          { "id": "repo", "status": "ok", "sublabel": "3 lines, 1 file" },
-          { "id": "you", "sublabel": "repro passes", "tags": null, "status": "ok" }
+          { "id": "cc>code", "packet": false },
+          { "from": "code", "to": "checks" },
+          { "from": "checks", "to": "you", "packet": { "kind": "response" } }
         ]
       }
     },
@@ -206,28 +280,31 @@
       "title": "Confident is not the same as correct",
       "chapter": "watch-out",
       "body": [
-        "Models sound equally sure when they are right and when they are wrong. A <span class=\"term\">hallucination</span> in debugging looks like a config option that does not exist, or a cause that fits the symptom but not your evidence.",
+        "Models sound equally sure when they are right and when they are wrong. A <span class=\"term\">hallucination</span> in debugging looks like a setting that does not exist, or a cause that fits the symptom but not your evidence.",
         "The sneakiest one: making a failing test pass by changing the test, or deleting the check that caught the bug."
       ],
       "callout": {
         "type": "claude-code",
-        "text": "Ask it to quote the line in your code or the docs page behind each claim. Check whether the diff touches test files or removes a check. Watch for new packages or settings you did not ask for. If you cannot verify a claim, treat it as a hypothesis, not a fact."
+        "text": "Ask it to quote the line in your code or the docs page behind each claim. Check whether the diff touches test files or removes a check. If you cannot verify a claim, treat it as a hypothesis, not a fact."
       },
+      "changes": [
+        "+ Official docs: the real reference to check claims",
+        "~ Claude Code: sure of a setting that may not exist",
+        "~ Checks and Bug report fade back"
+      ],
       "scene": {
         "extends": "previous",
-        "caption": "A confident claim gets checked against the docs and the code before it is accepted.",
+        "caption": "A confident claim gets checked against the official docs before it is accepted.",
         "nodes": [
-          { "id": "you", "status": "active", "sublabel": "checks claims" },
-          { "id": "cc", "status": "warn", "tags": ["invented setting?"] },
-          { "id": "repo", "status": "normal" },
+          { "id": "you", "status": "active" },
+          { "id": "cc", "status": "warn", "pill": { "text": "invented?", "tone": "warn" } },
           { "id": "checks", "status": "dim" },
-          { "id": "docs", "x": 6.4, "y": 1.4, "label": "Official docs", "sublabel": "the real API", "icon": "file", "kind": "external" }
+          { "id": "docs", "x": 0.8, "y": 7.4, "label": "Official docs", "icon": "file", "kind": "external" }
         ],
         "edges": [
+          { "id": "code>checks", "status": "dim" },
           { "id": "checks>you", "status": "dim", "packet": false },
-          { "id": "repo>checks", "status": "dim" },
-          { "id": "cc>repo", "packet": false, "label": null },
-          { "from": "you", "to": "docs", "label": "look it up", "style": "dashed", "packet": true }
+          { "from": "you", "to": "docs", "label": "check", "style": "dashed", "packet": { "kind": "request", "direction": "both" } }
         ]
       }
     },
@@ -237,7 +314,29 @@
       "body": [
         "Hand Claude Code evidence, not a symptom: repro, expected, actual, error, request, logs, bad commit. Ask for the cause before the code, and judge it against the evidence.",
         "After two failed tries, reset and start fresh with what you learned. A fix counts when your repro passes and the diff makes sense to you."
-      ]
+      ],
+      "changes": [
+        "~ Claude Code: claim checked, back to normal",
+        "~ Bug report and Checks back in view"
+      ],
+      "scene": {
+        "extends": "previous",
+        "caption": "Evidence goes in through the report; proof comes back through the checks.",
+        "nodes": [
+          { "id": "you", "status": "normal" },
+          { "id": "cc", "status": "normal", "pill": null },
+          { "id": "report", "status": "normal" },
+          { "id": "checks", "status": "ok" },
+          { "id": "docs", "status": "dim" }
+        ],
+        "edges": [
+          { "id": "you>docs", "status": "dim", "packet": false },
+          { "id": "you>report", "status": "normal", "packet": { "kind": "request" } },
+          { "id": "report>cc", "status": "normal", "packet": { "kind": "request" } },
+          { "id": "code>checks", "status": "normal" },
+          { "id": "checks>you", "status": "ok", "packet": { "kind": "response" } }
+        ]
+      }
     }
   ],
   "quiz": [
@@ -260,7 +359,7 @@
     {
       "question": "Claude Code says a failing test now passes. What should you check in the diff first?",
       "options": [
-        { "text": "Whether it changed the test file or removed the assertion that was failing.", "correct": true, "why": "Making the test agree with the bug is a classic false fix. A real fix changes the code under test, not the check." },
+        { "text": "Whether it changed the test file or removed the check that was failing.", "correct": true, "why": "Making the test agree with the bug is a classic false fix. A real fix changes the code under test, not the check." },
         { "text": "Whether the code formatting is consistent.", "why": "Formatting matters little here. The question is whether the bug is actually gone." },
         { "text": "Nothing. A passing test is proof.", "why": "Only if the test still checks the right thing. If it was edited to pass, it proves nothing." }
       ]
