@@ -30,7 +30,7 @@
       "chapter": "setup",
       "body": [
         "You build Notely with <span class=\"term\">Claude Code</span>, an AI assistant that reads Notely's code and edits it for you. The code is the set of files that make Notely run.",
-        "Today Maya, one of Notely's users, reports that her summaries come back blank. You open Claude Code to fix it."
+        "Maya, one of Notely's users, reports blank summaries: the bug from the last lesson. Let's replay it, starting the way many people do: straight to Claude Code."
       ],
       "metrics": {
         "attempts": 0,
@@ -108,7 +108,7 @@
       "chapter": "how",
       "body": [
         "Signs of a loop: the same fix comes back, the <span class=\"term\">diff</span> keeps growing, earlier changes get undone, or the fixes add <code>try/catch</code> and <code>?.</code> everywhere.",
-        "Stop after two failed tries. Throw the attempts away with git, write down what you know, and start a fresh session with <code>/clear</code>. A long failed chat is <span class=\"term\">context</span> full of wrong ideas."
+        "Stop after two failed tries. Undo the attempts with git, write down what you know, and start fresh with Claude Code's <code>/clear</code> command. A long failed chat is <span class=\"term\">context</span> full of wrong ideas."
       ],
       "callout": {
         "type": "warn",
@@ -208,7 +208,7 @@
       "title": "Notely's blank summary, the good way",
       "chapter": "example",
       "body": [
-        "With the report, Claude Code answers in plan mode: the <code>SummaryBlock</code> type names a <code>value</code> field, the Claude API sends <code>text</code>, and an <code>as</code> cast told TypeScript to trust the wrong shape.",
+        "With the report, Claude Code answers in plan mode: the <code>SummaryBlock</code> type names a <code>value</code> field, the Claude API sends <code>text</code>, and an <code>as</code> cast told TypeScript, the type checker, to trust the wrong shape.",
         "You approve. The fix is three lines in one file, and it fails loudly if the first block is ever not text."
       ],
       "code": {
@@ -290,7 +290,7 @@
       "changes": [
         "+ Official docs: the real reference to check claims",
         "~ Claude Code: sure of a setting that may not exist",
-        "~ Checks and Bug report fade back"
+        "~ You in focus; Checks fades back"
       ],
       "scene": {
         "extends": "previous",

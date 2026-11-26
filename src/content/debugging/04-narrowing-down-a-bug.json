@@ -32,7 +32,7 @@
       "chapter": "setup",
       "body": [
         "Last week, Notely's <b>Summarize</b> button worked. Maya's browser (the screen she uses) asks the <span class=\"term\">app server</span>, the computer running Notely's code.",
-        "The app server loads the note from the database, sends its text to the Claude API, Anthropic's AI, and sends a three-line summary back to the browser."
+        "The app server loads the note from the database (where notes are kept), sends its text to the Claude API, Anthropic's AI, and sends a three-line summary back to the browser."
       ],
       "metrics": {
         "suspects": { "value": 0, "tone": "good" },
@@ -134,7 +134,7 @@
       "chapter": "how",
       "body": [
         "Now <span class=\"term\">isolate</span>: test the server side without the page. From the terminal, call the app server directly with <span class=\"term\">curl</span>, a tool that sends one request. If the raw answer is already wrong, the page is innocent.",
-        "It is: the answer is <code>{}</code>, with no <code>summary</code> at all. The page was faithfully showing nothing."
+        "It is: the answer is <code>{}</code>, an empty object, with no <code>summary</code> at all. The page was faithfully showing nothing."
       ],
       "code": {
         "language": "bash",
@@ -144,8 +144,8 @@
       },
       "changes": [
         "+ Terminal: sends the request without the page",
-        "~ App Server answers {}: the bug is server side",
-        "~ Suspects 4 → 3: the page (Browser) is cleared",
+        "~ Outlines go; App Server answers {}: the page is cleared",
+        "~ Suspects 4 → 3",
         "~ Tests run 1 → 2"
       ],
       "metrics": {
@@ -210,8 +210,8 @@
       "title": "git bisect: binary search through time",
       "chapter": "how",
       "body": [
-        "It worked last Monday, so this is a <span class=\"term\">regression</span>: some <span class=\"term\">commit</span> since then broke it. <span class=\"term\">Git bisect</span> finds which one.",
-        "You name one good commit and one bad one. Git checks out the commit halfway between. You test it and say <code>good</code> or <code>bad</code>. Git halves again. Even 100 commits take about 7 tests."
+        "The reply code looks fine, yet it worked last Monday. So a later <span class=\"term\">commit</span> (a saved version of the code) broke it, a <span class=\"term\">regression</span>. <span class=\"term\">Git bisect</span> finds it.",
+        "Name a good commit and a bad one. Git switches to the one halfway between; test it and say <code>good</code> or <code>bad</code>. 100 commits take about 7 tests."
       ],
       "code": {
         "language": "bash",
@@ -222,7 +222,7 @@
       "changes": [
         "− Load note, Call Claude, Build reply",
         "+ Commits a1b2c3d, 5d0e7b2, c48f019, 9f2e1aa, e77a3d4",
-        "+ Commits left: 4 could be the first bad one"
+        "~ Commits left – → 4: any one after Monday"
       ],
       "metrics": {
         "commits": { "value": 4, "tone": "warn" }
@@ -255,7 +255,7 @@
         "language": "diff",
         "filename": "9f2e1aa  refactor summary types",
         "code": "- return Response.json({ summary: data.content[0].text });\n+ const block = data.content[0] as SummaryBlock;\n+ return Response.json({ summary: block.value });",
-        "caption": "SummaryBlock said value, but the API sends text. The as cast tells TypeScript to trust that wrong shape."
+        "caption": "SummaryBlock said value, but the API sends text. <code>as SummaryBlock</code> told TypeScript, the type checker, to trust that wrong shape, so nothing warned."
       },
       "changes": [
         "~ c48f019 tests good; 5d0e7b2 before it is good too",

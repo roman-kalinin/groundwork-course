@@ -34,8 +34,8 @@
       "title": "Notely's Summarize button, on your laptop",
       "chapter": "setup",
       "body": [
-        "Notely is our notes app. Maya clicks <b>Summarize</b>: her <span class=\"term\">browser</span> (the screen she types into) sends the note to the <span class=\"term\">app server</span> (the computer running Notely's code), which asks the <span class=\"term\">Claude API</span>, Anthropic's AI, for a summary.",
-        "While you build, the app server runs on your laptop and prints messages in a <span class=\"term\">terminal</span>, a text window."
+        "Click <b>Summarize</b> in Notely, our notes app, and the <span class=\"term\">browser</span> (the screen you use) sends the note to the <span class=\"term\">app server</span> (the computer running Notely's code), which asks the <span class=\"term\">Claude API</span>, Anthropic's AI, for a summary.",
+        "For now it all runs on your laptop, and the app server prints messages in a <span class=\"term\">terminal</span>, a text window."
       ],
       "metrics": {
         "error": { "value": "none", "tone": "good" },
@@ -60,7 +60,7 @@
       "title": "The summary never comes back",
       "chapter": "problem",
       "body": [
-        "Maya clicks Summarize. Nothing appears. The terminal fills with red text, and the bug could be anywhere in Notely's 3,000 lines.",
+        "You click Summarize to test it. Nothing appears. The terminal fills with red text, and the bug could be anywhere in Notely's 3,000 lines.",
         "The reflex is to paste all of it into Claude Code and type \"fix\". But an <span class=\"term\">error</span> is not noise. Its first lines usually say what broke and where. Reading them takes thirty seconds."
       ],
       "callout": {
@@ -109,8 +109,10 @@
       "changes": [
         "− Browser, App Server, Claude API, Terminal: we zoom in",
         "+ Error: the first two lines of the red text",
-        "+ Type, Message, Location: the three parts it carries"
+        "+ Type, Message, Location: the three parts it carries",
+        "~ The error red wall → TypeError"
       ],
+      "metrics": { "error": { "value": "TypeError", "tone": "bad" } },
       "scene": {
         "caption": "One error, split into the three answers it always carries.",
         "nodes": [
@@ -130,7 +132,7 @@
       "title": "The type names the kind of mistake",
       "chapter": "how",
       "body": [
-        "A few types cover most bugs. <span class=\"term\">TypeError</span>: a value was used the wrong way, very often because it was <span class=\"term\">undefined</span> (empty). <code>ReferenceError</code>: a name that does not exist, like a typo. <code>SyntaxError</code>: text that cannot be read, like broken <span class=\"term\">JSON</span>.",
+        "A few types cover most bugs. <span class=\"term\">TypeError</span>: a value was used the wrong way, very often because it was <span class=\"term\">undefined</span> (empty). <code>ReferenceError</code>: a name that does not exist, like a typo. <code>SyntaxError</code>: text that cannot be read, like broken <span class=\"term\">JSON</span> (the text format apps send data in).",
         "Ours is a TypeError. So something had no value."
       ],
       "callout": {
@@ -184,8 +186,8 @@
       "title": "A stack trace is a trail of calls",
       "chapter": "how",
       "body": [
-        "The location is the top line of a <span class=\"term\">stack trace</span>: the chain of function calls that led to the crash.",
-        "Each line is one <span class=\"term\">frame</span>: a function, its file, line and column. The top frame is where the error was thrown. Each frame below it called the one above, back to where the request started."
+        "The location is the top line of a <span class=\"term\">stack trace</span>: the chain of function calls that led to the crash. The diagram reads left to right, top line first.",
+        "Each line is one <span class=\"term\">frame</span>: a function, its file, line and column. Each was called by the next one. <code>POST</code>, the function that answers the browser's request, called <code>summarize</code>."
       ],
       "code": {
         "language": "text",
@@ -196,10 +198,10 @@
       "changes": [
         "− Error, Type, Message, Location: we read further down",
         "+ summarize, POST: two functions in Notely's code",
-        "+ Next.js, Node.js: the tools that run that code"
+        "+ Next.js, Node.js: the tools that run Notely's code"
       ],
       "scene": {
-        "caption": "The stack, top to bottom: where it broke, then who called it, back to where it started.",
+        "caption": "The stack trace, top line on the left: where it broke, then who called it, back to where it started.",
         "zones": [
           { "id": "stack", "x": 0.1, "y": 2.4, "w": 11.8, "h": 2.6, "label": "Stack trace" }
         ],
@@ -221,7 +223,7 @@
       "chapter": "how",
       "body": [
         "Long traces are mostly framework code: installed tools such as Next.js, the toolkit Notely is written with. Skip every frame in <span class=\"term\">node_modules</span> or <code>node:internal</code>. The bug is almost never there.",
-        "Read from the top and stop at the first file you or Claude Code wrote. Here that is <code>route.ts</code>, line 14. Open it there."
+        "Read from the top and stop at the first file you or Claude Code wrote. Here that is <code>route.ts</code> (Notely's Summarize code), line 14. Open it there."
       ],
       "callout": {
         "type": "tip",
@@ -253,7 +255,7 @@
       "title": "Notely's bug, read line by line",
       "chapter": "example",
       "body": [
-        "Line 14 is <code>data.content[0].text</code>, so <code>data.content</code> was undefined. You log <code>data</code> and see why: the Claude API answered <code>429</code>, \"too many requests\". Error answers have no <code>content</code>.",
+        "Line 14 is <code>data.content[0].text</code>, so <code>data.content</code> was undefined. You print <code>data</code> with <code>console.log</code> and see why: the Claude API answered with status code <code>429</code>, \"too many requests\". Error answers have no <code>content</code>.",
         "The code never checked. The fix: check <code>res.ok</code> (true only for a successful answer) first, and throw an error that says what really happened."
       ],
       "code": {
@@ -262,6 +264,7 @@
         "code": "const res = await fetch(\"https://api.anthropic.com/v1/messages\", {\n  method: \"POST\", headers, body: JSON.stringify(payload),\n});\nif (!res.ok) {\n  throw new Error(`Claude API ${res.status}: ${await res.text()}`);\n}\nconst data = await res.json();\nconst text = data.content[0].text;",
         "caption": "Now the terminal starts with \"Claude API 429\" instead of a puzzle about undefined."
       },
+      "callout": { "type": "tip", "text": "The 429 itself is a separate problem: Notely asked too often, too fast. Waiting and retrying is covered in the AI module. This lesson is about making the error say so." },
       "changes": [
         "+ Browser, App Server, Claude API, Terminal: back to Notely",
         "− summarize, POST, Next.js, Node.js",
@@ -290,15 +293,15 @@
       "title": "Optional chaining hides, it does not fix",
       "chapter": "watch-out",
       "body": [
-        "A common \"fix\" for this crash is <code>data?.content?.[0]?.text</code>. <span class=\"term\">Optional chaining</span> (<code>?.</code>) stops the crash. It also turns a loud, readable error into a silent blank summary.",
-        "Maya sees an empty box, the terminal shows nothing, and the 429 is still there. Use <code>?.</code> only when a missing value is truly normal."
+        "Instead of checking <code>res.ok</code>, a common \"fix\" for the crash is <code>data?.content?.[0]?.text</code>. <span class=\"term\">Optional chaining</span> (<code>?.</code>) stops the crash. It also turns a loud, readable error into a silent blank summary.",
+        "You, and later Maya, see an empty box, the terminal shows nothing, and the 429 is still there. Use <code>?.</code> only when a missing value is truly normal."
       ],
       "callout": {
         "type": "claude-code",
         "text": "When Claude Code says \"fixed\", ask: which line of the trace was it, and <b>why</b> was the value undefined? Search its diff for new <code>?.</code>, <code>|| \"\"</code> and empty <code>catch {}</code>. Each may hide the error instead of removing its cause."
       },
       "changes": [
-        "~ App Server: ?. hides the crash",
+        "~ App Server: ?. instead of the res.ok check",
         "~ Browser shows a blank box; Terminal goes quiet",
         "~ The error Claude 429 → hidden",
         "~ Lines to check 1 → 3,000: the clue is gone"
@@ -309,7 +312,7 @@
       },
       "scene": {
         "extends": "previous",
-        "caption": "With ?. everywhere, nothing crashes, Maya gets a blank box, and the terminal is silent.",
+        "caption": "With ?. everywhere, nothing crashes, the page shows a blank box, and the terminal is silent.",
         "nodes": [
           { "id": "app", "status": "warn", "pill": { "text": "?. added", "tone": "warn" } },
           { "id": "browser", "status": "warn", "pill": { "text": "blank", "tone": "bad" } },

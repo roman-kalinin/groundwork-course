@@ -33,7 +33,7 @@
       "chapter": "setup",
       "body": [
         "Notely is live. Maya's browser (the screen she uses) sends each request first to <span class=\"term\">Cloudflare</span>, a service in front of the app that blocks bad traffic, then to the <span class=\"term\">app server</span>: Notely's code, running on Vercel.",
-        "The app server loads notes from the <span class=\"term\">database</span>, run by Supabase, and asks the Claude API, Anthropic's AI, for summaries."
+        "The app server keeps notes in the <span class=\"term\">database</span>, run by Supabase, and asks the Claude API, Anthropic's AI, for summaries."
       ],
       "metrics": {
         "status": { "value": "200", "tone": "good" },
@@ -90,7 +90,7 @@
       "chapter": "idea",
       "body": [
         "Each platform on the request's path writes its own logs. Cloudflare logs what it let through or blocked. Vercel logs what your app server printed. Supabase logs the database's queries and logins.",
-        "Debugging a 500 means walking that path in order, checking each log at the same moment, until one of them says what broke."
+        "Debugging a 500 means checking each log along that path, at the minute it failed, until one of them says what broke."
       ],
       "callout": {
         "type": "analogy",
@@ -98,11 +98,11 @@
       },
       "changes": [
         "~ Cloudflare, App Server, Database: each keeps its own logs",
-        "~ Claude API fades back"
+        "~ Claude API fades back: your server's log records its answers"
       ],
       "scene": {
         "extends": "previous",
-        "caption": "Three platforms, three sets of logs. Read them in the order the request travelled.",
+        "caption": "Three platforms, three sets of logs. Check each at the minute the request failed.",
         "nodes": [
           { "id": "cf", "pill": { "text": "logs", "icon": "log" } },
           { "id": "app", "pill": { "text": "logs", "icon": "log" } },
@@ -196,7 +196,7 @@
       "title": "Cloudflare: the request that never arrived",
       "chapter": "how",
       "body": [
-        "Cloudflare sits in front of everything. If a <span class=\"term\">WAF</span> rule or a bot check blocks a request, it never reaches Vercel, so the app server has no log line at all.",
+        "Cloudflare sits in front of everything. If a security rule (a <span class=\"term\">WAF</span>) or a bot check blocks a request, it never reaches Vercel, so the app server has no log line at all.",
         "A user sees an error but Vercel's logs are empty? Check Cloudflare's security events. Its error pages show a <span class=\"term\">Ray ID</span> you can search for."
       ],
       "callout": {
@@ -205,7 +205,8 @@
       },
       "changes": [
         "~ Cloudflare in focus: it can block a request",
-        "~ Database and App Server fade back"
+        "~ Database and App Server fade back",
+        "~ Browser back in focus: its request is blocked"
       ],
       "scene": {
         "extends": "previous",
@@ -228,7 +229,7 @@
       "chapter": "example",
       "body": [
         "Cloudflare: the request passed. Database: the note loaded fine. App Server: <code>summary:failed</code>, <em>Claude API 401</em>. The Claude API did not accept the key.",
-        "The cause: <code>ANTHROPIC_API_KEY</code>, an <span class=\"term\">environment variable</span>, was set only for Vercel's Preview copies (test versions of the site), not for Production, the live one."
+        "The cause: <code>ANTHROPIC_API_KEY</code>, an <span class=\"term\">environment variable</span> (a setting Vercel hands your code), was set only for Vercel's Preview copies (test versions of the site), not for Production, the live one."
       ],
       "code": {
         "language": "text",
@@ -242,7 +243,8 @@
       "changes": [
         "~ Cloudflare and Database: fine in their logs",
         "~ App Server log: the Claude API answered 401",
-        "~ Suspects 4 → 1"
+        "~ Suspects 4 → 1",
+        "~ Claude API back in focus: it refused the key"
       ],
       "metrics": {
         "suspects": { "value": 1, "tone": "warn" }
@@ -269,7 +271,7 @@
       "chapter": "watch-out",
       "body": [
         "Debug logging tempts you to print everything: <code>req.headers</code>, <code>process.env</code>, the full prompt. Logs are kept for days, readable by the whole team, and often copied to other services.",
-        "One <code>console.log(req.headers)</code> writes users' login cookies to disk. A logged prompt writes their private notes. Log ids and outcomes, never keys, tokens or <span class=\"term\">PII</span>."
+        "One <code>console.log(req.headers)</code> writes users' login cookies to disk. A logged prompt writes their private notes. Log ids and outcomes, never keys, tokens or personal data (<span class=\"term\">PII</span>)."
       ],
       "callout": {
         "type": "claude-code",
@@ -299,7 +301,7 @@
       "title": "Recap: follow the request",
       "chapter": "recap",
       "body": [
-        "A 500 is explained on the server, never in the browser. Walk the path in order: Cloudflare (blocked?), Vercel's runtime logs (what did my code print?), Supabase's logs (what did the database say?).",
+        "A 500 is explained on the server, never in the browser. Check each hop: Cloudflare (blocked?), Vercel's runtime logs (what did my code print?), Supabase's logs (what did the database say?).",
         "Log the start and end of each step with ids, as JSON. Never log secrets or user content. Here, adding the key and redeploying fixed Maya's summary."
       ],
       "changes": [

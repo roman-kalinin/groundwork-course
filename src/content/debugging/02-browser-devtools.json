@@ -108,8 +108,8 @@
       "title": "The spinner that never stops",
       "chapter": "problem",
       "body": [
-        "One day Maya clicks Save and the button shows a spinner. It keeps spinning. No red message, no crash, nothing on screen.",
-        "Something in the conversation between the browser and the app server went wrong, and the page does not say what. You cannot see it on screen. You can see it in the browser's own inspection tools."
+        "One day Maya writes to you: Save spins forever. You try it in your own browser and the spinner keeps spinning. No red message, no crash.",
+        "Something between the browser and the app server went wrong, and the page does not say what. The browser's own inspection tools can show you."
       ],
       "changes": [
         "~ Browser: Save spins forever",
@@ -128,7 +128,7 @@
       },
       "scene": {
         "extends": "previous",
-        "caption": "Maya clicks Save. Something goes wrong behind the screen, and the page shows nothing.",
+        "caption": "You click Save. Something goes wrong behind the screen, and the page shows nothing.",
         "nodes": [
           {
             "id": "browser",
@@ -173,7 +173,7 @@
       ],
       "scene": {
         "extends": "previous",
-        "caption": "Three DevTools panels, built into Maya's browser.",
+        "caption": "Three DevTools panels, built into every desktop browser.",
         "zones": [
           {
             "id": "devtools",
@@ -241,7 +241,7 @@
       "chapter": "how",
       "body": [
         "The <span class=\"term\">console</span> lists errors in red, warnings in yellow, and anything the code printed. Each line links to the file and line that printed it.",
-        "Errors read the same way as in the last lesson: type, message, location. Here Maya's console has nothing red at all. That is a clue in itself: the page's code did not crash."
+        "Errors read the same way as in the last lesson: type, message, location. Here your console has nothing red at all. That is a clue in itself: the page's code did not crash."
       ],
       "callout": {
         "type": "tip",
@@ -277,7 +277,7 @@
       "title": "Network: every request, recorded",
       "chapter": "how",
       "body": [
-        "The Network panel lists every request the page makes. The <b>Fetch/XHR</b> filter hides images and scripts and keeps only data calls. Maya's save request is there, in red.",
+        "The Network panel lists every request the page makes. The <b>Fetch/XHR</b> filter hides images and scripts and keeps only data calls. Your save request is there, in red.",
         "Click it. <b>Headers</b> shows the address and status code. <b>Payload</b> shows the <span class=\"term\">payload</span>, what the page sent. <b>Response</b> shows the <span class=\"term\">response body</span>, what came back."
       ],
       "callout": {
@@ -335,7 +335,7 @@
       "chapter": "how",
       "body": [
         "The first digit says which side to blame. <b>2xx</b>: it worked. <b>4xx</b>: the server refused what was sent: <code>401</code> not logged in, <code>403</code> not allowed, <code>404</code> wrong address, <code>429</code> too many requests.",
-        "<b>5xx</b>: the server itself broke, so the real error is in its logs. A row stuck on <code>(pending)</code> never got an answer at all."
+        "<b>5xx</b>: the server itself broke, so the real error is in the server's own logs (next lesson). A row stuck on <code>(pending)</code> never got an answer at all."
       ],
       "changes": [
         "~ Network: 403 means forbidden, the server said no"
@@ -358,8 +358,8 @@
       "title": "Application: what the browser keeps",
       "chapter": "how",
       "body": [
-        "A 403 makes you wonder: is Maya even logged in? The Application panel answers. Under <b>Storage</b> it lists <span class=\"term\" data-term=\"cookie\">cookies</span> and <span class=\"term\">localStorage</span> for this site.",
-        "Notely keeps the login in a cookie named like <code>sb-…-auth-token</code>. It is there, so the browser holds a session. The refusal has another cause."
+        "A 403 makes you wonder: are you even logged in? The Application panel answers. Under <b>Storage</b> it lists <span class=\"term\" data-term=\"cookie\">cookies</span> and <span class=\"term\">localStorage</span> for this site.",
+        "Notely keeps the login in a cookie named like <code>sb-…-auth-token</code>. It is there, so you are logged in. The refusal has another cause."
       ],
       "callout": {
         "type": "tip",
@@ -371,7 +371,7 @@
       ],
       "scene": {
         "extends": "previous",
-        "caption": "The login cookie is present. Maya is logged in, so the 403 is about something else.",
+        "caption": "The login cookie is present. You are logged in, so the 403 is about something else.",
         "nodes": [
           {
             "id": "network",
@@ -393,7 +393,7 @@
       "title": "The response body names the cause",
       "chapter": "example",
       "body": [
-        "Back in Network, the <b>Response</b> tab reads: <em>new row violates row-level security policy for table \"notes\"</em>. An <span class=\"term\">RLS</span> rule only accepts notes whose <code>user_id</code> is the logged-in user. The insert never sent one.",
+        "Back in Network, the <b>Response</b> tab reads: <em>new row violates row-level security policy for table \"notes\"</em>. A database safety rule (<span class=\"term\">RLS</span>) accepts a note only if its <code>user_id</code>, the owner, is the logged-in user. The server's code never sent one.",
         "Two bugs, really: the missing field, and page code that ignored a failed answer, so the spinner never stopped."
       ],
       "code": {
@@ -404,8 +404,7 @@
       },
       "changes": [
         "~ Database: its RLS rule refused the note",
-        "~ Application fades back; Network back in focus",
-        "~ Status code 403 explained: no user_id sent"
+        "~ Application fades back; Network back in focus"
       ],
       "scene": {
         "extends": "previous",
@@ -453,9 +452,10 @@
         "text": "Give Claude Code the address, status code and response body, plus the Console error with its line. Remove <code>Cookie</code> and <code>Authorization</code> headers first. When it fixes a failed request, check the page also handles the failure."
       },
       "changes": [
-        "− Console: not part of this step",
+        "− Console: makes room for this step",
         "+ Shared chat: a chat or issue others can read",
-        "~ Network: copying the request copies the login"
+        "~ Network: copying the request copies the login",
+        "~ App Server and Database fade back"
       ],
       "scene": {
         "extends": "previous",
@@ -464,11 +464,6 @@
           "console"
         ],
         "nodes": [
-          {
-            "id": "browser",
-            "status": "normal",
-            "pill": null
-          },
           {
             "id": "app",
             "status": "dim"
