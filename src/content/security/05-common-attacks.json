@@ -30,8 +30,8 @@
       "title": "Notely, where anyone can sign up",
       "chapter": "setup",
       "body": [
-        "Maya uses Notely, our notes app, in her browser. Her clicks go to the <span class=\"term\">app server</span> (the computer running Notely's code), which saves and reads notes in the database.",
-        "Notes can be searched, and shared with other users. Anyone can sign up for an account. Nothing has gone wrong yet, but nobody has checked for holes either."
+        "Maya uses Notely, our notes app, in her browser, the screen she types into. Her clicks go to the <span class=\"term\">app server</span> (the computer running Notely's code), which saves and reads notes in the database.",
+        "Notes can be searched and shared. Anyone can sign up. Nothing has gone wrong yet, but nobody has checked for holes either."
       ],
       "callout": {
         "type": "tip",
@@ -82,7 +82,7 @@
       "title": "The root: data that turns into code",
       "chapter": "idea",
       "body": [
-        "The first two attacks share one root. The app glues what someone typed into something it runs: HTML in a browser, or SQL, the database's command language. Text meant to be shown or searched becomes an instruction.",
+        "The first two attacks share one root. The app glues what someone typed into something it runs: HTML, the code web pages are built from, or SQL, the database's command language. Typed text becomes an instruction.",
         "The fix is the same idea twice: keep data and code apart. <span class=\"term\">Escape</span> the text, or send it as a separate value."
       ],
       "callout": {
@@ -109,8 +109,8 @@
       "title": "XSS: a note that runs code",
       "chapter": "how",
       "body": [
-        "The attacker shares a note with Maya that hides a script inside an image tag. If Notely shows it as HTML, Maya's browser runs the script as if it were Notely's own. That is <span class=\"term\">XSS</span>.",
-        "React, which draws Notely's pages, escapes text by default. The holes: <code>dangerouslySetInnerHTML</code>, and markdown or AI output turned into HTML without <span class=\"term\" data-term=\"sanitize\">sanitizing</span>."
+        "The attacker shares a note with Maya that hides a script. If Notely shows it as HTML, Maya's browser runs the script as Notely's own. That is <span class=\"term\">XSS</span>.",
+        "React, which draws Notely's pages, escapes text by default. The holes: <code>dangerouslySetInnerHTML</code> (React's raw-HTML switch), and markdown or AI output turned into HTML without <span class=\"term\" data-term=\"sanitize\">sanitizing</span>."
       ],
       "code": {
         "language": "tsx",
@@ -119,6 +119,7 @@
       },
       "changes": [
         "~ Browser: shows the attacker's note as plain text",
+        "~ App Server back to normal",
         "~ Holes open 4 → 3"
       ],
       "metrics": {
@@ -150,7 +151,8 @@
       "changes": [
         "~ Attacker: searches with SQL in the text",
         "~ App Server: sends the text as a separate value",
-        "~ Holes open 3 → 2"
+        "~ Holes open 3 → 2",
+        "~ Browser steps back"
       ],
       "metrics": {
         "holes": { "value": 2, "tone": "warn" }
@@ -173,16 +175,17 @@
       "title": "CSRF: a forged request with real cookies",
       "chapter": "how",
       "body": [
-        "Maya visits the attacker's site. Hidden on it is a form that posts to Notely's delete route. Unless the login cookie forbids it, her browser attaches it, so Notely sees a real request from Maya. That is <span class=\"term\">CSRF</span>.",
-        "Defenses: <code>SameSite=Lax</code> cookies, never change data on a <code>GET</code> (a plain link), and check the <span class=\"term\">Origin header</span>."
+        "Maya visits the attacker's site. A hidden form on it calls Notely's delete route (the server address that deletes notes). Unless the cookie forbids it, her browser attaches her login cookie. Notely sees a real request from Maya. That is <span class=\"term\">CSRF</span>.",
+        "Defenses: <code>SameSite=Lax</code> cookies, no data changes on a <code>GET</code> (a plain link), and check the <span class=\"term\">Origin header</span>."
       ],
       "callout": {
         "type": "tip",
-        "text": "Next.js Server Actions only accept POST and compare the Origin with the Host. Tokens sent in an <code>Authorization</code> header are not attached automatically, so CSRF is mostly a cookie problem."
+        "text": "Next.js Server Actions (server functions the page calls) already refuse requests from other sites. Tokens sent in an <code>Authorization</code> header are never attached automatically, so CSRF is mostly a cookie problem."
       },
       "changes": [
         "~ Attacker: lures Maya's browser to their site",
         "~ Browser: its cookie stays home (SameSite)",
+        "~ App Server and Database back to normal",
         "~ Holes open 2 → 1"
       ],
       "metrics": {
@@ -212,7 +215,8 @@
       ],
       "changes": [
         "~ Attacker: asks for note 124, which is Maya's",
-        "~ App Server: hands it over without checking the owner"
+        "~ App Server: hands it over without checking the owner",
+        "~ Database: Maya's note leaks out"
       ],
       "scene": {
         "extends": "previous",
@@ -268,11 +272,11 @@
       "chapter": "watch-out",
       "body": [
         "Every server route and Server Action (a function the page calls on the server) is a public door. Anyone can call it with <code>curl</code>, a command-line tool, without any button. So each one checks login and owner itself.",
-        "And a route using the service role key, which skips RLS, leaves your own code as the only check."
+        "And a route using the service role key (Supabase's admin key, which skips RLS) leaves your own code as the only check."
       ],
       "callout": {
         "type": "claude-code",
-        "text": "Grep what Claude Code wrote for: <code>dangerouslySetInnerHTML</code> without sanitizing, SQL built from template strings, input inside <code>.or()</code> filter strings, routes or actions that read an <code>id</code> without an owner check, the service role key in request handlers, and <code>GET</code> handlers that change data."
+        "text": "Grep what Claude Code wrote for: <code>dangerouslySetInnerHTML</code> without sanitizing, SQL built from template strings, routes or actions that read an <code>id</code> without an owner check, the service role key in request handlers, and <code>GET</code> handlers that change data."
       },
       "changes": [
         "~ Attacker: calls a Server Action directly with curl",

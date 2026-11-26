@@ -60,7 +60,7 @@
       "title": "One leaked copy exposes everyone",
       "chapter": "problem",
       "body": [
-        "Notely now has 10,000 users. One day a copy of the database ends up in the wrong hands: a stolen backup, a bad query, a hacked laptop.",
+        "Months later, Notely has 10,000 users, and every password still sits in the database as typed. One day a copy of the database ends up in the wrong hands: a backup left public, or a developer's hacked laptop.",
         "The attacker can read every password. People reuse passwords, so Maya's email account is now at risk too."
       ],
       "callout": {
@@ -69,6 +69,7 @@
       },
       "changes": [
         "+ Stolen Copy: the database, copied by an attacker",
+        "~ Database: copied, every password readable",
         "~ Passwords known 0 → 10,000",
         "~ Browser steps back"
       ],
@@ -94,7 +95,7 @@
       "title": "Store a fingerprint, not the password",
       "chapter": "idea",
       "body": [
-        "Notely never needs to <em>read</em> Maya's password again. It only needs to check that she typed the same one. So at sign-up it stores a <span class=\"term\">hash</span>: a one-way fingerprint of the password.",
+        "Rewind to sign-up day. Notely never needs to <em>read</em> Maya's password again, only to check she typed the same one. So it stores a <span class=\"term\">hash</span>: a one-way fingerprint of the password.",
         "At login it hashes what she typed and compares. Same fingerprint: she is in. That check is <span class=\"term\">authentication</span>."
       ],
       "callout": {
@@ -104,7 +105,8 @@
       "changes": [
         "~ Database: password → hash",
         "~ Passwords known 10,000 → 4,000",
-        "~ Stolen Copy: only weak passwords can be matched"
+        "~ Stolen Copy: only common passwords can still be guessed",
+        "~ Browser back in view: Maya logs in"
       ],
       "metrics": {
         "known": { "value": 4000, "tone": "warn" }
@@ -138,11 +140,12 @@
         "language": "sql",
         "filename": "Supabase SQL editor",
         "code": "select email, encrypted_password from auth.users;\n\n-- maya@example.com | $2a$10$Qm8x…(salt)…(hash)\n-- ben@example.com  | $2a$10$7Lp2…(salt)…(hash)",
-        "caption": "$2a$ means bcrypt, 10 is the cost. Salt and hash live in one string. Same password, different strings."
+        "caption": "auth.users is the users table Supabase keeps for logins. $2a$ means bcrypt, 10 is the cost. Salt and hash live in one string."
       },
       "changes": [
         "~ Database: plain hash → salted bcrypt",
-        "~ Passwords known 4,000 → 20: the weakest, one slow guess at a time"
+        "~ Passwords known 4,000 → 20: the weakest, one slow guess at a time",
+        "~ Browser and Stolen Copy step back"
       ],
       "metrics": {
         "known": { "value": 20, "tone": "good" }
@@ -175,7 +178,8 @@
       "changes": [
         "+ Google: checks Maya's password for Notely",
         "− Stolen Copy",
-        "~ Database: no password at all for Maya"
+        "~ Database: no password at all for Maya",
+        "~ Browser back in view"
       ],
       "scene": {
         "extends": "previous",
@@ -196,11 +200,11 @@
       "chapter": "how",
       "body": [
         "Notely sends Maya's browser to Google. She logs in there. Google sends her back to Notely's <span class=\"term\">redirect URL</span> with a one-time code.",
-        "The app server then trades that code with Google for her verified identity. The code works once, expires fast, and is useless without a second proof the server kept back."
+        "The app server then trades that code with Google for her verified identity. The code works once, expires fast, and is useless without a second secret that only Notely's server holds."
       ],
       "changes": [
-        "+ Arrow: Google sends Maya back with a one-time code",
-        "+ Arrow: the app server trades the code for her identity",
+        "~ Browser → App Server: carries the one-time code",
+        "+ App Server → Google: trades the code for her identity",
         "~ Database steps back"
       ],
       "scene": {
@@ -221,7 +225,7 @@
       "title": "Redirect URLs must be on a list",
       "chapter": "watch-out",
       "body": [
-        "Google, and Supabase in front of it, only send codes back to redirect URLs you registered in advance. That stops an attacker from having Maya's code delivered to their own site.",
+        "Google only sends codes back to redirect URLs you registered with it in advance. That stops a trick: a login link that asks Google to deliver Maya's code to the attacker's own site.",
         "The classic bug: login works on <code>localhost</code> (your own laptop), then fails on the live site, because nobody added its address to the list."
       ],
       "callout": {
@@ -274,20 +278,21 @@
       }
     },
     {
-      "title": "The login form leaks too",
+      "title": "Bots at the login form",
       "chapter": "watch-out",
       "body": [
-        "\"No account for this email\" tells an attacker who uses Notely. Say \"Wrong email or password\" in both cases.",
-        "And bots run <span class=\"term\">credential stuffing</span>: they replay email and password pairs leaked from other sites. Limit login attempts, and offer <span class=\"term\">MFA</span>, a second proof like an app code, so a correct password alone is not enough."
+        "Bots run <span class=\"term\">credential stuffing</span>: they replay email and password pairs leaked elsewhere. Limit login attempts and offer <span class=\"term\">MFA</span>, a second proof like an app code, so a right password alone is not enough.",
+        "Bots also probe which emails have an account, so never answer \"No account for this email\". Say \"Wrong email or password\" in both cases."
       ],
       "callout": {
         "type": "tip",
-        "text": "You met rate limiting in the system design course. A login form is one of the first places it belongs, counted per account and per IP address."
+        "text": "You met rate limiting in the system design course. A login form is one of the first places it belongs, counted per account and per IP address (the network address a request comes from)."
       },
       "changes": [
         "+ Bot: replays passwords leaked from other sites",
         "− Maya's Inbox",
-        "~ App Server: login attempts limited"
+        "~ App Server: login attempts limited",
+        "~ Browser steps back"
       ],
       "scene": {
         "extends": "previous",
@@ -313,7 +318,7 @@
       ],
       "callout": {
         "type": "claude-code",
-        "text": "Ask: does any of our own tables have a <code>password</code> column? (It should not.) Are the live and preview URLs in Supabase's Redirect URLs? Does <code>/auth/callback</code> call <code>exchangeCodeForSession</code>? Is anything logging login request bodies?"
+        "text": "Ask: does any of our own tables have a <code>password</code> column? (It should not.) Are the live and preview URLs in Supabase's Redirect URLs? Does <code>/auth/callback</code> (where Google sends Maya back) trade the code with <code>exchangeCodeForSession</code>? Is anything logging login request bodies?"
       },
       "code": {
         "language": "ts",
@@ -323,7 +328,8 @@
       "changes": [
         "+ Supabase Auth: the login service next to the database",
         "− Bot",
-        "~ App Server hands every login to Supabase Auth"
+        "~ App Server hands every login to Supabase Auth",
+        "~ Database: Notely's own tables hold no passwords"
       ],
       "scene": {
         "extends": "previous",

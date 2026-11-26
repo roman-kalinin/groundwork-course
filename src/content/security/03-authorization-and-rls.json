@@ -8,7 +8,7 @@
     "The difference between <b>authentication</b> and <b>authorization</b>",
     "Why a check in the browser is not a check",
     "How to write Supabase <b>RLS policies</b> with <code>using</code> and <code>with check</code>",
-    "The three common ways RLS gets skipped, and how to test it"
+    "The common ways RLS gets skipped or cheated, and how to test it"
   ],
   "glossary": {
     "authorization": "Deciding what a known user may see or change. It comes after authentication, which only proves who they are.",
@@ -30,8 +30,8 @@
       "title": "Maya's notes come straight from the database",
       "chapter": "setup",
       "body": [
-        "Notely, our notes app, has one user so far: Maya, with 12 notes. Her browser loads them without going through Notely's own server.",
-        "It asks the <span class=\"term\">Data API</span>, a web door Supabase puts in front of the database, and sends Maya's login token along. The database, where every note lives, answers with her 12 notes."
+        "Notely, our notes app, has one user: Maya, with 12 notes. Here her browser skips the app server and reads them straight from Supabase, the service that runs Notely's database.",
+        "It asks the <span class=\"term\">Data API</span>, Supabase's web door to the database, and sends Maya's login token along. The database, where every note lives, answers with her 12 notes."
       ],
       "callout": {
         "type": "tip",
@@ -90,7 +90,7 @@
         "text": "At a hotel, the front desk checks your ID once: authentication. Your key card then opens room 214 and nothing else: authorization."
       },
       "changes": [
-        "~ Browser: who she is is known",
+        "~ Browser: Maya's identity is known",
         "~ Database: no rule yet about which rows are hers"
       ],
       "scene": {
@@ -109,8 +109,8 @@
       "title": "A check in the browser is not a check",
       "chapter": "how",
       "body": [
-        "Hiding other people's notes in Notely's page code only hides them. Anyone can open <b>DevTools</b>, the browser's built-in developer tools, take their own token and send any query they like.",
-        "The browser talks to the database directly, so the database itself must enforce the rule. That is <span class=\"term\">Row Level Security</span>, or RLS."
+        "Hiding other people's notes in the page code only hides them. Anyone can open <b>DevTools</b>, the browser's built-in developer tools, copy the page's public Supabase key and their own login token, and send any query.",
+        "Here the browser talks to the database directly, so the database itself must enforce the rule. That is <span class=\"term\">Row Level Security</span>, or RLS."
       ],
       "callout": {
         "type": "tip",
@@ -147,7 +147,8 @@
       },
       "changes": [
         "~ Database: RLS on, no policies yet",
-        "~ Notes Maya sees 30,000 → 0"
+        "~ Notes Maya sees 30,000 → 0",
+        "~ Browser back in view, DevTools steps back"
       ],
       "metrics": {
         "sees": { "value": 0, "tone": "warn" }
@@ -171,7 +172,7 @@
       "chapter": "how",
       "body": [
         "A policy says which rows pass. <span class=\"term\">auth.uid()</span> returns the user id from the verified token. Postgres, the database, compares it with each row's <code>user_id</code>.",
-        "This runs inside the database on every query, whatever was asked. Maya gets her 12 notes. A <code>select *</code> from DevTools gets the same 12."
+        "This runs inside the database on every query, whatever was asked. Maya gets her 12 notes. A <code>select *</code> typed into DevTools gets only the sender's own rows."
       ],
       "code": {
         "language": "sql",
@@ -180,7 +181,7 @@
       },
       "changes": [
         "~ Database: a policy lets through only your own rows",
-        "~ DevTools: the same query now gets only its own rows",
+        "~ DevTools: back, and gets only the sender's own rows",
         "~ Notes Maya sees 0 → 12"
       ],
       "metrics": {
@@ -204,7 +205,7 @@
       "chapter": "how",
       "body": [
         "<code>using</code> decides which existing rows you can see or touch. <span class=\"term\">with check</span> tests the row you are about to write.",
-        "Without it, someone could save a note with <code>user_id</code> set to Ben's id, or move their own note into his account. Inserts need <code>with check</code>. Updates need both parts."
+        "Without it, someone could save a note with <code>user_id</code> set to another user's id, say Ben's, or move their own note into his account. Inserts need <code>with check</code>. Updates need both parts."
       ],
       "code": {
         "language": "sql",
@@ -212,7 +213,8 @@
       },
       "changes": [
         "~ DevTools: tries to write a note into Ben's account",
-        "~ Database: with check refuses it"
+        "~ Database: with check refuses it",
+        "~ Browser steps back"
       ],
       "scene": {
         "extends": "previous",
@@ -261,11 +263,11 @@
       }
     },
     {
-      "title": "Three ways RLS gets skipped",
+      "title": "Two ways RLS gets skipped",
       "chapter": "watch-out",
       "body": [
-        "1. The <span class=\"term\">service role key</span> ignores RLS completely. Fine in the app server, which runs Notely's own code. A disaster in the browser. 2. A <span class=\"term\">view</span> runs with its creator's rights unless created <code>with (security_invoker = true)</code>.",
-        "3. Tables created with SQL, including Claude Code's migrations, start with RLS <b>off</b>. One forgotten line and the table is open."
+        "The <span class=\"term\">service role key</span> is Supabase's admin key: it ignores RLS. Fine in the app server (Notely's own code), as long as that code checks who is asking. A disaster in the browser.",
+        "And tables created with SQL, including Claude Code's migrations (scripts that change the database), start with RLS <b>off</b>. One forgotten line and the table is open."
       ],
       "callout": {
         "type": "warn",
@@ -274,7 +276,7 @@
       "changes": [
         "+ App Server: Notely's own code, holding the service role key",
         "− Ben",
-        "~ App Server goes straight past the policy"
+        "~ Database: its policy is skipped for that key"
       ],
       "scene": {
         "extends": "previous",
@@ -301,7 +303,7 @@
       ],
       "callout": {
         "type": "claude-code",
-        "text": "After Claude Code adds a table, ask: is RLS enabled in the same migration? Which policies exist for select, insert, update and delete? Does every write policy have <code>with check</code>? Can a user's request reach the service role key?"
+        "text": "After Claude Code adds a table, ask: is RLS on in the same migration? A policy per action? <code>with check</code> on every write? <span class=\"term\" data-term=\"view\">Views</span> (saved queries) made with <code>security_invoker</code>, so they obey RLS? Can a user's request reach the service role key?"
       },
       "code": {
         "language": "sql",
@@ -336,7 +338,7 @@
       "options": [
         { "text": "Yes, because users only see what the page shows.", "why": "The page is not the only way in. Anyone can call the Data API from DevTools with their own token and read every row." },
         { "text": "No. Turn on RLS and add policies so the database filters the rows.", "correct": true, "why": "Authorization must happen where the user cannot skip it. With Supabase, that is RLS in the database." },
-        { "text": "Yes, as long as the anon key stays secret.", "why": "The anon key is meant to be in the browser, so it is not a secret. RLS is what makes it safe to publish." }
+        { "text": "Yes, as long as Notely's public Supabase key stays secret.", "why": "The public (anon) key is meant to be in the browser, so it is not a secret. RLS is what makes it safe to publish." }
       ]
     },
     {

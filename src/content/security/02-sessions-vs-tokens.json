@@ -86,7 +86,7 @@
       "chapter": "idea",
       "body": [
         "The fix: check the password <b>once</b>, then give the browser a proof to send with every later request.",
-        "Proofs come in two families. A <b>session</b>: the server keeps a note, and you hold a ticket that points to it. A <b>token</b>: the server hands you a signed pass that carries the facts itself."
+        "Proofs come in two families. A <b>session</b>: the server keeps a note, and you hold a ticket that points to it. A <b>token</b>: the server hands you a stamped pass that carries the facts itself."
       ],
       "callout": {
         "type": "analogy",
@@ -112,12 +112,12 @@
       "title": "Sessions: the server keeps the list",
       "chapter": "how",
       "body": [
-        "With a <span class=\"term\">session</span>, the server makes a long random <span class=\"term\">session ID</span>, saves it in a session store next to Maya's user id, and sends the ID back in a <span class=\"term\">cookie</span>: a small value the browser keeps for one site.",
-        "The browser sends that cookie with every request. The server looks the ID up. Found: it is Maya."
+        "With a <span class=\"term\">session</span>, the server makes a random <span class=\"term\">session ID</span> and saves it in a session store, its list of who is logged in. The ID goes back in a <span class=\"term\">cookie</span>: a small value the browser keeps for one site.",
+        "The browser sends it with every request. The server looks it up: it is Maya."
       ],
       "callout": {
         "type": "tip",
-        "text": "You met this in the system design course: with several servers, the session store must be shared (Redis or the database), so any server can look the ID up."
+        "text": "You met this in the system design course: with several servers, the session store must be shared (a shared store such as Redis, or the database), so any server can look the ID up."
       },
       "changes": [
         "+ Session Store: the server's list of who is logged in",
@@ -141,7 +141,7 @@
       "chapter": "how",
       "body": [
         "The server sets the cookie with a few flags. <code>HttpOnly</code>: page JavaScript cannot read it, so a script slipped in through an <span class=\"term\">XSS</span> bug cannot steal it. <code>Secure</code>: sent over encrypted HTTPS only.",
-        "<code>SameSite=Lax</code>: left out when another site quietly triggers a request, which blocks most <span class=\"term\">CSRF</span> tricks."
+        "<code>SameSite=Lax</code>: the cookie stays home when another site quietly triggers a request to Notely. That blocks most <span class=\"term\">CSRF</span> tricks, fake requests made in Maya's name."
       ],
       "code": {
         "language": "http",
@@ -151,7 +151,8 @@
       },
       "changes": [
         "+ Bad Script: an attacker's code running on the page",
-        "~ Browser: the cookie is HttpOnly, the script cannot read it"
+        "~ Browser: the cookie is HttpOnly, the script cannot read it",
+        "~ Session Store steps back"
       ],
       "scene": {
         "extends": "previous",
@@ -172,7 +173,7 @@
       "chapter": "how",
       "body": [
         "The other family skips the lookup. At login, the server writes the facts into a <span class=\"term\">JWT</span>: who you are (<code>sub</code>) and when the pass expires (<code>exp</code>).",
-        "Then it adds a <span class=\"term\">signature</span> made with a key only the server side has. Anyone can <em>read</em> a JWT. Nobody can <em>change</em> it without breaking the signature."
+        "Then it adds a <span class=\"term\">signature</span>, the stamp, made with a key only the server side has. Anyone can <em>read</em> a JWT. Nobody can <em>change</em> it without breaking the signature."
       ],
       "code": {
         "language": "json",
@@ -202,17 +203,18 @@
       "title": "The catch: you can't take a pass back",
       "chapter": "watch-out",
       "body": [
-        "A JWT stays valid until its <code>exp</code> time, wherever it ends up. If someone copies it (from a log file, a screenshot, an XSS bug), they <em>are</em> Maya until it expires.",
+        "Notely's JWTs last 30 days, and a JWT stays valid until its <code>exp</code> time, wherever it ends up. If someone copies it (from a log file, a screenshot, an XSS bug), they <em>are</em> Maya until it expires.",
         "And \"Log out\" only deletes the browser's copy. The server never kept a list, so it has nothing to cross off."
       ],
       "callout": {
         "type": "warn",
-        "text": "Avoid keeping long-lived tokens in <code>localStorage</code>. Every script on the page can read it, so one XSS bug can leak the token of every user who visits."
+        "text": "Avoid keeping long-lived tokens in <code>localStorage</code>, the browser's built-in storage. Every script on the page can read it, so one XSS bug can leak the token of every user who visits."
       },
       "changes": [
         "+ Stranger: someone holding a copy of Maya's JWT",
         "~ Browser: Maya logged out",
-        "~ Copy still works – → 30 days"
+        "~ Copy still works – → 30 days",
+        "~ App Server says yes; Signing Key steps back"
       ],
       "metrics": {
         "copy": { "value": "30 days", "tone": "bad" }
@@ -237,12 +239,13 @@
       "title": "Short passes, plus a refresh token",
       "chapter": "how",
       "body": [
-        "The standard fix: make the <span class=\"term\">access token</span> short-lived, minutes rather than days. Next to it, issue a <span class=\"term\">refresh token</span>: long-lived, used only to get new access tokens, and recorded by an <b>auth server</b>, the service that handles logins.",
+        "The standard fix: make the <span class=\"term\">access token</span> short-lived: 15 minutes rather than 30 days. Next to it, issue a <span class=\"term\">refresh token</span>: long-lived, used only to get new access tokens, and recorded by an <b>auth server</b>, the service that handles logins.",
         "Each refresh token works once and is swapped for a new one. That is <span class=\"term\">rotation</span>."
       ],
       "changes": [
         "+ Auth Server: hands out passes, tracks refresh tokens",
         "− Signing Key: it now lives inside the auth server",
+        "~ Browser: holds two tokens, back in view",
         "~ Copy still works 30 days → 15 min"
       ],
       "metrics": {
@@ -269,12 +272,13 @@
       "title": "Logging out, for real",
       "chapter": "how",
       "body": [
-        "Now logout means something. The app asks the auth server to <span class=\"term\">revoke</span> Maya's refresh token, then deletes its own copy. No new passes can be made from it, and the last access token dies within minutes.",
+        "Now logout means something. The app asks the auth server to <span class=\"term\">revoke</span> Maya's refresh token, so no new passes can be made from it. Fifteen minutes later, any copied access token has expired, and nothing renews it.",
         "Need someone out <em>this second</em>, like a fired employee? Sessions win: delete the row, and their very next request fails."
       ],
       "changes": [
+        "~ Browser: Maya clicks Log out",
         "~ Auth Server: Maya's refresh token revoked",
-        "~ Stranger: the copied pass expires and is not renewed",
+        "~ Stranger: 15 minutes later, the copy has expired",
         "~ Copy still works 15 min → 0 min"
       ],
       "metrics": {
@@ -282,7 +286,7 @@
       },
       "scene": {
         "extends": "previous",
-        "caption": "Logout revokes the refresh token. The copied pass runs out and nothing replaces it.",
+        "caption": "Logout revokes the refresh token. Within 15 minutes the copied pass runs out, and nothing replaces it.",
         "nodes": [
           { "id": "browser", "status": "dim", "pill": "logged out" },
           { "id": "auth", "status": "ok", "pill": { "text": "revoked", "tone": "good" } },
@@ -300,7 +304,7 @@
       "chapter": "recap",
       "body": [
         "HTTP forgets, so after login the browser carries proof. A <b>session</b> is a record the server can delete at once. A <b>token</b> carries itself and cannot be taken back.",
-        "Notely uses Supabase Auth's mix: a short access token and a rotating refresh token, both kept in <code>HttpOnly</code> cookies, out of reach of page scripts."
+        "Notely uses <b>Supabase Auth</b>, the login service next to its database: a short access token and a rotating refresh token, both in cookies the app server reads on every request."
       ],
       "callout": {
         "type": "claude-code",
@@ -308,15 +312,16 @@
       },
       "changes": [
         "− Stranger",
-        "~ Browser: both tokens in HttpOnly cookies",
+        "~ Browser: both tokens in cookies",
+        "~ Database back in view",
         "~ Auth Server: Supabase Auth plays this part for Notely"
       ],
       "scene": {
         "extends": "previous",
-        "caption": "Short passes, a revocable refresh token, both out of reach of page scripts.",
+        "caption": "Short passes and a revocable refresh token, carried in cookies.",
         "remove": ["stranger"],
         "nodes": [
-          { "id": "browser", "status": "ok", "pill": "HttpOnly" },
+          { "id": "browser", "status": "ok", "pill": "cookies" },
           { "id": "auth", "status": "normal", "pill": "Supabase" },
           { "id": "db", "status": "normal" }
         ],
