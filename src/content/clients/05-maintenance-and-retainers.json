@@ -11,38 +11,80 @@
     "How to survive AI model retirements with one env var and an <b>eval set</b>"
   ],
   "glossary": {
+    "package": "Code written by someone else that your app uses, such as a date picker or the database client.",
     "warranty": "A promise to fix defects in your own work for free, for a set period after launch.",
     "retainer": "A monthly agreement where the client pays a fixed fee for ongoing care and a set amount of your time.",
     "SLA": "Service level agreement: how fast you promise to respond and start work, usually by how severe the problem is.",
     "uptime monitor": "A service that loads a page of your app every few minutes and alerts you when it fails.",
     "error tracking": "A tool that collects crashes from your app, with the error message and where in the code it happened.",
-    "dependency": "A package your app uses, written by someone else, such as the Supabase client or Next.js itself.",
-    "Dependabot": "A GitHub feature that watches your dependencies and opens pull requests when updates are available.",
+    "pull request": "A proposed change to the code that you can review and test before it is merged into the live app.",
+    "Dependabot": "A GitHub feature that watches your packages and opens pull requests when updates are available.",
     "eval set": "A fixed list of real inputs with known good answers, used to check an AI feature still works after a change.",
     "offboarding": "Ending a client relationship cleanly: removing your access, handing over loose ends and confirming it in writing."
   },
+  "metrics": [
+    { "id": "first", "label": "First to know", "icon": "bell" },
+    { "id": "unpaid", "label": "Unpaid hours", "icon": "clock", "unit": "h" }
+  ],
   "steps": [
     {
-      "title": "Two months later: \"Nobody can book\"",
-      "chapter": "problem",
+      "title": "Sam's app, two months after launch",
+      "chapter": "setup",
       "body": [
-        "A Saturday text from Sam: \"Nobody can book.\" Your code did not change. The world around it did: the SMS provider retired an old API version, a package needed a security fix, a card on file expired.",
-        "An app is less like a finished painting and more like a garden. Who tends it, how fast and for how much should be agreed before that Saturday."
+        "<b>Sam</b> owns a small hair salon. Two months ago you launched her <b>booking app</b>: clients book online and get a text reminder before each visit.",
+        "The app leans on outside things: <span class=\"term\" data-term=\"package\">packages</span> (code written by others), an <b>SMS service</b> (a company that sends the texts) and <b>billing</b>, the card that pays for hosting."
       ],
+      "metrics": {
+        "first": "no issues",
+        "unpaid": 0
+      },
       "scene": {
-        "caption": "The code stayed the same. Things around it changed, and the app broke.",
+        "caption": "The booking app works, leaning on packages, an SMS service and a paid hosting plan.",
         "nodes": [
-          { "id": "sam", "x": 2, "y": 4, "label": "Sam", "sublabel": "Saturday morning", "icon": "chat", "kind": "person", "status": "warn" },
-          { "id": "app", "x": 6.4, "y": 4, "label": "Booking app", "sublabel": "code unchanged", "icon": "rocket", "kind": "server", "status": "error" },
-          { "id": "pkgs", "x": 10.4, "y": 1.6, "label": "npm packages", "sublabel": "security fix", "icon": "layers", "kind": "external", "status": "warn" },
-          { "id": "sms", "x": 10.4, "y": 4, "label": "SMS provider", "sublabel": "old API retired", "icon": "mail", "kind": "external", "status": "error" },
-          { "id": "card", "x": 10.4, "y": 6.4, "label": "Billing", "sublabel": "card expired", "icon": "money", "kind": "external", "status": "warn" }
+          { "id": "sam", "x": 0.8, "y": 4.0, "label": "Sam", "icon": "user", "kind": "person" },
+          { "id": "app", "x": 4.6, "y": 4.0, "label": "Booking App", "icon": "rocket", "kind": "server", "status": "ok" },
+          { "id": "pkgs", "x": 8.4, "y": 1.4, "label": "Packages", "icon": "layers", "kind": "external" },
+          { "id": "sms", "x": 8.4, "y": 4.0, "label": "SMS Service", "icon": "mail", "kind": "external" },
+          { "id": "card", "x": 8.4, "y": 6.6, "label": "Billing", "icon": "money", "kind": "external" }
         ],
         "edges": [
-          { "from": "sam", "to": "app", "label": "can't book!", "status": "error", "packet": { "label": "help", "status": "error" } },
-          { "from": "pkgs", "to": "app", "style": "dashed", "status": "warn" },
-          { "from": "sms", "to": "app", "label": "old API gone", "status": "error" },
-          { "from": "card", "to": "app", "style": "dashed", "status": "warn" }
+          { "from": "sam", "to": "app", "packet": { "kind": "request", "direction": "both", "speed": "slow" } },
+          { "from": "pkgs", "to": "app", "style": "dotted" },
+          { "from": "app", "to": "sms", "packet": { "kind": "job", "speed": "slow" } },
+          { "from": "card", "to": "app", "style": "dotted" }
+        ]
+      }
+    },
+    {
+      "title": "Saturday: \"Nobody can book\"",
+      "chapter": "problem",
+      "body": [
+        "A Saturday text from Sam: \"Nobody can book.\" Your code did not change. The world around it did: the SMS service retired an old version, a package needed a security fix, a card expired.",
+        "An app is less like a finished painting and more like a garden. Agree who tends it, how fast and for how much before that Saturday."
+      ],
+      "changes": [
+        "~ Booking App: broken, though its code did not change",
+        "~ SMS Service, Packages, Billing: each changed under it",
+        "~ First to know: Sam, on a Saturday"
+      ],
+      "metrics": {
+        "first": { "value": "Sam", "tone": "bad" }
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "The code stayed the same. Things around it changed, and the app broke.",
+        "nodes": [
+          { "id": "sam", "status": "warn" },
+          { "id": "app", "status": "error" },
+          { "id": "pkgs", "status": "warn", "pill": { "text": "security fix", "tone": "warn" } },
+          { "id": "sms", "status": "error", "pill": { "text": "old API off", "tone": "bad" } },
+          { "id": "card", "status": "warn", "pill": { "text": "card expired", "tone": "warn" } }
+        ],
+        "edges": [
+          { "id": "sam>app", "status": "error", "packet": { "kind": "error", "speed": "fast" } },
+          { "id": "app>sms", "status": "error", "packet": false },
+          { "id": "pkgs>app", "status": "warn" },
+          { "id": "card>app", "status": "warn" }
         ]
       }
     },
@@ -51,22 +93,26 @@
       "chapter": "idea",
       "body": [
         "After launch come two phases. First, the <span class=\"term\">warranty</span> from your contract: for a short period, defects in your own work are fixed for free.",
-        "Then a <span class=\"term\">retainer</span>: a monthly fee for keeping the app healthy plus a little change work. Outside causes, like a provider retiring an API, are maintenance, inside the warranty or not."
+        "Then a <span class=\"term\">retainer</span>: a monthly fee for keeping the app healthy, plus a little change work. Outside causes, like a provider retiring a version, are maintenance, inside the warranty or not."
       ],
       "callout": {
         "type": "analogy",
         "text": "A new car. The warranty covers factory faults for a while. Oil changes, tires and brakes are servicing, paid for every time, no matter who built the car."
       },
+      "changes": [
+        "− Sam, Booking App, Packages, SMS Service, Billing",
+        "+ Launch, Warranty, Retainer: the phases after the build"
+      ],
       "scene": {
         "caption": "Launch, then a short free warranty, then an ongoing paid retainer.",
         "nodes": [
-          { "id": "launch", "x": 2, "y": 4, "label": "Launch", "sublabel": "sign-off", "icon": "rocket", "kind": "neutral", "status": "ok" },
-          { "id": "warranty", "x": 6.4, "y": 4, "label": "Warranty", "sublabel": "your bugs, free", "icon": "shield", "kind": "neutral" },
-          { "id": "retainer", "x": 10.4, "y": 4, "label": "Retainer", "sublabel": "monthly", "icon": "calendar", "kind": "neutral", "status": "active" }
+          { "id": "launch", "x": 0.8, "y": 4.0, "label": "Launch", "icon": "rocket", "status": "ok" },
+          { "id": "warranty", "x": 4.6, "y": 4.0, "label": "Warranty", "icon": "shield", "pill": "30 days" },
+          { "id": "retainer", "x": 8.4, "y": 4.0, "label": "Retainer", "icon": "calendar", "status": "active", "pill": "monthly" }
         ],
         "edges": [
-          { "from": "launch", "to": "warranty", "label": "e.g. 30 days" },
-          { "from": "warranty", "to": "retainer", "label": "then", "packet": { "label": "month", "speed": "slow" } }
+          { "from": "launch", "to": "warranty" },
+          { "from": "warranty", "to": "retainer", "packet": { "kind": "job", "speed": "slow" } }
         ]
       }
     },
@@ -87,16 +133,21 @@
         "type": "tip",
         "text": "Define \"business hours\" in writing. Saturday may be the salon's busiest day. If you do not work weekends, say so, or price weekend cover separately."
       },
+      "changes": [
+        "~ Retainer: a short written list, with reply times",
+        "~ Launch and Warranty fade back"
+      ],
       "scene": {
         "extends": "previous",
         "caption": "The retainer is a short, written list, with response times by severity.",
         "nodes": [
           { "id": "launch", "status": "dim" },
           { "id": "warranty", "status": "dim" },
-          { "id": "retainer", "tags": ["monitoring", "4 h / month", "SLA"] }
+          { "id": "retainer", "pill": "4 h / month" }
         ],
         "edges": [
-          { "id": "warranty>retainer", "packet": false }
+          { "id": "launch>warranty", "status": "dim" },
+          { "id": "warranty>retainer", "status": "dim", "packet": false }
         ]
       }
     },
@@ -104,23 +155,32 @@
       "title": "Find out before Sam does",
       "chapter": "how",
       "body": [
-        "You cannot respond fast to problems you do not know about. Three cheap signals cover most small apps: an <span class=\"term\">uptime monitor</span> on the booking page, <span class=\"term\">error tracking</span> for crashes, and usage alerts from Vercel, Supabase and the AI provider.",
+        "You cannot respond fast to problems you do not know about. Three cheap signals cover most small apps: an <span class=\"term\">uptime monitor</span> on the booking page, <span class=\"term\">error tracking</span> for crashes, and usage alerts from the hosting and AI providers.",
         "The production module goes deeper. Here, the point is: monitoring is what makes your SLA honest."
       ],
+      "changes": [
+        "− Launch, Warranty, Retainer",
+        "+ Booking App, and You, who gets the alerts",
+        "+ Uptime Check, Error Tracking, Usage Alerts: three signals",
+        "~ First to know Sam → You"
+      ],
+      "metrics": {
+        "first": { "value": "You", "tone": "good" }
+      },
       "scene": {
         "caption": "Three signals reach you before an angry text from Sam does.",
         "nodes": [
-          { "id": "app", "x": 6.4, "y": 4, "label": "Booking app", "sublabel": "live", "icon": "rocket", "kind": "server", "status": "normal" },
-          { "id": "uptime", "x": 2, "y": 1.6, "label": "Uptime check", "sublabel": "every few minutes", "icon": "clock", "kind": "external" },
-          { "id": "errors", "x": 2, "y": 6.4, "label": "Error tracking", "sublabel": "crashes + stack", "icon": "bug", "kind": "external" },
-          { "id": "usage", "x": 10.4, "y": 1.6, "label": "Usage alerts", "sublabel": "hosting, AI spend", "icon": "chart", "kind": "external" },
-          { "id": "you", "x": 10.4, "y": 6.4, "label": "You", "sublabel": "alerted first", "icon": "bell", "kind": "person", "status": "active" }
+          { "id": "app", "x": 0.8, "y": 4.0, "label": "Booking App", "icon": "rocket", "kind": "server" },
+          { "id": "uptime", "x": 0.8, "y": 0.6, "label": "Uptime Check", "icon": "clock", "kind": "external" },
+          { "id": "errors", "x": 4.6, "y": 4.0, "label": "Error Tracking", "icon": "bug", "kind": "external" },
+          { "id": "usage", "x": 8.4, "y": 0.6, "label": "Usage Alerts", "icon": "chart", "kind": "external" },
+          { "id": "you", "x": 8.4, "y": 4.0, "label": "You", "icon": "bell", "kind": "person", "status": "active" }
         ],
         "edges": [
-          { "from": "uptime", "to": "app", "label": "GET /book", "style": "dashed" },
-          { "from": "app", "to": "errors", "label": "crash report", "status": "error", "packet": { "label": "error", "status": "error" } },
-          { "from": "errors", "to": "you", "label": "alert", "packet": { "label": "alert", "status": "active" } },
-          { "from": "usage", "to": "you", "label": "alert", "style": "dashed" }
+          { "from": "uptime", "to": "app", "style": "dashed", "packet": { "kind": "request", "direction": "both", "speed": "slow" } },
+          { "from": "app", "to": "errors", "status": "error", "packet": { "kind": "error" } },
+          { "from": "errors", "to": "you", "label": "alert", "packet": { "kind": "job" } },
+          { "from": "usage", "to": "you", "style": "dashed" }
         ]
       }
     },
@@ -128,8 +188,8 @@
       "title": "Updates arrive as small pull requests",
       "chapter": "how",
       "body": [
-        "Packages get fixes all the time. Updating once a year means one huge, scary jump. Small, regular updates are boring, which is exactly the goal.",
-        "<span class=\"term\">Dependabot</span> opens a pull request when a <span class=\"term\">dependency</span> has an update. Vercel builds a preview of each one. You check the preview, run the tests, and merge."
+        "Packages get fixes all the time. Updating once a year means one huge, scary jump. Small, regular updates are boring, which is the goal.",
+        "<span class=\"term\">Dependabot</span>, a GitHub feature, opens a <span class=\"term\">pull request</span> (a proposed change) for each update. The hosting builds a preview copy of the site from it. You check the preview, run the tests, and merge."
       ],
       "code": {
         "language": "yaml",
@@ -137,17 +197,22 @@
         "code": "version: 2\nupdates:\n  - package-ecosystem: \"npm\"\n    directory: \"/\"\n    schedule:\n      interval: \"weekly\"\n    groups:\n      minor-and-patch:\n        patterns: [\"*\"]\n        update-types: [\"minor\", \"patch\"]",
         "caption": "Grouping small updates into one pull request a week keeps the noise down."
       },
+      "changes": [
+        "− Booking App, You, Uptime Check, Error Tracking, Usage Alerts",
+        "+ Dependabot, Pull Request: a robot proposes each update",
+        "+ Preview, Live Site: a test copy first, then the real app"
+      ],
       "scene": {
-        "caption": "An update becomes a pull request, gets a preview, and only then reaches production.",
+        "caption": "An update becomes a pull request, gets a preview, and only then reaches the live site.",
         "nodes": [
-          { "id": "bot", "x": 2, "y": 4, "label": "Dependabot", "sublabel": "weekly", "icon": "robot", "kind": "external" },
-          { "id": "pr", "x": 6.2, "y": 4, "label": "Pull request", "sublabel": "grouped updates", "icon": "git", "kind": "neutral", "status": "active" },
-          { "id": "preview", "x": 10.4, "y": 1.6, "label": "Preview deploy", "sublabel": "on Vercel", "icon": "browser", "kind": "server", "status": "ok" },
-          { "id": "prod", "x": 10.4, "y": 6.4, "label": "Production", "sublabel": "after you check", "icon": "rocket", "kind": "server" }
+          { "id": "bot", "x": 0.8, "y": 4.0, "label": "Dependabot", "icon": "robot", "kind": "external" },
+          { "id": "pr", "x": 4.6, "y": 4.0, "label": "Pull Request", "icon": "git", "status": "active" },
+          { "id": "preview", "x": 8.4, "y": 1.4, "label": "Preview", "icon": "browser", "kind": "server", "status": "ok" },
+          { "id": "prod", "x": 8.4, "y": 6.6, "label": "Live Site", "icon": "rocket", "kind": "server" }
         ],
         "edges": [
-          { "from": "bot", "to": "pr", "label": "opens", "packet": { "label": "PR" } },
-          { "from": "pr", "to": "preview", "label": "builds", "status": "ok" },
+          { "from": "bot", "to": "pr", "packet": { "kind": "job" } },
+          { "from": "pr", "to": "preview", "status": "ok", "packet": { "kind": "data" } },
           { "from": "pr", "to": "prod", "label": "merge", "style": "dashed" }
         ]
       }
@@ -156,8 +221,8 @@
       "title": "AI models get retired",
       "chapter": "how",
       "body": [
-        "AI providers release new models and retire old ones, with advance notice. When Sam's model is retired, her AI rebooking feature stops working, though nobody touched the code.",
-        "Two habits make this cheap. Keep the model id in one env var. And keep an <span class=\"term\">eval set</span>: around 20 real, anonymized inputs with what a good answer must contain. Run it before every switch."
+        "Say Sam later added AI rebooking: her app server (the computer running her code) asks a Claude model for suggestions. Old models get retired, and the feature stops.",
+        "Two cheap habits: keep the model id in one env var (a setting outside the code), and an <span class=\"term\">eval set</span> of about 20 real cases. Run it before every switch."
       ],
       "code": {
         "language": "ts",
@@ -169,19 +234,25 @@
         "type": "claude-code",
         "text": "When Claude Code switches the model for you, check: did it change only <code>AI_MODEL</code>, or quietly rewrite prompts too? Ask it to run the eval set before and after, and show failures side by side. Add the provider's deprecations page to your monthly checklist."
       },
+      "changes": [
+        "− Dependabot, Pull Request, Preview, Live Site",
+        "+ App Server, Old Model: today's AI feature, model retiring",
+        "+ Model Setting: the model id, in one env var",
+        "+ Eval Set, New Model: real cases tested before the switch"
+      ],
       "scene": {
         "caption": "The model id lives in one place. The eval set tests the new model before the switch.",
         "nodes": [
-          { "id": "app", "x": 2, "y": 4, "label": "Salon app", "sublabel": "AI rebooking", "icon": "server", "kind": "server" },
-          { "id": "env", "x": 2, "y": 1.6, "label": "AI_MODEL", "sublabel": "one env var", "icon": "gear", "kind": "data", "status": "active" },
-          { "id": "old", "x": 10.4, "y": 4, "label": "Old model", "sublabel": "being retired", "icon": "sparkle", "kind": "ai", "status": "warn" },
-          { "id": "eval", "x": 6.4, "y": 6.4, "label": "Eval set", "sublabel": "~20 real cases", "icon": "flask", "kind": "neutral" },
-          { "id": "new", "x": 10.4, "y": 6.4, "label": "New model", "sublabel": "tested first", "icon": "sparkle", "kind": "ai", "status": "ok" }
+          { "id": "app", "x": 0.8, "y": 4.0, "label": "App Server", "icon": "server", "kind": "server" },
+          { "id": "env", "x": 0.8, "y": 0.6, "label": "Model Setting", "icon": "gear", "kind": "data", "status": "active", "pill": "AI_MODEL" },
+          { "id": "old", "x": 4.6, "y": 4.0, "label": "Old Model", "icon": "sparkle", "kind": "ai", "status": "warn", "pill": { "text": "retiring", "tone": "warn" } },
+          { "id": "new", "x": 4.6, "y": 7.4, "label": "New Model", "icon": "sparkle", "kind": "ai", "status": "ok" },
+          { "id": "eval", "x": 8.4, "y": 7.4, "label": "Eval Set", "icon": "flask", "pill": "20 cases" }
         ],
         "edges": [
-          { "from": "env", "to": "app", "label": "configures", "style": "dashed" },
-          { "from": "app", "to": "old", "label": "today", "status": "warn", "packet": true },
-          { "from": "eval", "to": "new", "label": "run first", "status": "ok", "packet": { "label": "20 tests", "status": "ok" } }
+          { "from": "env", "to": "app", "style": "dashed" },
+          { "from": "app", "to": "old", "status": "warn", "packet": { "kind": "request", "direction": "both" } },
+          { "from": "eval", "to": "new", "label": "run first", "status": "ok", "packet": { "kind": "request", "direction": "both" } }
         ]
       }
     },
@@ -190,26 +261,28 @@
       "chapter": "example",
       "body": [
         "Price it from the time it really takes. Count a typical month: updates, checking monitors and backups, a few hours of changes, and a short monthly report.",
-        "Being reachable has a cost even in quiet months, so include it. Offer two tiers, for example \"Care\" and \"Care plus changes\", and let Sam choose which one fits."
+        "Being reachable has a cost even in quiet months, so include it. Offer two tiers, for example \"Care\" and \"Care Plus\", and let Sam choose which one fits."
       ],
       "callout": {
         "type": "tip",
         "text": "Track your real hours for the first three months. If the retainer keeps running over, re-price it openly rather than quietly working for free."
       },
+      "changes": [
+        "− App Server, Old Model, Model Setting, Eval Set, New Model",
+        "+ Monitoring, Updates: the Care tier",
+        "+ Change Hours, Faster Reply: added in Care Plus"
+      ],
       "scene": {
-        "caption": "Two clear tiers. The second adds change hours and a faster response.",
+        "caption": "Two clear tiers. The second adds change hours and a faster reply.",
         "zones": [
-          { "id": "z-care", "x": 0.5, "y": 0.6, "w": 5.2, "h": 6.8, "label": "Care" },
-          { "id": "z-plus", "x": 6.3, "y": 0.6, "w": 5.2, "h": 6.8, "label": "Care plus changes", "status": "ok" }
+          { "id": "z-care", "x": 0.4, "y": 0.6, "w": 4.4, "h": 6.8, "label": "Care" },
+          { "id": "z-plus", "x": 6.6, "y": 0.6, "w": 4.4, "h": 6.8, "label": "Care Plus", "status": "ok" }
         ],
         "nodes": [
-          { "id": "c-mon", "x": 3.1, "y": 2.4, "label": "Monitoring", "sublabel": "alerts to you", "icon": "bell", "kind": "neutral" },
-          { "id": "c-upd", "x": 3.1, "y": 5, "label": "Monthly updates", "sublabel": "+ backup check", "icon": "refresh", "kind": "neutral" },
-          { "id": "p-hours", "x": 8.9, "y": 2.4, "label": "Change hours", "sublabel": "e.g. 4 h / month", "icon": "pencil", "kind": "neutral", "status": "ok" },
-          { "id": "p-sla", "x": 8.9, "y": 5, "label": "Faster SLA", "sublabel": "quicker P1 reply", "icon": "clock", "kind": "neutral", "status": "ok" }
-        ],
-        "edges": [
-          { "from": "c-mon", "to": "p-hours", "label": "+ includes all of Care", "style": "dotted" }
+          { "id": "c-mon", "x": 2.6, "y": 1.8, "label": "Monitoring", "icon": "bell" },
+          { "id": "c-upd", "x": 2.6, "y": 5.6, "label": "Updates", "icon": "refresh" },
+          { "id": "p-hours", "x": 8.8, "y": 1.8, "label": "Change Hours", "icon": "pencil", "status": "ok", "pill": "4 h / month" },
+          { "id": "p-sla", "x": 8.8, "y": 5.6, "label": "Faster Reply", "icon": "clock", "status": "ok" }
         ]
       }
     },
@@ -222,22 +295,31 @@
       ],
       "callout": {
         "type": "claude-code",
-        "text": "A monthly check with Claude Code: run <code>npm audit</code> and <code>npm outdated</code>, list the AI model ids in use, and summarize the month's commits for Sam's report. Read the summary before sending: it must not claim work you did not do or hide a skipped update."
+        "text": "A monthly check with Claude Code: run <code>npm audit</code> and <code>npm outdated</code>, list the AI model ids in use, and summarize the month's commits for Sam's report. Read the summary before sending: it must not claim work you did not do."
+      },
+      "changes": [
+        "− Monitoring, Updates, Change Hours, Faster Reply",
+        "+ You, Monthly Report, Sam: logged work, reported monthly",
+        "+ Quick Favors, Old Access: the two slow leaks",
+        "~ Unpaid hours 0 → 6 a month"
+      ],
+      "metrics": {
+        "unpaid": { "value": 6, "tone": "bad" }
       },
       "scene": {
-        "caption": "Tracked work goes into a monthly report. Untracked favors and old access leak.",
+        "caption": "Logged work goes into a monthly report. Untracked favors and old access leak.",
         "nodes": [
-          { "id": "you", "x": 2, "y": 4, "label": "You", "sublabel": "on retainer", "icon": "laptop", "kind": "person" },
-          { "id": "report", "x": 6.4, "y": 1.6, "label": "Monthly report", "sublabel": "hours + changes", "icon": "chart", "kind": "neutral", "status": "ok" },
-          { "id": "favors", "x": 6.4, "y": 4, "label": "Quick favors", "sublabel": "untracked", "icon": "chat", "kind": "neutral", "status": "warn" },
-          { "id": "access", "x": 6.4, "y": 6.4, "label": "Old access", "sublabel": "remove at the end", "icon": "key", "kind": "threat", "status": "error" },
-          { "id": "sam", "x": 10.4, "y": 4, "label": "Sam", "sublabel": "client", "icon": "user", "kind": "person" }
+          { "id": "you", "x": 0.8, "y": 4.0, "label": "You", "icon": "laptop", "kind": "person" },
+          { "id": "report", "x": 4.6, "y": 4.0, "label": "Monthly Report", "icon": "chart", "status": "ok" },
+          { "id": "sam", "x": 8.4, "y": 4.0, "label": "Sam", "icon": "user", "kind": "person" },
+          { "id": "favors", "x": 4.6, "y": 0.6, "label": "Quick Favors", "icon": "chat", "status": "warn", "pill": { "text": "untracked", "tone": "warn" } },
+          { "id": "access", "x": 4.6, "y": 7.4, "label": "Old Access", "icon": "key", "kind": "threat", "status": "error" }
         ],
         "edges": [
-          { "from": "you", "to": "report", "label": "logs hours", "status": "ok" },
-          { "from": "report", "to": "sam", "label": "monthly", "status": "ok", "packet": { "label": "report", "status": "ok" } },
-          { "from": "sam", "to": "favors", "label": "\"just quickly…\"", "style": "dashed", "status": "warn" },
-          { "from": "you", "to": "access", "label": "still works?", "style": "dashed", "status": "error" }
+          { "from": "you", "to": "report", "status": "ok", "packet": { "kind": "data" } },
+          { "from": "report", "to": "sam", "status": "ok", "packet": { "kind": "data" } },
+          { "from": "sam", "to": "favors", "style": "dashed", "status": "warn", "packet": { "kind": "request" } },
+          { "from": "you", "to": "access", "style": "dashed", "status": "error" }
         ]
       }
     },
@@ -245,18 +327,37 @@
       "title": "Recap in one breath",
       "chapter": "recap",
       "body": [
-        "Apps break without code changes, because providers, packages and models keep moving. After a short warranty, a retainer pays for care: monitoring, small regular updates, a few change hours and clear response times.",
+        "Apps break without code changes, because providers, packages and models keep moving. After a short warranty, a retainer pays for care: monitoring, small regular updates, a few change hours and clear reply times.",
         "Keep the model id in one env var with an eval set ready, log every hour, and offboard cleanly when it ends."
-      ]
+      ],
+      "changes": [
+        "− Old Access: removed at offboarding",
+        "~ Quick Favors: now logged in the Monthly Report",
+        "~ Unpaid hours 6 → 0"
+      ],
+      "metrics": {
+        "unpaid": { "value": 0, "tone": "good" }
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Every favor is logged and reported. No access is left behind.",
+        "remove": ["access", "sam>favors"],
+        "nodes": [
+          { "id": "favors", "status": "ok", "pill": { "text": "logged", "tone": "good" } }
+        ],
+        "edges": [
+          { "from": "favors", "to": "report", "status": "ok" }
+        ]
+      }
     }
   ],
   "quiz": [
     {
-      "question": "Four months after launch, the SMS provider retires the API version the app uses, and reminders stop. Sam's warranty was 30 days. Who pays for the fix?",
+      "question": "Four months after launch, the SMS service retires the version the app uses, and reminders stop. Sam's warranty was 30 days. Who pays for the fix?",
       "options": [
         { "text": "You, because it is your code.", "why": "The code was correct when delivered. An outside provider changed; that is maintenance, not a defect in your work." },
         { "text": "It falls under the retainer, or is quoted as maintenance if there is none.", "correct": true, "why": "Keeping up with outside changes is exactly what a retainer is for. Without one, it is new paid work." },
-        { "text": "The SMS provider.", "why": "Providers announce changes and expect customers to update. They will not fix your integration for you." }
+        { "text": "The SMS service.", "why": "Providers announce changes and expect customers to update. They will not fix your integration for you." }
       ]
     },
     {
@@ -280,7 +381,7 @@
     "Apps break without code changes: providers, packages and AI models keep moving.",
     "A <b>warranty</b> covers your own defects for a short time. A <b>retainer</b> pays for ongoing care.",
     "Write the retainer as a list: monitoring, updates, change hours, and reply times by severity.",
-    "Small weekly dependency updates through pull requests and previews beat one scary yearly upgrade.",
+    "Small weekly package updates through pull requests and previews beat one scary yearly upgrade.",
     "Keep <code>AI_MODEL</code> in one env var and an <b>eval set</b> ready. Log every hour, and offboard in writing."
   ]
 }

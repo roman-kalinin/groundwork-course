@@ -11,6 +11,7 @@
     "How to move a project you started in your own accounts"
   ],
   "glossary": {
+    "code repo": "Short for repository: the folder of an app's code and its full history, stored online on a site like GitHub.",
     "statement of work": "The part of a contract that describes exactly what will be delivered. Often it points to the signed scope doc.",
     "IP": "Intellectual property: legal ownership of creative work such as code, designs and text.",
     "IP assignment": "A contract clause that moves ownership of the work from the person who made it to the client, usually once paid in full.",
@@ -21,29 +22,65 @@
     "environment variable": "A named setting given to the app when it runs, like an API key, kept outside the code.",
     "transfer": "Moving a repo, project or database from one account or organization to another without rebuilding it."
   },
+  "metrics": [
+    { "id": "owned", "label": "Owned by Sam", "icon": "key" }
+  ],
   "steps": [
     {
-      "title": "Whose app is it, really?",
-      "chapter": "problem",
+      "title": "Sam's app runs on four accounts",
+      "chapter": "setup",
       "body": [
-        "A year after launch, Sam wants another developer to add a feature. Then it turns out: the repo is on your GitHub, the app on your Vercel account, the domain in your name, the AI key on your card.",
-        "Sam paid for an app she cannot move without you. Nobody planned it, but it works like a hostage situation."
+        "<b>Sam</b> owns a small hair salon, and <b>you</b> are building her booking app. It rests on four things: the <span class=\"term\">code repo</span> (the stored code), <b>hosting</b> (servers that run it), the <b>domain</b> (the salon's web address) and an <b>AI key</b> (a password that lets the app use Claude).",
+        "To move fast, you set all four up in your own accounts."
       ],
+      "metrics": {
+        "owned": "0 of 4"
+      },
       "scene": {
-        "caption": "Everything Sam paid for sits inside your accounts.",
+        "caption": "Code, hosting, domain and AI key: all four sit in your accounts.",
         "zones": [
-          { "id": "z-acc", "x": 4.4, "y": 0.4, "w": 4, "h": 7.2, "label": "Your accounts", "status": "warn" }
+          { "id": "z-acc", "x": 3.0, "y": 0.8, "w": 5.6, "h": 6.2, "label": "Your accounts" }
         ],
         "nodes": [
-          { "id": "you", "x": 2, "y": 4, "label": "You", "sublabel": "the only way in", "icon": "laptop", "kind": "person" },
-          { "id": "github", "x": 6.4, "y": 1.3, "label": "GitHub repo", "sublabel": "your account", "icon": "git", "kind": "external", "status": "warn" },
-          { "id": "vercel", "x": 6.4, "y": 2.9, "label": "Vercel project", "sublabel": "your free plan", "icon": "cloud", "kind": "external", "status": "warn" },
-          { "id": "domain", "x": 6.4, "y": 4.9, "label": "Domain", "sublabel": "in your name", "icon": "globe", "kind": "external", "status": "warn" },
-          { "id": "aikey", "x": 6.4, "y": 6.9, "label": "AI API key", "sublabel": "your card", "icon": "key", "kind": "external", "status": "warn" },
-          { "id": "sam", "x": 10.4, "y": 4, "label": "Sam", "sublabel": "paid, can't move it", "icon": "user", "kind": "person", "status": "error" }
+          { "id": "you", "x": 0.8, "y": 2.2, "label": "You", "icon": "laptop", "kind": "person" },
+          { "id": "host", "x": 4.4, "y": 2.2, "label": "Hosting", "icon": "cloud", "kind": "external" },
+          { "id": "repo", "x": 7.2, "y": 2.2, "label": "Code Repo", "icon": "git", "kind": "external" },
+          { "id": "aikey", "x": 4.4, "y": 5.4, "label": "AI Key", "icon": "key", "kind": "external" },
+          { "id": "domain", "x": 7.2, "y": 5.4, "label": "Domain", "icon": "globe", "kind": "external" },
+          { "id": "sam", "x": 11.0, "y": 5.4, "label": "Sam", "icon": "user", "kind": "person" }
         ],
         "edges": [
-          { "from": "sam", "to": "you", "label": "please?", "bend": 0, "style": "dashed", "status": "error", "packet": { "label": "ask" } }
+          { "from": "you", "to": "host", "packet": { "kind": "request", "speed": "slow" } }
+        ]
+      }
+    },
+    {
+      "title": "A year later: whose app is it?",
+      "chapter": "problem",
+      "body": [
+        "A year after launch, Sam wants another developer to add a feature. Then it turns out: the code, the hosting, the domain and the AI key are all in your accounts, some on your card.",
+        "Sam paid for an app she cannot move without you. Nobody planned it, but it works like a hostage situation."
+      ],
+      "changes": [
+        "+ Arrow from Sam to You: she has to ask",
+        "~ Sam: paid for the app, but cannot move it",
+        "~ Owned by Sam 0 of 4 is now a real problem"
+      ],
+      "metrics": {
+        "owned": { "value": "0 of 4", "tone": "bad" }
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Everything Sam paid for sits inside your accounts.",
+        "zones": [
+          { "id": "z-acc", "status": "warn" }
+        ],
+        "nodes": [
+          { "id": "sam", "status": "error" }
+        ],
+        "edges": [
+          { "id": "you>host", "packet": false },
+          { "from": "sam", "to": "you", "label": "please?", "style": "dashed", "status": "error", "packet": { "kind": "request", "speed": "slow" } }
         ]
       }
     },
@@ -52,30 +89,38 @@
       "chapter": "idea",
       "body": [
         "The rule: the client owns every account, and you are invited in as a member. Her business email, her card, her name on the domain.",
-        "You work exactly the same way, with Claude Code, git and the dashboards. The difference only shows on bad days: if you get sick, fall out, or Sam hires someone else, nothing has to be rescued."
+        "You work the same way, with Claude Code and the dashboards. The difference shows on bad days: if you get sick, fall out, or Sam hires someone else, nothing has to be rescued."
       ],
       "callout": {
         "type": "analogy",
         "text": "A builder renovating a house. The owner keeps the deed and hands the builder a key. When the job ends, the key comes back. Nobody puts the deed in the builder's name to save time."
       },
+      "changes": [
+        "~ Your accounts → Sam's accounts",
+        "~ You: an invited member",
+        "~ Owned by Sam 0 of 4 → 4 of 4"
+      ],
+      "metrics": {
+        "owned": { "value": "4 of 4", "tone": "good" }
+      },
       "scene": {
         "extends": "previous",
-        "caption": "Same accounts, new owner. Sam holds the deed; you hold a member key.",
+        "caption": "Same four accounts, new owner. Sam holds the deed; you hold a member key.",
         "remove": ["sam>you"],
         "zones": [
           { "id": "z-acc", "label": "Sam's accounts", "status": "ok" }
         ],
         "nodes": [
-          { "id": "sam", "x": 2, "y": 4, "sublabel": "owns everything", "status": "ok" },
-          { "id": "you", "x": 10.4, "y": 4, "sublabel": "invited member", "icon": "key" },
-          { "id": "github", "sublabel": "Sam's org", "status": "ok" },
-          { "id": "vercel", "sublabel": "Sam's team", "status": "ok" },
-          { "id": "domain", "sublabel": "Sam's name", "status": "ok" },
-          { "id": "aikey", "sublabel": "Sam's card", "status": "ok" }
+          { "id": "sam", "status": "ok" },
+          { "id": "you", "pill": "member" },
+          { "id": "host", "status": "ok" },
+          { "id": "repo", "status": "ok" },
+          { "id": "aikey", "status": "ok" },
+          { "id": "domain", "status": "ok" }
         ],
         "edges": [
-          { "from": "sam", "to": "domain", "label": "owner", "status": "ok" },
-          { "from": "you", "to": "vercel", "label": "member", "style": "dashed" }
+          { "id": "you>host", "style": "dashed" },
+          { "from": "sam", "to": "domain", "status": "ok" }
         ]
       }
     },
@@ -83,7 +128,7 @@
       "title": "The contract in six clauses",
       "chapter": "how",
       "body": [
-        "A small project contract covers six things: the <span class=\"term\">statement of work</span> (your scope doc from lesson 1), fees and milestones (lesson 2), how changes work, who owns the result, a short <span class=\"term\">warranty</span>, and who owns the accounts.",
+        "A small project contract covers six things: the <span class=\"term\">statement of work</span> (your scope doc), fees and milestones (your estimate), how changes work, who owns the result, a short <span class=\"term\">warranty</span>, and who owns the accounts.",
         "Start from a lawyer-reviewed template for your country. This lesson tells you what to look for; it is not legal advice."
       ],
       "code": {
@@ -96,18 +141,23 @@
         "type": "tip",
         "text": "Also look for a cap on your liability, confidentiality, and who is responsible for personal data. Bookings hold clients' names and phone numbers, so privacy law may apply to you both."
       },
+      "changes": [
+        "− You, Hosting, Code Repo, AI Key, Domain: paper first",
+        "+ Scope Doc and Estimate: the plan and price you agreed",
+        "+ Contract: ties them together, signed by both"
+      ],
       "scene": {
         "caption": "The contract ties together the scope, the price and the ownership rules.",
         "nodes": [
-          { "id": "sow", "x": 2, "y": 1.6, "label": "Scope doc", "sublabel": "lesson 1", "icon": "file", "kind": "neutral" },
-          { "id": "est", "x": 2, "y": 6.4, "label": "Estimate", "sublabel": "lesson 2", "icon": "money", "kind": "neutral" },
-          { "id": "contract", "x": 6.4, "y": 4, "label": "Contract", "sublabel": "signed by both", "icon": "pencil", "kind": "neutral", "status": "active", "tags": ["ownership", "warranty", "accounts"] },
-          { "id": "sam", "x": 10.4, "y": 4, "label": "Sam", "sublabel": "client", "icon": "user", "kind": "person" }
+          { "id": "sow", "x": 0.8, "y": 4.0, "label": "Scope Doc", "icon": "file", "shape": "stack" },
+          { "id": "est", "x": 4.6, "y": 0.6, "label": "Estimate", "icon": "money" },
+          { "id": "contract", "x": 4.6, "y": 4.0, "label": "Contract", "icon": "pencil", "status": "active", "pill": "6 clauses" },
+          { "id": "sam", "x": 8.4, "y": 4.0, "label": "Sam", "icon": "user", "kind": "person", "status": "normal" }
         ],
         "edges": [
-          { "from": "sow", "to": "contract", "label": "by reference" },
-          { "from": "est", "to": "contract", "label": "fees" },
-          { "from": "contract", "to": "sam", "label": "signs", "status": "ok", "packet": { "label": "signed", "status": "ok" } }
+          { "from": "sow", "to": "contract" },
+          { "from": "est", "to": "contract" },
+          { "from": "contract", "to": "sam", "label": "signs", "status": "ok", "packet": { "kind": "data" } }
         ]
       }
     },
@@ -115,29 +165,33 @@
       "title": "Who owns the code you write",
       "chapter": "how",
       "body": [
-        "In many countries, whoever writes code owns its copyright, even when someone else paid. So the contract needs an <span class=\"term\">IP assignment</span>: ownership of the custom work moves to Sam, usually on full payment.",
-        "Two things stay outside it. Your <span class=\"term\">pre-existing IP</span>, like a starter kit you reuse, which you license to her. And open-source packages, which keep their own licences."
+        "In many countries, whoever writes code owns its copyright, even when someone else paid. So the contract needs an <span class=\"term\">IP assignment</span>: ownership of the custom work moves to Sam on full payment.",
+        "Two things stay outside it: your <span class=\"term\">pre-existing IP</span>, like a starter kit you reuse and license to her, and open-source packages, which keep their own licences."
       ],
       "callout": {
         "type": "tip",
         "text": "Tie the assignment to final payment. It is fair to both sides: Sam gets full ownership the moment she has paid, and you keep leverage until then without holding her accounts hostage."
       },
+      "changes": [
+        "− Scope Doc, Estimate, Contract, Sam: zoom into the code",
+        "+ Booking Flow, Database Design: custom, assigned to Sam",
+        "+ Starter Kit, Open Source: used, but only licensed"
+      ],
       "scene": {
-        "caption": "Custom work moves to Sam. Your toolkit is licensed. Open source keeps its own terms.",
+        "caption": "Custom work moves to Sam. Your toolkit and open source are only licensed.",
         "zones": [
-          { "id": "z-custom", "x": 0.3, "y": 0.5, "w": 5.6, "h": 7, "label": "Assigned to Sam", "status": "ok" },
-          { "id": "z-kit", "x": 6.2, "y": 0.5, "w": 5.5, "h": 3.3, "label": "Licensed: your toolkit" },
-          { "id": "z-oss", "x": 6.2, "y": 4.2, "w": 5.5, "h": 3.3, "label": "Open source: own licence" }
+          { "id": "z-custom", "x": 0.6, "y": 0.6, "w": 4.4, "h": 6.8, "label": "Sam owns", "status": "ok" },
+          { "id": "z-lic", "x": 6.6, "y": 0.6, "w": 4.4, "h": 6.8, "label": "Licensed" }
         ],
         "nodes": [
-          { "id": "flow", "x": 3.1, "y": 2.4, "label": "Booking flow", "sublabel": "custom code", "icon": "code", "kind": "neutral", "status": "ok" },
-          { "id": "schema", "x": 3.1, "y": 5.4, "label": "Database schema", "sublabel": "custom", "icon": "table", "kind": "data", "status": "ok" },
-          { "id": "kit", "x": 8.95, "y": 2.3, "label": "Starter kit", "sublabel": "yours, reused", "icon": "box", "kind": "neutral" },
-          { "id": "pkgs", "x": 8.95, "y": 6, "label": "npm packages", "sublabel": "MIT, Apache…", "icon": "layers", "kind": "external" }
+          { "id": "flow", "x": 2.8, "y": 2.0, "label": "Booking Flow", "icon": "code", "status": "ok" },
+          { "id": "schema", "x": 2.8, "y": 5.6, "label": "Database Design", "icon": "table", "kind": "data", "status": "ok" },
+          { "id": "kit", "x": 8.8, "y": 2.0, "label": "Starter Kit", "icon": "box" },
+          { "id": "oss", "x": 8.8, "y": 5.6, "label": "Open Source", "icon": "layers", "kind": "external" }
         ],
         "edges": [
           { "from": "kit", "to": "flow", "label": "used in", "style": "dashed" },
-          { "from": "pkgs", "to": "schema", "label": "used by", "style": "dashed" }
+          { "from": "oss", "to": "schema", "style": "dashed" }
         ]
       }
     },
@@ -145,30 +199,35 @@
       "title": "Sam signs up, you get invited",
       "chapter": "how",
       "body": [
-        "At kickoff, Sam creates the accounts with a shared business email and her card: a GitHub organization, a Vercel team, a Supabase organization, Cloudflare, the AI provider. Then she invites you.",
+        "At kickoff, Sam creates each account with a shared business email and her card: GitHub (where code is stored), Vercel (hosting), Supabase (the database), the AI provider, the domain. Then she invites you.",
         "It takes one screen-share call. Bills land with her from day one, which is the pass-through from lesson 2."
       ],
       "callout": {
         "type": "warn",
         "text": "Do not run a client's business on your free personal plans. Vercel's Hobby plan, for example, is meant for personal, non-commercial use. Check each provider's terms and put commercial work on a team or paid plan in the client's name."
       },
+      "changes": [
+        "− Booking Flow, Database Design, Starter Kit, Open Source",
+        "+ Sam, You and the four accounts, now in Sam's name",
+        "+ Code Repo, Hosting, AI Key, Domain: Sam creates each one",
+        "+ Invite: from Hosting to You"
+      ],
       "scene": {
         "caption": "Sam creates each account. Invites flow out to you.",
         "zones": [
-          { "id": "z-acc", "x": 4.4, "y": 0.4, "w": 4, "h": 7.2, "label": "Sam's accounts", "status": "ok" }
+          { "id": "z-acc", "x": 3.0, "y": 0.8, "w": 5.6, "h": 6.2, "label": "Sam's accounts", "status": "ok" }
         ],
         "nodes": [
-          { "id": "sam", "x": 2, "y": 4, "label": "Sam", "sublabel": "creates accounts", "icon": "user", "kind": "person", "status": "active" },
-          { "id": "you", "x": 11, "y": 4.4, "label": "You", "sublabel": "invited member", "icon": "key", "kind": "person" },
-          { "id": "github", "x": 6.4, "y": 1.3, "label": "GitHub org", "sublabel": "Sam's org", "icon": "git", "kind": "external", "status": "ok" },
-          { "id": "vercel", "x": 6.4, "y": 2.9, "label": "Vercel team", "sublabel": "paid plan", "icon": "cloud", "kind": "external", "status": "ok" },
-          { "id": "domain", "x": 6.4, "y": 4.9, "label": "Domain", "sublabel": "Sam's name", "icon": "globe", "kind": "external", "status": "ok" },
-          { "id": "aikey", "x": 6.4, "y": 6.9, "label": "AI API key", "sublabel": "Sam's card", "icon": "key", "kind": "external", "status": "ok" }
+          { "id": "you", "x": 0.8, "y": 2.2, "label": "You", "icon": "laptop", "kind": "person", "pill": "member" },
+          { "id": "host", "x": 4.4, "y": 2.2, "label": "Hosting", "icon": "cloud", "kind": "external", "status": "ok" },
+          { "id": "repo", "x": 7.2, "y": 2.2, "label": "Code Repo", "icon": "git", "kind": "external", "status": "ok" },
+          { "id": "aikey", "x": 4.4, "y": 5.4, "label": "AI Key", "icon": "key", "kind": "external", "status": "ok" },
+          { "id": "domain", "x": 7.2, "y": 5.4, "label": "Domain", "icon": "globe", "kind": "external", "status": "ok" },
+          { "id": "sam", "x": 11.0, "y": 5.4, "label": "Sam", "icon": "user", "kind": "person", "status": "active" }
         ],
         "edges": [
-          { "from": "sam", "to": "github", "label": "creates" },
-          { "from": "github", "to": "you", "label": "invite", "packet": { "label": "invite", "status": "active" } },
-          { "from": "vercel", "to": "you", "label": "invite", "packet": { "label": "invite", "status": "active" } }
+          { "from": "sam", "to": "domain", "status": "ok" },
+          { "from": "host", "to": "you", "label": "invite", "packet": { "kind": "request" } }
         ]
       }
     },
@@ -176,32 +235,37 @@
       "title": "The domain: never hold it yourself",
       "chapter": "how",
       "body": [
-        "The domain is the salon's address on the internet. Register it in Sam's name, at a <span class=\"term\">registrar</span> account she controls, with her email for renewal notices.",
-        "You only need access to its <span class=\"term\">DNS</span>, the records that point the domain at Vercel. If the domain sits in your account and a renewal slips, her business can vanish from the web."
+        "Register the domain in Sam's name, in her own account at a <span class=\"term\">registrar</span> (the company that rents out domain names), with her email for renewals.",
+        "You only need access to its <span class=\"term\">DNS</span>, the records that point the domain at the hosting. If it sits in your account and a renewal slips, her business vanishes from the web."
       ],
       "code": {
         "language": "text",
         "filename": "DNS records (values come from Vercel's domain settings)",
         "code": "Type    Name   Value\nA       @      the IP address Vercel shows you\nCNAME   www    the target Vercel shows you",
-        "caption": "Two records connect the domain to the app. Changing them is all you need access for."
+        "caption": "Two records connect the domain to the hosting. Changing them is all you need access for."
       },
       "callout": {
         "type": "tip",
         "text": "Turn on auto-renew and the transfer lock, and give a second person on Sam's side access to the registrar. Lapsed domains get registered by someone else and resold."
       },
+      "changes": [
+        "~ Domain: in Sam's name, auto-renew on",
+        "~ You: may edit only its DNS records",
+        "~ Code Repo and AI Key fade back"
+      ],
       "scene": {
         "extends": "previous",
-        "caption": "Sam owns the domain. You only edit the DNS records that point it at Vercel.",
-        "remove": ["sam>github", "github>you", "vercel>you"],
+        "caption": "Sam owns the domain. You only edit the records that point it at the hosting.",
+        "remove": ["host>you"],
         "nodes": [
-          { "id": "sam", "sublabel": "owner", "status": "ok" },
-          { "id": "domain", "status": "active", "sublabel": "Sam's registrar", "tags": ["auto-renew", "locked"] },
-          { "id": "github", "status": "dim" },
+          { "id": "sam", "status": "ok" },
+          { "id": "domain", "status": "active", "pill": { "text": "auto-renew", "icon": "refresh", "tone": "good" } },
+          { "id": "you", "pill": "DNS only" },
+          { "id": "repo", "status": "dim" },
           { "id": "aikey", "status": "dim" }
         ],
         "edges": [
-          { "from": "sam", "to": "domain", "label": "owns", "status": "ok" },
-          { "from": "you", "to": "domain", "label": "edits DNS", "style": "dashed" }
+          { "id": "sam>domain", "label": "owns", "status": "active" }
         ]
       }
     },
@@ -209,8 +273,8 @@
       "title": "API keys live in env vars, never in code",
       "chapter": "how",
       "body": [
-        "Each key belongs to the account that pays for it: Sam's AI key, Sam's SMS key. Make separate keys for development and production.",
-        "Keys go into <span class=\"term\" data-term=\"environment variable\">environment variables</span> in Vercel, never into the repo. Commit a <code>.env.example</code> with names only, so the next developer knows what to ask Sam for."
+        "Each key belongs to the account that pays for it: Sam's AI key, Sam's SMS key. Make separate keys for development and the live app.",
+        "Keys go into <span class=\"term\" data-term=\"environment variable\">environment variables</span> (env vars) in the hosting settings, never into the code repo. Commit a <code>.env.example</code> with names only, so the next developer knows what to ask for."
       ],
       "code": {
         "language": "env",
@@ -220,20 +284,25 @@
       },
       "callout": {
         "type": "claude-code",
-        "text": "Ask Claude Code: \"List every env var the app reads, and where.\" Then check: does any secret start with <code>NEXT_PUBLIC_</code>? Is <code>.env*</code> in <code>.gitignore</code>, except <code>.env.example</code>? Search old commits too: <code>git log -p -S \"sk-ant\"</code> finds an Anthropic key that was ever committed. Found one? Rotate it."
+        "text": "Ask Claude Code: \"List every env var the app reads, and where.\" Check: does any secret start with <code>NEXT_PUBLIC_</code>? Is <code>.env*</code> in <code>.gitignore</code>? <code>git log -p -S \"sk-ant\"</code> finds an Anthropic key ever committed. Found one? Rotate it."
       },
+      "changes": [
+        "+ AI Key → Hosting: stored there as an env var",
+        "~ Code Repo: holds no secrets",
+        "~ Domain fades back, AI Key comes forward"
+      ],
       "scene": {
         "extends": "previous",
-        "caption": "The key is Sam's. It lives in Vercel's env vars, not in the GitHub repo.",
-        "remove": ["you>domain"],
+        "caption": "The key is Sam's. It lives in the hosting's env vars, not in the code repo.",
         "nodes": [
-          { "id": "domain", "status": "normal", "tags": null },
+          { "id": "domain", "status": "dim", "pill": null },
+          { "id": "you", "pill": "member" },
           { "id": "aikey", "status": "active" },
-          { "id": "github", "status": "normal", "tags": ["no secrets"] },
-          { "id": "env", "x": 10.4, "y": 6.7, "label": "Vercel env vars", "sublabel": "prod + preview", "icon": "lock", "kind": "data", "status": "ok" }
+          { "id": "repo", "status": "ok", "pill": { "text": "no secrets", "tone": "good" } }
         ],
         "edges": [
-          { "from": "aikey", "to": "env", "label": "stored in", "status": "ok", "packet": { "label": "key", "status": "ok" } }
+          { "id": "sam>domain", "label": null, "status": "dim" },
+          { "from": "aikey", "to": "host", "label": "env var", "status": "ok", "packet": { "kind": "secret" } }
         ]
       }
     },
@@ -242,30 +311,36 @@
       "chapter": "watch-out",
       "body": [
         "Sometimes you prototype in your own accounts before the contract is signed. That is fine if you move everything before launch, while it is small.",
-        "GitHub, Vercel and Supabase all let you <span class=\"term\">transfer</span> a repo or project to another account or organization. Put it in the estimate as a task. After launch, a move touches live data, domains and keys, and gets risky."
+        "GitHub, Vercel and Supabase all let you <span class=\"term\">transfer</span> a project to another account. Put it in the estimate as a task. After launch, a move touches live data and keys, and gets risky."
       ],
       "callout": {
         "type": "warn",
         "text": "After a transfer, rotate the keys you created or saw: the AI key, database secrets, webhook secrets. A project should not leave your hands while you still hold working credentials to it."
       },
+      "changes": [
+        "− Sam, You, AI Key, Domain",
+        "+ Code Repo, Hosting, Database: copies in your prototype",
+        "+ Database: moves into Sam's accounts too",
+        "~ Code Repo and Hosting: the moved copies, on Sam's side"
+      ],
       "scene": {
         "caption": "Each piece moves from your prototype accounts into Sam's, before launch.",
         "zones": [
-          { "id": "z-mine", "x": 0.3, "y": 0.4, "w": 4.6, "h": 7.2, "label": "Your prototype" },
-          { "id": "z-sam", "x": 7.1, "y": 0.4, "w": 4.6, "h": 7.2, "label": "Sam's accounts", "status": "ok" }
+          { "id": "z-mine", "x": 0.4, "y": 0.2, "w": 4.2, "h": 7.6, "label": "Your prototype" },
+          { "id": "z-acc", "x": 7.2, "y": 0.2, "w": 4.2, "h": 7.6, "label": "Sam's accounts", "status": "ok" }
         ],
         "nodes": [
-          { "id": "p-repo", "x": 2.6, "y": 1.8, "label": "Repo", "sublabel": "your GitHub", "icon": "git", "kind": "external", "status": "dim" },
-          { "id": "p-proj", "x": 2.6, "y": 4, "label": "Vercel project", "sublabel": "your account", "icon": "cloud", "kind": "external", "status": "dim" },
-          { "id": "p-db", "x": 2.6, "y": 6.2, "label": "Supabase project", "sublabel": "your org", "icon": "database", "kind": "data", "status": "dim" },
-          { "id": "s-repo", "x": 9.4, "y": 1.8, "label": "Repo", "sublabel": "Sam's org", "icon": "git", "kind": "external", "status": "ok" },
-          { "id": "s-proj", "x": 8.4, "y": 4, "label": "Vercel project", "sublabel": "Sam's team", "icon": "cloud", "kind": "external", "status": "ok" },
-          { "id": "s-db", "x": 9.4, "y": 6.2, "label": "Supabase project", "sublabel": "Sam's org", "icon": "database", "kind": "data", "status": "ok" }
+          { "id": "p-repo", "x": 2.5, "y": 1.4, "label": "Code Repo", "icon": "git", "kind": "external" },
+          { "id": "p-host", "x": 2.5, "y": 4.0, "label": "Hosting", "icon": "cloud", "kind": "external" },
+          { "id": "p-db", "x": 2.5, "y": 6.6, "label": "Database", "icon": "database", "kind": "data" },
+          { "id": "repo", "x": 9.3, "y": 1.4, "label": "Code Repo", "icon": "git", "kind": "external", "status": "ok" },
+          { "id": "host", "x": 9.3, "y": 4.0, "label": "Hosting", "icon": "cloud", "kind": "external", "status": "ok" },
+          { "id": "s-db", "x": 9.3, "y": 6.6, "label": "Database", "icon": "database", "kind": "data", "status": "ok" }
         ],
         "edges": [
-          { "from": "p-repo", "to": "s-repo", "label": "transfer", "packet": { "label": "move", "status": "active" } },
-          { "from": "p-proj", "to": "s-proj", "label": "transfer", "packet": { "label": "move", "status": "active" } },
-          { "from": "p-db", "to": "s-db", "label": "transfer", "packet": { "label": "move", "status": "active" } }
+          { "from": "p-repo", "to": "repo", "label": "transfer", "packet": { "kind": "job" } },
+          { "from": "p-host", "to": "host", "packet": { "kind": "job" } },
+          { "from": "p-db", "to": "s-db", "packet": { "kind": "data" } }
         ]
       }
     },
@@ -275,7 +350,24 @@
       "body": [
         "A short contract covers scope, fees, changes, ownership, warranty and accounts. Custom code is assigned to the client on payment; your toolkit is licensed.",
         "Sam owns every account, the domain and every key, on her email and card. You are a member. If you started in your accounts, transfer before launch and rotate the keys."
-      ]
+      ],
+      "changes": [
+        "~ Your prototype copies fade out: everything lives with Sam"
+      ],
+      "scene": {
+        "extends": "previous",
+        "caption": "Everything lives in Sam's accounts. Your old copies are switched off.",
+        "nodes": [
+          { "id": "p-repo", "status": "dim" },
+          { "id": "p-host", "status": "dim" },
+          { "id": "p-db", "status": "dim" }
+        ],
+        "edges": [
+          { "id": "p-repo>repo", "status": "dim", "packet": false },
+          { "id": "p-host>host", "status": "dim", "packet": false },
+          { "id": "p-db>s-db", "status": "dim", "packet": false }
+        ]
+      }
     }
   ],
   "quiz": [
@@ -290,8 +382,8 @@
     {
       "question": "Sam wants to launch fast. What is the best way to set up hosting and the AI key?",
       "options": [
-        { "text": "Use your Vercel account and your AI key, and bill her monthly.", "why": "It works until something changes. Then Sam cannot move without you, and you are paying her bills and carrying her usage risk." },
-        { "text": "Share your own login details with Sam so she has access too.", "why": "Shared logins break 2FA and auditing, and the accounts are still yours. Ownership has not moved." },
+        { "text": "Use your hosting account and your AI key, and bill her monthly.", "why": "It works until something changes. Then Sam cannot move without you, and you are paying her bills and carrying her usage risk." },
+        { "text": "Share your own login details with Sam so she has access too.", "why": "Shared logins break two-factor login and auditing, and the accounts are still yours. Ownership has not moved." },
         { "text": "Sam creates the accounts on her card and invites you as a member.", "correct": true, "why": "She owns the assets and pays the providers directly. You get exactly the access you need, and it can be removed cleanly later." }
       ]
     },

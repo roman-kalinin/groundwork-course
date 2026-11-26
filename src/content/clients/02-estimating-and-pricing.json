@@ -18,83 +18,108 @@
     "time and materials": "Billing for the hours actually worked, at an agreed rate. If the work takes longer, the client pays more.",
     "milestone": "A visible point in the project, like \"booking works on staging\", that is tied to a payment.",
     "deposit": "A payment made before work starts. It commits the client and covers your early work.",
+    "staging": "A private copy of the app, separate from the live one, where changes are tested before real users see them.",
     "token": "The unit AI models read and write in, roughly a short word or part of a word. AI APIs bill per token.",
     "pass-through": "A running cost the client pays directly to the provider, from their own account, rather than through your invoice.",
     "spend limit": "A cap set in a provider's dashboard that stops or alerts on usage once monthly spending reaches an amount."
   },
+  "metrics": [
+    { "id": "est", "label": "Estimate", "icon": "clock", "unit": "days" },
+    { "id": "calls", "label": "AI calls", "icon": "sparkle", "unit": "/ mo" }
+  ],
   "steps": [
+    {
+      "title": "Sam signed the scope. Now: the price",
+      "chapter": "setup",
+      "body": [
+        "<b>Sam</b> owns a small hair salon. In discovery (the last lesson) you agreed on a one-page <b>scope doc</b>: online booking, text reminders and an owner calendar. She signed it.",
+        "<b>You</b> are the builder: you will make the app with Claude Code. Before you start, Sam needs to know what it will cost."
+      ],
+      "callout": {
+        "type": "tip",
+        "text": "New to this module? Lesson 1, Discovery and scoping, shows how Sam's vague wish became that one signed page."
+      },
+      "metrics": {
+        "est": "?",
+        "calls": 0
+      },
+      "scene": {
+        "caption": "Sam signed the scope doc you wrote. No price yet.",
+        "nodes": [
+          { "id": "sam", "x": 0.8, "y": 4.4, "label": "Sam", "icon": "user", "kind": "person" },
+          { "id": "doc", "x": 4.6, "y": 0.8, "label": "Scope Doc", "icon": "file", "shape": "stack", "status": "ok", "pill": "signed" },
+          { "id": "you", "x": 8.4, "y": 4.4, "label": "You", "icon": "laptop", "kind": "person" }
+        ],
+        "edges": [
+          { "from": "sam", "to": "doc", "status": "ok" },
+          { "from": "you", "to": "doc" }
+        ]
+      }
+    },
     {
       "title": "\"So, roughly how much?\"",
       "chapter": "problem",
       "body": [
-        "Sam has signed the scope doc from lesson 1. Now she asks: \"So, roughly how much?\" You feel the pressure to say a number on the spot.",
+        "On the call Sam asks: \"So, roughly how much?\" You feel the pressure to say a number on the spot.",
         "A number said out loud becomes the price in her head. Say a low figure today and a higher one next week, and you lose trust, even if the higher one was always right."
       ],
       "callout": {
         "type": "tip",
-        "text": "A safe answer on the call: \"I will send a written estimate within two days, with a range and what drives it.\" Clients trust a clear process more than a fast guess."
+        "text": "A safe answer on the call: \"I will send a written <span class=\"term\">estimate</span> within two days, with a range and what drives it.\" Clients trust a clear process more than a fast guess."
       },
-      "scene": {
-        "caption": "Sam asks for a price. A number from your gut is a promise with nothing under it.",
-        "nodes": [
-          { "id": "sam", "x": 2, "y": 4, "label": "Sam", "sublabel": "signed the scope", "icon": "user", "kind": "person" },
-          { "id": "you", "x": 10.4, "y": 4, "label": "You", "sublabel": "on the spot", "icon": "laptop", "kind": "person", "status": "warn" }
-        ],
-        "edges": [
-          { "from": "sam", "to": "you", "label": "how much?", "packet": { "label": "$ ?" } }
-        ],
-        "notes": [
-          { "id": "gut", "x": 6.2, "y": 2.2, "text": "A gut number becomes the price", "status": "warn" }
-        ]
-      }
-    },
-    {
-      "title": "Estimate the parts, not the whole",
-      "chapter": "idea",
-      "body": [
-        "Big things are hard to guess. Small things are easier. So break each Must story into tasks of half a day to two days, and estimate those.",
-        "Add them up and you get an <span class=\"term\">estimate</span> you can defend line by line. If Sam wants it cheaper, she can see which line to cut."
+      "changes": [
+        "+ Arrow from Sam to You: \"how much?\"",
+        "~ You: put on the spot",
+        "~ Scope Doc fades back"
       ],
       "scene": {
-        "caption": "One story splits into small tasks. Small tasks are much easier to size.",
+        "extends": "previous",
+        "caption": "Sam asks for a price. A number from your gut is a promise with nothing under it.",
         "nodes": [
-          { "id": "story", "x": 2, "y": 4, "label": "Online booking", "sublabel": "Must story", "icon": "list", "kind": "neutral", "status": "active" },
-          { "id": "t1", "x": 6.4, "y": 1.6, "label": "Slot picker UI", "sublabel": "1-2 days", "icon": "code", "kind": "neutral" },
-          { "id": "t2", "x": 6.4, "y": 4, "label": "Bookings table", "sublabel": "about half a day", "icon": "table", "kind": "neutral" },
-          { "id": "t3", "x": 6.4, "y": 6.6, "label": "Double-book guard", "sublabel": "1-2 days", "icon": "shield", "kind": "neutral" },
-          { "id": "total", "x": 10.4, "y": 4, "label": "Story total", "sublabel": "sum of tasks", "icon": "chart", "kind": "neutral", "status": "ok" }
+          { "id": "doc", "status": "dim" },
+          { "id": "you", "status": "warn" }
         ],
         "edges": [
-          { "from": "story", "to": "t1" },
-          { "from": "story", "to": "t2" },
-          { "from": "story", "to": "t3" },
-          { "from": "t1", "to": "total", "style": "dotted" },
-          { "from": "t2", "to": "total", "style": "dotted" },
-          { "from": "t3", "to": "total", "style": "dotted" }
+          { "id": "sam>doc", "status": "dim" },
+          { "id": "you>doc", "status": "dim" },
+          { "from": "sam", "to": "you", "label": "how much?", "packet": { "kind": "request" } }
         ]
       }
     },
     {
-      "title": "Three numbers per task, not one",
-      "chapter": "how",
+      "title": "Small tasks, three numbers each",
+      "chapter": "idea",
       "body": [
-        "For each task, write a best case, a most likely case and a worst case. This <span class=\"term\">three-point estimate</span> makes you think about what could go wrong.",
-        "A common way to combine them weights the likely case four times. The gap between best and worst shows you where the risk lives."
+        "Big things are hard to guess. Small things are easier. So split each Must story into tasks of half a day to two days, and give each task three numbers: best, likely and worst case.",
+        "This <span class=\"term\">three-point estimate</span> makes you think about what could go wrong. The widest gap shows where the risk lives."
       ],
       "code": {
         "language": "ts",
         "filename": "estimate.ts",
-        "code": "type Task = {\n  name: string; best: number; likely: number; worst: number;\n};\n\n// Weighted average in days (the PERT formula)\nconst expected = (t: Task) => (t.best + 4 * t.likely + t.worst) / 6;\n\nconst tasks: Task[] = [\n  { name: \"Slot picker UI\", best: 1, likely: 1.5, worst: 3 },\n  { name: \"Bookings table\", best: 0.5, likely: 0.5, worst: 1 },\n  { name: \"Double-book guard\", best: 1, likely: 1.5, worst: 4 },\n];\n\nconst total = tasks.reduce((sum, t) => sum + expected(t), 0);\n// ≈ 4.1 days. The 1 → 4 gap marks the risky task.",
+        "code": "type Task = { best: number; likely: number; worst: number };\n\n// Weighted average in days (the PERT formula)\nconst expected = (t: Task) => (t.best + 4 * t.likely + t.worst) / 6;\n\nconst tasks: Task[] = [\n  { best: 1, likely: 1.5, worst: 3 },   // slot picker\n  { best: 0.5, likely: 0.5, worst: 1 }, // bookings table\n  { best: 1, likely: 1.5, worst: 4 },   // booking guard\n];\n\nconst total = tasks.reduce((sum, t) => sum + expected(t), 0);\n// ≈ 4.1 days. The 1 → 4 gap marks the risky task.",
         "caption": "A spreadsheet does the same job. What matters is three honest numbers per task."
       },
+      "changes": [
+        "− Sam, Scope Doc, You: we zoom into one story",
+        "+ Online Booking: one Must story from the scope",
+        "+ Slot Picker, Bookings Table, Booking Guard: its tasks",
+        "~ Estimate ? → 4.1 days for this story"
+      ],
+      "metrics": {
+        "est": { "value": 4.1, "tone": "neutral" }
+      },
       "scene": {
-        "extends": "previous",
-        "caption": "Each task now carries best / likely / worst. The widest gap is the risk.",
+        "caption": "One story, three small tasks. Each carries best / likely / worst days.",
         "nodes": [
-          { "id": "t1", "sublabel": "1 / 1.5 / 3 days" },
-          { "id": "t2", "sublabel": "0.5 / 0.5 / 1 day" },
-          { "id": "t3", "sublabel": "1 / 1.5 / 4 days", "status": "warn", "tags": ["widest gap"] },
-          { "id": "total", "sublabel": "≈ 4.1 days" }
+          { "id": "story", "x": 1.0, "y": 4.0, "label": "Online Booking", "icon": "list", "shape": "tile", "status": "active" },
+          { "id": "t1", "x": 5.0, "y": 1.7, "label": "Slot Picker", "icon": "code", "shape": "tile", "pill": "1/1.5/3" },
+          { "id": "t2", "x": 5.0, "y": 4.0, "label": "Bookings Table", "icon": "table", "shape": "tile", "pill": "0.5/0.5/1" },
+          { "id": "t3", "x": 5.0, "y": 6.3, "label": "Booking Guard", "icon": "shield", "shape": "tile", "status": "warn", "pill": { "text": "1/1.5/4", "tone": "warn" } }
+        ],
+        "edges": [
+          { "from": "story", "to": "t1" },
+          { "from": "story", "to": "t2" },
+          { "from": "story", "to": "t3" }
         ]
       }
     },
@@ -102,27 +127,29 @@
       "title": "The work that is not coding",
       "chapter": "how",
       "body": [
-        "Claude Code makes writing code faster. It does not speed up calls, waiting for feedback, reviewing what it wrote, testing on real phones, fixing deploys or writing the handoff.",
+        "Claude Code makes writing code faster. It does not speed up calls, waiting for feedback, reviewing what it wrote, testing on real phones or fixing deploys.",
         "On small client projects that work is a large share of the hours. Give it its own lines, then add a <span class=\"term\">buffer</span> on top for the problems you cannot see yet."
       ],
       "callout": {
         "type": "claude-code",
         "text": "Ask Claude Code: \"List everything needed to ship this story, including tests, migrations, env vars and deploy steps.\" Compare its list with yours. It tends to miss meetings, revision rounds and waiting time, because it never sees them."
       },
+      "changes": [
+        "− Online Booking, Slot Picker, Bookings Table, Booking Guard",
+        "+ Coding, Testing, Calls: the three kinds of work",
+        "+ Buffer: extra time for problems you cannot see yet",
+        "~ Estimate 4.1 → 7 days"
+      ],
+      "metrics": {
+        "est": { "value": 7, "tone": "neutral" }
+      },
       "scene": {
-        "caption": "Coding is one line of the estimate. Review, calls and a buffer are separate lines.",
+        "caption": "Coding got faster. Testing and calls did not. The buffer sits on top.",
         "nodes": [
-          { "id": "build", "x": 2, "y": 1.6, "label": "Build", "sublabel": "Claude Code helps", "icon": "code", "kind": "neutral", "status": "ok" },
-          { "id": "review", "x": 2, "y": 4, "label": "Review + test", "sublabel": "real phones", "icon": "eye", "kind": "neutral" },
-          { "id": "pm", "x": 2, "y": 6.4, "label": "Calls, revisions", "sublabel": "waiting on feedback", "icon": "chat", "kind": "neutral" },
-          { "id": "buffer", "x": 6.4, "y": 6.4, "label": "Buffer", "sublabel": "for the unknowns", "icon": "shield", "kind": "neutral", "status": "active" },
-          { "id": "total", "x": 10.4, "y": 4, "label": "Project estimate", "sublabel": "a range, in days", "icon": "chart", "kind": "neutral", "status": "ok" }
-        ],
-        "edges": [
-          { "from": "build", "to": "total", "label": "faster now" },
-          { "from": "review", "to": "total", "label": "not faster" },
-          { "from": "pm", "to": "total", "label": "own line" },
-          { "from": "buffer", "to": "total", "label": "on top", "status": "active" }
+          { "id": "coding", "x": 2.0, "y": 1.8, "label": "Coding", "icon": "code", "status": "ok", "pill": { "text": "faster", "tone": "good" } },
+          { "id": "testing", "x": 6.4, "y": 1.8, "label": "Testing", "icon": "phone", "pill": "same speed" },
+          { "id": "calls", "x": 2.0, "y": 5.6, "label": "Calls", "icon": "chat", "pill": "same speed" },
+          { "id": "buffer", "x": 6.4, "y": 5.6, "label": "Buffer", "icon": "shield", "status": "active", "pill": "+20%" }
         ]
       }
     },
@@ -130,28 +157,33 @@
       "title": "Fixed price or hourly: who holds the risk",
       "chapter": "how",
       "body": [
-        "With a <span class=\"term\">fixed price</span>, Sam pays one agreed amount. If the work runs long, you pay for it in unpaid hours. With <span class=\"term\">time and materials</span>, Sam pays for the hours worked. If it runs long, she pays.",
+        "With a <span class=\"term\">fixed price</span>, Sam pays one agreed amount. If the work runs two days long, you pay for them in unpaid hours. With hourly billing, called <span class=\"term\">time and materials</span>, she pays for the hours worked.",
         "Neither is better. Fixed price needs a tight, signed scope. Hourly fits fuzzy or changing work."
       ],
       "callout": {
         "type": "analogy",
         "text": "A set menu versus ordering à la carte. With the set menu, the kitchen carries the risk of extra portions. À la carte, the guest pays for exactly what arrives."
       },
+      "changes": [
+        "− Coding, Testing, Calls, Buffer",
+        "+ Sam and You, twice: once per pricing model",
+        "+ Two zones: Fixed price and Hourly"
+      ],
       "scene": {
-        "caption": "Same overrun, different payer. The pricing model decides who carries the risk.",
+        "caption": "Same two-day overrun, different payer. The pricing model decides.",
         "zones": [
-          { "id": "z-fixed", "x": 0.3, "y": 0.5, "w": 5.5, "h": 7, "label": "Fixed price" },
-          { "id": "z-tm", "x": 6.2, "y": 0.5, "w": 5.5, "h": 7, "label": "Time and materials" }
+          { "id": "z-fixed", "x": 0.4, "y": 0.6, "w": 4.4, "h": 6.8, "label": "Fixed price" },
+          { "id": "z-hourly", "x": 6.6, "y": 0.6, "w": 4.4, "h": 6.8, "label": "Hourly" }
         ],
         "nodes": [
-          { "id": "f-sam", "x": 3, "y": 2.2, "label": "Sam", "sublabel": "pays one amount", "icon": "user", "kind": "person", "status": "ok" },
-          { "id": "f-you", "x": 3, "y": 5.6, "label": "You", "sublabel": "absorb the overrun", "icon": "laptop", "kind": "person", "status": "warn" },
-          { "id": "t-sam", "x": 9, "y": 2.2, "label": "Sam", "sublabel": "pays per hour", "icon": "user", "kind": "person", "status": "warn" },
-          { "id": "t-you", "x": 9, "y": 5.6, "label": "You", "sublabel": "paid for every hour", "icon": "laptop", "kind": "person", "status": "ok" }
+          { "id": "f-sam", "x": 2.6, "y": 1.8, "label": "Sam", "icon": "user", "kind": "person", "status": "ok" },
+          { "id": "f-you", "x": 2.6, "y": 5.6, "label": "You", "icon": "laptop", "kind": "person", "status": "warn", "pill": { "text": "unpaid days", "tone": "bad" } },
+          { "id": "t-sam", "x": 8.8, "y": 1.8, "label": "Sam", "icon": "user", "kind": "person", "status": "warn", "pill": { "text": "pays +2 days", "tone": "warn" } },
+          { "id": "t-you", "x": 8.8, "y": 5.6, "label": "You", "icon": "laptop", "kind": "person", "status": "ok" }
         ],
         "edges": [
-          { "from": "f-sam", "to": "f-you", "label": "risk lands here", "status": "warn", "packet": { "label": "+2 days", "status": "warn" } },
-          { "from": "t-you", "to": "t-sam", "label": "risk lands here", "status": "warn", "packet": { "label": "+2 days", "status": "warn" } }
+          { "from": "f-sam", "to": "f-you", "label": "one amount" },
+          { "from": "t-sam", "to": "t-you", "label": "per hour" }
         ]
       }
     },
@@ -159,8 +191,8 @@
       "title": "A deposit and milestones",
       "chapter": "how",
       "body": [
-        "For a fixed price, split payment into <span class=\"term\" data-term=\"milestone\">milestones</span> Sam can see: a <span class=\"term\">deposit</span> to start, a payment when booking works on staging, the rest at launch.",
-        "The deposit commits Sam and pays for work you already did. Milestones keep both sides honest: nobody is ever more than one step out of pocket."
+        "For a fixed price, split payment into <span class=\"term\" data-term=\"milestone\">milestones</span> Sam can see: a <span class=\"term\">deposit</span> to start, a payment when booking works on <span class=\"term\">staging</span> (a private test copy of the app), the rest at launch.",
+        "The deposit commits Sam and pays for early work. Milestones keep both sides honest: nobody is more than one step out of pocket."
       ],
       "code": {
         "language": "text",
@@ -168,16 +200,20 @@
         "code": "Milestone                    Share  Trigger\n1. Kickoff deposit            30%  contract signed\n2. Booking flow on staging    40%  Sam tests the criteria\n3. Launch + handoff           30%  live, docs delivered",
         "caption": "Example split. Tie each trigger to something Sam can check, not to \"60% done\"."
       },
+      "changes": [
+        "− Both pairs of Sam and You, and the two zones",
+        "+ Deposit, Staging Demo, Launch: three payments"
+      ],
       "scene": {
         "caption": "Payments follow visible progress. Each step is small enough to trust.",
         "nodes": [
-          { "id": "m1", "x": 2, "y": 4, "label": "Deposit", "sublabel": "contract signed", "icon": "money", "kind": "neutral", "status": "ok", "tags": ["30%"] },
-          { "id": "m2", "x": 6.4, "y": 4, "label": "Staging demo", "sublabel": "Sam tests it", "icon": "browser", "kind": "neutral", "status": "active", "tags": ["40%"] },
-          { "id": "m3", "x": 10.4, "y": 4, "label": "Launch", "sublabel": "live + handoff", "icon": "rocket", "kind": "neutral", "tags": ["30%"] }
+          { "id": "m1", "x": 0.8, "y": 4.4, "label": "Deposit", "icon": "money", "status": "ok", "pill": "30%" },
+          { "id": "m2", "x": 4.6, "y": 4.4, "label": "Staging Demo", "icon": "browser", "status": "active", "pill": "40%" },
+          { "id": "m3", "x": 8.4, "y": 4.4, "label": "Launch", "icon": "rocket", "pill": "30%" }
         ],
         "edges": [
-          { "from": "m1", "to": "m2", "label": "build", "packet": { "label": "work" } },
-          { "from": "m2", "to": "m3", "label": "polish, launch", "style": "dashed" }
+          { "from": "m1", "to": "m2", "packet": { "kind": "job", "speed": "slow" } },
+          { "from": "m2", "to": "m3", "style": "dashed" }
         ]
       }
     },
@@ -185,8 +221,8 @@
       "title": "AI costs grow with every click",
       "chapter": "how",
       "body": [
-        "Say Sam later approves the AI rebooking feature. Hosting costs are fairly flat. AI usage is not. Each Claude API call is billed in <span class=\"term\" data-term=\"token\">tokens</span>: input (prompt plus context) and output (the reply), at different rates.",
-        "Estimate it like a utility bill: calls per month × tokens per call × price. Take prices from the provider's pricing page, not from memory."
+        "Say Sam later approves AI rebooking. The app server (the computer running the salon's code) sends each call to the Claude API, Anthropic's AI. It bills in <span class=\"term\" data-term=\"token\">tokens</span>, in and out, at different rates.",
+        "Hosting stays flat; AI usage does not. Estimate it like a utility bill: calls × tokens × price, using the provider's price page."
       ],
       "code": {
         "language": "ts",
@@ -194,16 +230,25 @@
         "code": "// Prices: $ per million tokens, from the provider's pricing page\nconst PRICE_IN = 0;   // fill in\nconst PRICE_OUT = 0;  // fill in\n\nconst callsPerMonth = 3000;  // rebooking suggestions\nconst tokensIn = 1500;       // prompt + booking history\nconst tokensOut = 300;       // a short message\n\nconst monthly =\n  (callsPerMonth * (tokensIn * PRICE_IN + tokensOut * PRICE_OUT))\n  / 1_000_000;",
         "caption": "Show Sam a low, expected and high month. Usage, not your build, sets this number."
       },
+      "changes": [
+        "− Deposit, Staging Demo, Launch",
+        "+ App Server and Claude API: the AI rebooking feature",
+        "+ Monthly Bill: grows with every call",
+        "~ AI calls 0 → 3,000 a month"
+      ],
+      "metrics": {
+        "calls": { "value": 3000, "tone": "neutral" }
+      },
       "scene": {
         "caption": "Every AI click sends tokens in and out. The bill grows with usage.",
         "nodes": [
-          { "id": "app", "x": 2, "y": 4, "label": "Salon app", "sublabel": "AI rebooking", "icon": "server", "kind": "server" },
-          { "id": "llm", "x": 6.4, "y": 4, "label": "Claude API", "sublabel": "billed per token", "icon": "sparkle", "kind": "ai", "tags": ["in + out"] },
-          { "id": "bill", "x": 10.4, "y": 4, "label": "Monthly bill", "sublabel": "grows with use", "icon": "money", "kind": "neutral", "status": "warn" }
+          { "id": "app", "x": 0.8, "y": 4.4, "label": "App Server", "icon": "server", "kind": "server" },
+          { "id": "llm", "x": 4.6, "y": 4.4, "label": "Claude API", "icon": "sparkle", "kind": "ai" },
+          { "id": "bill", "x": 8.4, "y": 4.4, "label": "Monthly Bill", "icon": "money", "status": "warn" }
         ],
         "edges": [
-          { "from": "app", "to": "llm", "label": "each click", "packet": { "label": "1.8k tok", "speed": "fast" } },
-          { "from": "llm", "to": "bill", "label": "usage" }
+          { "from": "app", "to": "llm", "packet": { "kind": "request", "direction": "both", "speed": "fast" } },
+          { "from": "llm", "to": "bill", "status": "warn" }
         ]
       }
     },
@@ -211,24 +256,30 @@
       "title": "Let running costs pass through",
       "chapter": "how",
       "body": [
-        "Running costs belong to the client: hosting, database, SMS and AI. The clean setup is a <span class=\"term\">pass-through</span>: accounts in Sam's name, on her card, so she pays providers directly.",
-        "Your quote then has two parts: your fee for the build, and an estimated monthly running cost as a range. Lesson 3 covers setting up those accounts."
+        "Running costs belong to the client: hosting (the servers and database), text messages and AI. The clean setup is a <span class=\"term\">pass-through</span>: accounts in Sam's name, on her card, so she pays providers directly.",
+        "Your quote then has two parts: your fee for the build, and an estimated monthly running cost, as a range. Lesson 3 sets up those accounts."
       ],
       "callout": {
         "type": "tip",
         "text": "If you do pay a cost on the client's behalf, invoice it as a separate line with a margin you state openly. Hidden markups on usage turn into awkward conversations when usage spikes."
       },
+      "changes": [
+        "~ Monthly Bill → Sam's Card: she pays providers directly",
+        "+ Hosting: runs the app and database, billed monthly",
+        "+ SMS Service: sends the reminders, billed per text"
+      ],
       "scene": {
         "extends": "previous",
         "caption": "Every running cost lands on Sam's card. Your invoice covers only your work.",
         "nodes": [
-          { "id": "bill", "label": "Sam's card", "sublabel": "pays providers", "status": "ok" },
-          { "id": "host", "x": 6.4, "y": 1.6, "label": "Vercel + Supabase", "sublabel": "hosting, database", "icon": "cloud", "kind": "external" },
-          { "id": "sms", "x": 6.4, "y": 6.4, "label": "SMS provider", "sublabel": "per message", "icon": "mail", "kind": "external" }
+          { "id": "bill", "label": "Sam's Card", "icon": "money", "status": "ok" },
+          { "id": "host", "x": 8.4, "y": 0.8, "label": "Hosting", "icon": "cloud", "kind": "external" },
+          { "id": "sms", "x": 4.6, "y": 0.8, "label": "SMS Service", "icon": "mail", "kind": "external" }
         ],
         "edges": [
-          { "from": "host", "to": "bill", "label": "monthly" },
-          { "from": "sms", "to": "bill", "label": "per text" }
+          { "id": "llm>bill", "status": "ok" },
+          { "from": "host", "to": "bill", "status": "ok" },
+          { "from": "sms", "to": "bill", "status": "ok", "route": "mid" }
         ]
       }
     },
@@ -236,8 +287,8 @@
       "title": "One bug can burn a month's budget",
       "chapter": "watch-out",
       "body": [
-        "A bug that retries an AI call forever, or a bot hammering the endpoint, can spend a lot of money overnight. Under a fixed price, that bill becomes an argument.",
-        "Protect both sides: set a <span class=\"term\">spend limit</span> in the provider console, cap <code>max_tokens</code> on every call, rate-limit the endpoint, and log usage per call so you see the curve early."
+        "A bug that retries an AI call forever, or a bot hammering the feature, can spend a lot overnight. Under a fixed price, that bill becomes an argument.",
+        "Protect both sides: a <span class=\"term\">spend limit</span> in the provider's dashboard, a <code>max_tokens</code> cap (the longest reply allowed) on every call, a limit on retries, and a log of usage per call."
       ],
       "code": {
         "language": "ts",
@@ -246,22 +297,29 @@
       },
       "callout": {
         "type": "claude-code",
-        "text": "When Claude Code writes an AI call, check: is <code>max_tokens</code> sized to the feature? Is the model id in one env var, not hard-coded in five files? Does it log the <code>usage</code> numbers from the response? Is there a rate limit and a retry cap in front of it?"
+        "text": "When Claude Code writes an AI call, check: is <code>max_tokens</code> sized to the feature? Is the model id in one env var, not in five files? Does it log the <code>usage</code> numbers? Is there a retry cap and a rate limit in front of it?"
+      },
+      "changes": [
+        "− Hosting, SMS Service",
+        "+ Retry Loop: a bug that calls the AI again and again",
+        "~ AI calls 3,000 → 300,000 a month",
+        "~ Sam's Card: a spend limit stops the damage"
+      ],
+      "metrics": {
+        "calls": { "value": 300000, "tone": "bad" }
       },
       "scene": {
         "extends": "previous",
-        "caption": "A runaway loop multiplies calls. Caps and a spend limit stop the damage.",
+        "caption": "A runaway loop multiplies calls. The spend limit on Sam's card stops it.",
         "remove": ["host", "sms"],
         "nodes": [
-          { "id": "bill", "label": "Monthly bill", "sublabel": "capped by a limit", "status": "warn" },
-          { "id": "llm", "tags": ["max_tokens: 300"] },
-          { "id": "loop", "x": 2, "y": 6.6, "label": "Retry loop", "sublabel": "a bug", "icon": "bug", "kind": "threat", "status": "error" }
+          { "id": "bill", "status": "warn", "pill": { "text": "spend limit", "tone": "good" } },
+          { "id": "llm", "status": "error" },
+          { "id": "loop", "x": 4.6, "y": 0.8, "label": "Retry Loop", "icon": "bug", "kind": "threat", "status": "error" }
         ],
         "edges": [
-          { "from": "loop", "to": "llm", "label": "x 10,000", "status": "error", "packet": { "label": "retry", "status": "error", "speed": "fast" } }
-        ],
-        "notes": [
-          { "id": "cap", "x": 10.4, "y": 1.8, "text": "Spend limit stops it", "status": "ok" }
+          { "id": "llm>bill", "status": "error" },
+          { "from": "loop", "to": "llm", "status": "error", "packet": { "kind": "error", "speed": "fast" } }
         ]
       }
     },
@@ -269,9 +327,28 @@
       "title": "Recap in one breath",
       "chapter": "recap",
       "body": [
-        "Never price from your gut. Break stories into small tasks, give each three numbers, add the non-coding work and a buffer, and send a range in writing.",
+        "Never price from your gut. Split stories into small tasks, give each three numbers, add the non-coding work and a buffer, and send a range in writing.",
         "Fixed price puts the risk on you, so it needs a tight scope and milestones. Running costs, AI usage above all, pass through to the client and need caps from day one."
-      ]
+      ],
+      "changes": [
+        "− Retry Loop: fixed, with a retry cap",
+        "~ AI calls 300,000 → 3,000 a month"
+      ],
+      "metrics": {
+        "calls": { "value": 3000, "tone": "good" }
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Calls back to normal, capped per call, and paid from Sam's own card.",
+        "remove": ["loop"],
+        "nodes": [
+          { "id": "bill", "status": "ok" },
+          { "id": "llm", "status": "ok" }
+        ],
+        "edges": [
+          { "id": "llm>bill", "status": "ok" }
+        ]
+      }
     }
   ],
   "quiz": [
