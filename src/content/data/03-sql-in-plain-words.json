@@ -11,6 +11,7 @@
     "How the Supabase client maps to SQL, and why values go in as parameters"
   ],
   "glossary": {
+    "app server": "A computer, somewhere else, that runs the app's own code. Notely's runs on Vercel.",
     "SQL": "Structured Query Language: the language you use to ask a relational database for data or to change it.",
     "query": "One request written in SQL, like \"give me Maya's notes, newest first\".",
     "declarative": "You describe the result you want, and the system works out the steps to get it.",
@@ -25,51 +26,82 @@
     "transaction": "A group of writes that succeed or fail together. If one fails, Postgres undoes all of them.",
     "SQL injection": "An attack where user input is glued into a SQL string and runs as part of the command."
   },
+  "metrics": [
+    { "id": "rows", "label": "Rows touched", "icon": "table" },
+    { "id": "others", "label": "Others' notes", "icon": "alert" }
+  ],
   "steps": [
     {
-      "title": "Claude writes SQL. Can you read it?",
-      "chapter": "problem",
+      "title": "Notely talks to its database in SQL",
+      "chapter": "setup",
       "body": [
-        "Claude Code writes database code for Notely all day: queries in API routes, security policies, migrations. Most of it is <span class=\"term\">SQL</span>.",
-        "You do not need to write SQL from memory. You do need to read it, because one missing line can show Maya someone else's notes, or delete every note in the table. Seven words cover most of what you will see."
+        "Notely's <span class=\"term\">app server</span> (the computer running its code) keeps every note in the database. To read or change notes, it sends the database a <span class=\"term\">query</span> written in <span class=\"term\">SQL</span>, the language databases understand.",
+        "On the right are three rows of the <code>notes</code> table. Two belong to Maya (user 7), one to Leo (user 8)."
       ],
+      "metrics": {
+        "rows": { "value": 0, "tone": "neutral" },
+        "others": { "value": 0, "tone": "good" }
+      },
       "scene": {
-        "caption": "A query from Claude Code, and the notes table it will touch.",
+        "caption": "The app server, and three rows of the notes table it sends SQL to.",
         "zones": [
-          { "id": "tbl", "x": 0.3, "y": 0.2, "w": 4.6, "h": 7.7, "label": "notes table" }
+          { "id": "tbl", "x": 5.6, "y": 0.1, "w": 2.8, "h": 7.8, "label": "notes table" }
         ],
         "nodes": [
-          { "id": "q", "x": 9.8, "y": 3.4, "label": "Claude's query", "sublabel": "in an API route", "icon": "code", "kind": "ai", "status": "warn" },
-          { "id": "r1", "x": 2.6, "y": 1, "label": "Groceries", "sublabel": "maya · Nov 3", "icon": "file", "shape": "tile", "kind": "data" },
-          { "id": "r2", "x": 2.6, "y": 2.7, "label": "Trip plan", "sublabel": "leo · Nov 5", "icon": "file", "shape": "tile", "kind": "data" },
-          { "id": "r3", "x": 2.6, "y": 4.4, "label": "Book ideas", "sublabel": "maya · Nov 9", "icon": "file", "shape": "tile", "kind": "data" },
-          { "id": "r4", "x": 2.6, "y": 6.1, "label": "Standup notes", "sublabel": "maya · Nov 1", "icon": "file", "shape": "tile", "kind": "data" }
-        ],
-        "notes": [
-          { "id": "n-what", "x": 10.2, "y": 2.4, "text": "What will this touch?", "status": "warn" }
+          { "id": "app", "x": 2.0, "y": 4.2, "label": "App Server", "icon": "server", "kind": "server" },
+          { "id": "r1", "x": 7.0, "y": 1.0, "label": "Groceries", "icon": "file", "shape": "tile", "kind": "data", "pill": "user 7" },
+          { "id": "r2", "x": 7.0, "y": 3.2, "label": "Trip plan", "icon": "file", "shape": "tile", "kind": "data", "pill": "user 8" },
+          { "id": "r3", "x": 7.0, "y": 5.4, "label": "Book ideas", "icon": "file", "shape": "tile", "kind": "data", "pill": "user 7" }
         ]
       }
     },
     {
-      "title": "SQL reads like a request",
+      "title": "A query you did not write",
+      "chapter": "problem",
+      "body": [
+        "Claude Code writes most of Notely's SQL. For Maya's list it wrote <code>select * from notes;</code>. It runs without an error, and returns every row in the table. Maya's list now shows Leo's Trip plan.",
+        "You do not need to write SQL from memory. You do need to read it, because one missing line decides whose notes get touched."
+      ],
+      "changes": [
+        "~ Rows touched 0 → 3: every row in the table",
+        "~ Others' notes 0 → 1: Leo's Trip plan on Maya's screen"
+      ],
+      "metrics": {
+        "rows": { "value": 3, "tone": "warn" },
+        "others": { "value": 1, "tone": "bad" }
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "No filter: every row goes back, Leo's included.",
+        "nodes": [
+          { "id": "r2", "status": "error" }
+        ],
+        "edges": [
+          { "from": "r1", "to": "app", "packet": { "kind": "data" } },
+          { "from": "r2", "to": "app", "status": "error", "packet": { "kind": "error" } },
+          { "from": "r3", "to": "app", "packet": { "kind": "data" } }
+        ]
+      }
+    },
+    {
+      "title": "SQL reads like a sentence",
       "chapter": "idea",
       "body": [
-        "SQL is <span class=\"term\">declarative</span>: you say <em>what</em> you want, not how to find it. Postgres works out the how.",
-        "Most statements read like a sentence: a verb, a table, then which rows. \"Get the title from notes where the owner is Maya.\" Spot the verb and the <em>which rows</em> part, and you can read almost any <span class=\"term\">query</span>."
+        "SQL is <span class=\"term\">declarative</span>: you say <em>what</em> you want, not how to find it. Postgres, Notely's database, works out the how.",
+        "Most statements read like a sentence: a verb, a table, then which rows. <code>select * from notes</code> has a verb and a table, but no <em>which rows</em>. That missing part is the bug."
       ],
       "callout": {
         "type": "analogy",
         "text": "Ordering at a restaurant. You say \"the risotto, no cheese\". You do not walk into the kitchen and tell the chef which pan to use."
       },
+      "changes": [
+        "~ App Server: we read its query as a sentence"
+      ],
       "scene": {
         "extends": "previous",
-        "caption": "Every statement: a verb, a table, and which rows.",
-        "remove": ["n-what"],
+        "caption": "Verb, table, which rows. The third part is missing.",
         "nodes": [
-          { "id": "q", "label": "SQL sentence", "sublabel": "verb · table · rows", "status": "active" }
-        ],
-        "notes": [
-          { "id": "n-shape", "x": 10.2, "y": 2.4, "text": "\"Get titles from notes where…\"", "status": "active" }
+          { "id": "app", "status": "active", "pill": { "text": "which rows?", "tone": "warn" } }
         ]
       }
     },
@@ -78,28 +110,31 @@
       "chapter": "how",
       "body": [
         "<span class=\"term\">SELECT</span> picks the columns. <code>FROM</code> names the table. <span class=\"term\">WHERE</span> keeps only the rows that pass a test.",
-        "Here Postgres checks each row: is <code>user_id</code> 7? Maya's rows pass. Leo's row is skipped. You will also see <code>select *</code>, which means every column: handy while exploring, wasteful in app code."
+        "Here Postgres checks each row: is <code>user_id</code> 7? Maya's rows pass, Leo's is skipped. <code>select *</code> means every column: handy while exploring, wasteful in app code."
       ],
       "code": {
         "language": "sql",
         "code": "select title, created_at\nfrom notes\nwhere user_id = 7;",
-        "caption": "Maya is user 7, as in lesson 1. Keywords work in any case; lowercase is common."
+        "caption": "Keywords work in any case; lowercase is common."
+      },
+      "changes": [
+        "~ Rows touched 3 → 2",
+        "~ Others' notes 1 → 0: Leo's row is skipped",
+        "~ App Server: the query now says which rows"
+      ],
+      "metrics": {
+        "rows": { "value": 2, "tone": "good" },
+        "others": { "value": 0, "tone": "good" }
       },
       "scene": {
         "extends": "previous",
-        "caption": "WHERE lets Maya's three rows through and skips Leo's.",
-        "remove": ["n-shape"],
+        "caption": "WHERE user_id = 7 lets Maya's two rows through and skips Leo's.",
+        "remove": ["r2>app"],
         "nodes": [
-          { "id": "q", "label": "SELECT … WHERE", "sublabel": "user_id = 7" },
+          { "id": "app", "status": "normal", "pill": "user_id = 7" },
           { "id": "r1", "status": "active" },
           { "id": "r2", "status": "dim" },
-          { "id": "r3", "status": "active" },
-          { "id": "r4", "status": "active" }
-        ],
-        "edges": [
-          { "from": "q", "to": "r1", "packet": { "label": "row", "direction": "backward" } },
-          { "from": "q", "to": "r3", "packet": { "label": "row", "direction": "backward" } },
-          { "from": "q", "to": "r4", "packet": { "label": "row", "direction": "backward" } }
+          { "id": "r3", "status": "active" }
         ]
       }
     },
@@ -108,22 +143,28 @@
       "chapter": "how",
       "body": [
         "Rows come back in no promised order. If order matters, say so. <span class=\"term\">ORDER BY</span> <code>created_at desc</code> sorts newest first; <code>asc</code> is oldest first.",
-        "<span class=\"term\">LIMIT</span> stops after a number of rows. Maya's home screen wants her latest two notes, not all two thousand."
+        "<span class=\"term\">LIMIT</span> stops after a number of rows. Notely's \"Latest\" card shows only Maya's newest note, so the query stops after one."
       ],
       "code": {
         "language": "sql",
-        "code": "select title, created_at\nfrom notes\nwhere user_id = 7\norder by created_at desc\nlimit 2;"
+        "code": "select title, created_at\nfrom notes\nwhere user_id = 7\norder by created_at desc\nlimit 1;"
+      },
+      "changes": [
+        "~ Book ideas moves to the top: it is the newest",
+        "~ Groceries is cut by the limit",
+        "~ Rows touched 2 → 1"
+      ],
+      "metrics": {
+        "rows": { "value": 1, "tone": "good" }
       },
       "scene": {
         "extends": "previous",
-        "caption": "Sorted newest first, then cut after two rows.",
-        "remove": ["q>r4"],
+        "caption": "Sorted newest first, then cut after one row.",
+        "remove": ["r1>app"],
         "nodes": [
-          { "id": "q", "label": "ORDER BY + LIMIT", "sublabel": "newest 2" },
-          { "id": "r3", "y": 0.6 },
-          { "id": "r1", "y": 2.6 },
-          { "id": "r4", "y": 4.4, "status": "dim" },
-          { "id": "r2", "y": 6 }
+          { "id": "app", "pill": "newest 1" },
+          { "id": "r3", "y": 1.0 },
+          { "id": "r1", "y": 5.4, "status": "dim" }
         ]
       }
     },
@@ -140,51 +181,57 @@
       },
       "callout": {
         "type": "tip",
-        "text": "Some writes must happen together, like a note and its tag links. Wrap them in a <span class=\"term\">transaction</span>: <code>begin;</code> … <code>commit;</code>. If any statement fails, Postgres rolls all of them back, so you never keep half a change."
+        "text": "Some writes belong together, like a note and its tag links. Wrap them in a <span class=\"term\">transaction</span> (<code>begin;</code> … <code>commit;</code>). If one statement fails, Postgres undoes all of them."
       },
+      "changes": [
+        "+ Pitch deck: a new row for Maya",
+        "~ Every other row back to normal"
+      ],
       "scene": {
         "extends": "previous",
-        "caption": "A new row joins the table. Postgres fills in the id and the time.",
-        "remove": ["q>r1", "q>r3"],
+        "caption": "A new row joins the table. Postgres fills in its id and time.",
+        "remove": ["r3>app"],
         "nodes": [
-          { "id": "q", "label": "INSERT", "sublabel": "one new row" },
+          { "id": "app", "pill": null },
           { "id": "r1", "status": "normal" },
-          { "id": "r3", "status": "normal" },
-          { "id": "r4", "status": "normal" },
           { "id": "r2", "status": "normal" },
-          { "id": "r5", "x": 2.6, "y": 7.6, "label": "Pitch deck", "sublabel": "maya · Nov 25", "icon": "file", "shape": "tile", "kind": "data", "status": "ok" }
+          { "id": "r3", "status": "normal" },
+          { "id": "r4", "x": 7.0, "y": 7.6, "label": "Pitch deck", "icon": "file", "shape": "tile", "kind": "data", "pill": "user 7", "status": "ok" }
         ],
         "edges": [
-          { "from": "q", "to": "r5", "label": "returning id", "packet": { "label": "row", "direction": "both" } }
+          { "from": "app", "to": "r4", "packet": { "kind": "request", "direction": "both", "returns": "data" } }
         ]
       }
     },
     {
-      "title": "UPDATE: change rows that match",
+      "title": "UPDATE: change the rows that match",
       "chapter": "how",
       "body": [
         "<span class=\"term\">UPDATE</span> changes values in existing rows. <code>SET</code> says what changes, <code>WHERE</code> says which rows.",
-        "The <code>WHERE</code> is the part that can hurt. Point it at the primary key and exactly one row changes. Point it at something broad, like a title, and every matching row changes, whoever owns it."
+        "Point the <code>WHERE</code> at the primary key, and exactly one row changes. Point it at something broad, like a title, and every matching row changes, whoever owns it."
       ],
       "code": {
         "language": "sql",
-        "code": "update notes\nset title = 'Groceries (Sat)'\nwhere id = 101;"
+        "code": "update notes\nset title = 'Groceries (Sat)'\nwhere id = 101;  -- 101 is Groceries"
       },
       "callout": {
         "type": "tip",
         "text": "Before running an UPDATE or DELETE by hand, run the same WHERE as a SELECT. If it returns exactly the rows you expect, swap the verb."
       },
+      "changes": [
+        "~ Groceries → Groceries (Sat): one row, picked by its id",
+        "~ Pitch deck settles in"
+      ],
       "scene": {
         "extends": "previous",
         "caption": "WHERE id = 101 picks exactly one row to change.",
-        "remove": ["q>r5"],
+        "remove": ["app>r4"],
         "nodes": [
-          { "id": "q", "label": "UPDATE", "sublabel": "where id = 101" },
-          { "id": "r5", "status": "normal" },
-          { "id": "r1", "label": "Groceries (Sat)", "status": "active" }
+          { "id": "r4", "status": "normal" },
+          { "id": "r1", "label": "Groceries (Sat)", "status": "ok" }
         ],
         "edges": [
-          { "from": "q", "to": "r1", "label": "id = 101", "packet": { "label": "set" } }
+          { "from": "app", "to": "r1", "packet": { "kind": "request" } }
         ]
       }
     },
@@ -193,29 +240,34 @@
       "chapter": "watch-out",
       "body": [
         "<span class=\"term\">DELETE</span> removes the rows that match the <code>WHERE</code>. No undo, no trash folder, unless you build one (lesson 4).",
-        "<code>delete from notes where id = 102;</code> removes one note. Lose the last part and you get <code>delete from notes;</code>, which is valid SQL. It removes every note, for every user."
+        "<code>delete from notes where id = 102;</code> removes one note. Lose the last part and you get <code>delete from notes;</code>: valid SQL that removes every note, for every user. All two million."
       ],
       "callout": {
         "type": "warn",
         "text": "Know where your backups are before you need them: check your Supabase project's backup settings now, not after a bad delete."
       },
+      "changes": [
+        "~ Every row turns red: no WHERE means every row matches",
+        "~ Rows touched 1 → 2,000,000",
+        "~ Others' notes 0 → all"
+      ],
+      "metrics": {
+        "rows": { "value": 2000000, "tone": "bad" },
+        "others": { "value": "all", "tone": "bad" }
+      },
       "scene": {
         "extends": "previous",
         "caption": "No WHERE means every row in the table matches.",
-        "remove": ["q>r1"],
+        "remove": ["app>r1"],
         "zones": [
           { "id": "tbl", "status": "error" }
         ],
         "nodes": [
-          { "id": "q", "label": "DELETE", "sublabel": "no WHERE", "status": "error" },
+          { "id": "app", "status": "error" },
           { "id": "r1", "status": "error" },
           { "id": "r2", "status": "error" },
           { "id": "r3", "status": "error" },
-          { "id": "r4", "status": "error" },
-          { "id": "r5", "status": "error" }
-        ],
-        "notes": [
-          { "id": "n-all", "x": 10.2, "y": 6.2, "text": "Every row, every user", "status": "error" }
+          { "id": "r4", "status": "error" }
         ]
       }
     },
@@ -223,39 +275,46 @@
       "title": "The same query, from Notely's code",
       "chapter": "example",
       "body": [
-        "In Next.js, the Supabase client builds the SQL for you. Each method maps to a word you now know: <code>.select()</code>, <code>.eq()</code> for <code>where</code>, <code>.order()</code>, <code>.limit()</code>.",
-        "When you do write raw SQL in code, pass values as <span class=\"term\" data-term=\"parameter\">parameters</span>. Never paste user input into the SQL string: that is how <span class=\"term\">SQL injection</span> happens."
+        "Notely's code uses the Supabase client, a library that builds the SQL for you. Each method maps to a word you know: <code>.select()</code>, <code>.eq()</code> for <code>where</code>, <code>.order()</code>, <code>.limit()</code>.",
+        "When you write raw SQL in code, pass values as <span class=\"term\" data-term=\"parameter\">parameters</span>. Pasting user input into the SQL string is how <span class=\"term\">SQL injection</span> happens."
       ],
       "code": {
         "language": "ts",
         "filename": "app/api/notes/route.ts",
         "code": "const { data, error } = await supabase\n  .from('notes')\n  .select('title, created_at')\n  .eq('user_id', userId)\n  .order('created_at', { ascending: false })\n  .limit(20);",
-        "caption": "Same as: select … where user_id = $1 order by created_at desc limit 20. The .eq() shapes the list; RLS (lesson 6) is what blocks other users' rows."
+        "caption": "Same as: select … where user_id = $1 order by created_at desc limit 20."
       },
       "callout": {
         "type": "claude-code",
-        "text": "For each query Claude Code writes, find the verb and the WHERE. Does every UPDATE and DELETE target an id? Is user input passed as a parameter (<code>$1</code> or a client method), never inside a template string with <code>${...}</code>? Try risky statements on a local or staging database first."
+        "text": "For each query Claude Code writes, find the verb and the WHERE. Does every UPDATE and DELETE target an id? Is user input passed as a parameter, never inside a template string with <code>${...}</code>? Try risky statements on a test database first."
+      },
+      "changes": [
+        "~ Rows back to normal: that delete never ran",
+        "~ Rows touched 2,000,000 → 3: Maya's notes only",
+        "~ Others' notes all → 0",
+        "+ Maya's three rows flow back to the App Server"
+      ],
+      "metrics": {
+        "rows": { "value": 3, "tone": "good" },
+        "others": { "value": 0, "tone": "good" }
       },
       "scene": {
         "extends": "previous",
         "caption": "Client methods become one SQL query: Maya's notes, newest first.",
-        "remove": ["n-all"],
         "zones": [
           { "id": "tbl", "status": null }
         ],
         "nodes": [
-          { "id": "q", "label": "supabase-js", "sublabel": ".eq .order .limit", "kind": "client", "status": "ok" },
-          { "id": "r1", "status": "normal" },
+          { "id": "app", "status": "ok", "pill": "user_id = 7" },
+          { "id": "r1", "status": "active" },
           { "id": "r2", "status": "dim" },
-          { "id": "r3", "status": "normal" },
-          { "id": "r4", "status": "normal" },
-          { "id": "r5", "status": "normal" }
+          { "id": "r3", "status": "active" },
+          { "id": "r4", "status": "active" }
         ],
         "edges": [
-          { "from": "q", "to": "r5", "packet": { "label": "row", "direction": "backward" } },
-          { "from": "q", "to": "r3", "packet": { "label": "row", "direction": "backward" } },
-          { "from": "q", "to": "r1", "packet": { "label": "row", "direction": "backward" } },
-          { "from": "q", "to": "r4", "packet": { "label": "row", "direction": "backward" } }
+          { "from": "r3", "to": "app", "packet": { "kind": "data" } },
+          { "from": "r1", "to": "app", "packet": { "kind": "data" } },
+          { "from": "r4", "to": "app", "packet": { "kind": "data" } }
         ]
       }
     },
@@ -265,7 +324,20 @@
       "body": [
         "SQL is a sentence: verb, table, which rows. <code>SELECT</code> reads, <code>WHERE</code> filters, <code>ORDER BY</code> sorts, <code>LIMIT</code> caps. <code>INSERT</code> adds, <code>UPDATE</code> changes, <code>DELETE</code> removes.",
         "When you review Claude Code's SQL, look hardest at the <code>WHERE</code>. It decides whose data gets touched."
-      ]
+      ],
+      "changes": [
+        "~ All rows calm: a query that says exactly which rows it means"
+      ],
+      "scene": {
+        "extends": "previous",
+        "caption": "Verb, table, which rows: read every query this way.",
+        "nodes": [
+          { "id": "r1", "status": "normal" },
+          { "id": "r2", "status": "normal" },
+          { "id": "r3", "status": "normal" },
+          { "id": "r4", "status": "normal" }
+        ]
+      }
     }
   ],
   "quiz": [
@@ -281,7 +353,7 @@
       "question": "Claude Code wrote <code>update notes set pinned = true where title = 'Groceries';</code> for Maya's \"pin\" button. What is wrong?",
       "options": [
         { "text": "It pins every note titled Groceries, including other users' notes.", "correct": true, "why": "The WHERE matches by title, which is not unique. Target the note's <code>id</code> (and check the owner) so exactly one row changes." },
-        { "text": "<code>true</code> should be written as the string <code>'true'</code>.", "why": "<code>pinned</code> is a boolean column, so <code>true</code> is correct. The problem is which rows match." },
+        { "text": "<code>true</code> should be written as the string <code>'true'</code>.", "why": "<code>pinned</code> is a yes/no column, so <code>true</code> is correct. The problem is which rows match." },
         { "text": "An UPDATE needs a <code>LIMIT 1</code> at the end.", "why": "Postgres does not allow LIMIT on UPDATE. The safe fix is a WHERE that matches only the row you mean." }
       ]
     },

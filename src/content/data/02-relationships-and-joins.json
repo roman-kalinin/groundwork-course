@@ -11,6 +11,8 @@
     "How to spot the <b>N+1 query</b> trap in code Claude Code writes"
   ],
   "glossary": {
+    "app server": "A computer, somewhere else, that runs the app's own code. Notely's runs on Vercel.",
+    "database": "A program built to store data safely and find it again fast. Notely's is Postgres, run by Supabase.",
     "relationship": "How rows in two tables belong together, like a note belonging to a user.",
     "one-to-one": "Each row on one side matches at most one row on the other, like a user and their profile.",
     "one-to-many": "One row on one side matches many on the other, like one user with many notes, each note with one owner.",
@@ -23,29 +25,59 @@
     "index": "A sorted lookup Postgres keeps for a column, like the index at the back of a book, so it can find matching rows without reading the whole table.",
     "N+1 query": "Fetching a list with one query, then running one more query per item. Slow, and it grows with the list."
   },
+  "metrics": [
+    { "id": "queries", "label": "Queries per page", "icon": "database" },
+    { "id": "shown", "label": "Notes shown", "icon": "list" }
+  ],
   "steps": [
     {
-      "title": "Three tables, one screen",
-      "chapter": "problem",
+      "title": "Notely's note list, today",
+      "chapter": "setup",
       "body": [
-        "Maya's note list shows, for each note, the title, the author's name and some tag chips. In the database those facts live in three tables: <code>notes</code>, <code>users</code> and <code>tags</code>.",
-        "Each table holds its own facts once, as lesson 1 set up. The screen needs them side by side. Something has to put the pieces back together, quickly and correctly."
+        "Maya opens Notely and sees her list of notes. Her <b>browser</b> (the screen on her laptop) asks the <span class=\"term\">app server</span>, the computer running Notely's code. It reads her notes from the <span class=\"term\">database</span> and sends back their titles.",
+        "Inside the database are the two tables from lesson 1: <code>users</code> and <code>notes</code>. Each note's <code>user_id</code> points at its owner."
       ],
+      "metrics": {
+        "queries": { "value": 1, "tone": "good" },
+        "shown": { "value": "3 of 3", "tone": "good" }
+      },
       "scene": {
-        "caption": "One screen needs facts from three separate tables.",
+        "caption": "Maya's browser asks the app server, which reads her notes from the database.",
         "nodes": [
-          { "id": "screen", "x": 6.1, "y": 1.4, "label": "Note list", "sublabel": "title · author · tags", "icon": "list", "kind": "client", "status": "warn" },
-          { "id": "users", "x": 1.5, "y": 4.6, "label": "users", "sublabel": "people", "icon": "table", "kind": "data" },
-          { "id": "notes", "x": 3, "y": 4.6, "label": "notes", "sublabel": "the notes", "icon": "table", "kind": "data" },
-          { "id": "tags", "x": 10.6, "y": 4.6, "label": "tags", "sublabel": "labels", "icon": "table", "kind": "data" }
+          { "id": "browser", "x": 2.3, "y": 0.8, "label": "Browser", "icon": "browser", "kind": "client" },
+          { "id": "app", "x": 6.2, "y": 0.8, "label": "App Server", "icon": "server", "kind": "server" },
+          { "id": "db", "x": 10.1, "y": 0.8, "label": "Database", "icon": "database", "kind": "data" }
         ],
         "edges": [
-          { "from": "users", "to": "screen", "label": "name", "style": "dashed" },
-          { "from": "notes", "to": "screen", "label": "title", "style": "dashed" },
-          { "from": "tags", "to": "screen", "label": "tags", "style": "dashed" }
+          { "from": "browser", "to": "app", "packet": { "kind": "request", "direction": "both" } },
+          { "from": "app", "to": "db", "packet": { "kind": "data", "direction": "both", "returns": "data" } }
+        ]
+      }
+    },
+    {
+      "title": "One screen, three tables",
+      "chapter": "problem",
+      "body": [
+        "Maya wants more on each line: the author's name and tag chips like <em>work</em> or <em>travel</em>. Those facts live in three tables: <code>notes</code>, <code>users</code>, and a new <code>tags</code> table.",
+        "Each table stores its own facts once. To build the list, the app server has to put the pieces back together, quickly and correctly."
+      ],
+      "changes": [
+        "− Browser and Database: we zoom inside the database",
+        "+ users and notes: the two tables from lesson 1",
+        "+ tags: a new table of labels like work or travel"
+      ],
+      "scene": {
+        "caption": "One list on Maya's screen needs facts from three separate tables.",
+        "nodes": [
+          { "id": "app", "x": 6.2, "y": 0.8, "label": "App Server", "icon": "server", "kind": "server", "status": "warn" },
+          { "id": "users", "x": 2.3, "y": 0.8, "label": "users", "icon": "table", "kind": "data" },
+          { "id": "notes", "x": 2.3, "y": 4.7, "label": "notes", "icon": "table", "kind": "data" },
+          { "id": "tags", "x": 10.1, "y": 4.7, "label": "tags", "icon": "table", "kind": "data" }
         ],
-        "notes": [
-          { "id": "n-how", "x": 6.1, "y": 6.8, "text": "How do these fit together?", "status": "warn" }
+        "edges": [
+          { "from": "users", "to": "app", "style": "dashed" },
+          { "from": "notes", "to": "app", "style": "dashed" },
+          { "from": "tags", "to": "app", "style": "dashed" }
         ]
       }
     },
@@ -60,32 +92,40 @@
         "type": "analogy",
         "text": "An author and their books is one-to-many: each book has one author. Students and classes is many-to-many: the school keeps a class register to record who is in what."
       },
+      "changes": [
+        "− Dashed lines to the App Server, which steps back",
+        "+ users–notes line: one-to-many",
+        "+ notes–tags line: many-to-many"
+      ],
       "scene": {
         "extends": "previous",
         "caption": "Users to notes is one-to-many. Notes to tags is many-to-many.",
-        "remove": ["users>screen", "notes>screen", "tags>screen", "n-how"],
+        "remove": ["users>app", "notes>app", "tags>app"],
         "nodes": [
-          { "id": "screen", "status": "dim" }
+          { "id": "app", "status": "dim" }
         ],
         "edges": [
-          { "from": "users", "to": "notes", "label": "1 → many", "arrow": "none", "status": "active" },
-          { "from": "notes", "to": "tags", "label": "many ↔ many", "arrow": "none", "style": "dashed", "status": "warn" }
+          { "from": "users", "to": "notes", "label": "one-to-many", "arrow": "none", "status": "active" },
+          { "from": "notes", "to": "tags", "label": "many-to-many", "arrow": "none", "style": "dashed", "status": "warn" }
         ]
       }
     },
     {
-      "title": "One-to-many: the key sits on the many side",
+      "title": "One-to-many: the key goes on the many side",
       "chapter": "how",
       "body": [
-        "Each note has exactly one owner, so the note can carry the owner's id. That is the <code>user_id</code> <span class=\"term\">foreign key</span> from lesson 1.",
-        "Never the other way round. A user row cannot keep a list of note ids in one column: the list would grow forever, and the database could not check each id. One-to-one works the same way, plus a <code>unique</code> rule on the key."
+        "Each note has exactly one owner, so the note carries the owner's id. That is the <code>user_id</code> <span class=\"term\">foreign key</span> from lesson 1.",
+        "Never the other way round: a list of note ids inside a user row would grow forever, and the database could not check each id. One-to-one works the same way, plus a <code>unique</code> rule on the key."
+      ],
+      "changes": [
+        "~ users–notes line becomes notes.user_id, pointing at users"
       ],
       "scene": {
         "extends": "previous",
-        "caption": "Each note carries one user_id. A user carries nothing about its notes.",
+        "caption": "Each note carries one user_id. A user row carries nothing about its notes.",
         "remove": ["users>notes"],
         "nodes": [
-          { "id": "notes", "tags": ["user_id"], "status": "active" }
+          { "id": "notes", "status": "active" }
         ],
         "edges": [
           { "from": "notes", "to": "users", "label": "user_id", "status": "ok" }
@@ -96,7 +136,7 @@
       "title": "Many-to-many needs a table in the middle",
       "chapter": "how",
       "body": [
-        "A note has many tags and a tag has many notes, so neither side can hold a single id. The fix is a third table, a <span class=\"term\">join table</span>: <code>note_tags</code>. Each row says \"this note has this tag\".",
+        "A note has many tags and a tag has many notes, so neither side can hold one id. The fix is a third table, a <span class=\"term\">join table</span>: <code>note_tags</code>. Each row says \"this note has this tag\".",
         "It holds two foreign keys. Together they form its primary key, so the same tag cannot land on a note twice."
       ],
       "code": {
@@ -105,15 +145,22 @@
         "code": "create table note_tags (\n  note_id bigint references notes (id) on delete cascade,\n  tag_id  bigint references tags (id) on delete cascade,\n  primary key (note_id, tag_id)\n);",
         "caption": "on delete cascade: when a note is deleted, its tag links go with it."
       },
+      "changes": [
+        "+ note_tags: a join table, one row per note-tag pair",
+        "− notes–tags line: replaced by note_tags",
+        "~ users steps back"
+      ],
       "scene": {
         "extends": "previous",
-        "caption": "note_tags sits between notes and tags. Each row is one note-tag pair.",
+        "caption": "note_tags sits between notes and tags. Each of its rows is one note-tag pair.",
         "remove": ["notes>tags"],
         "nodes": [
+          { "id": "users", "status": "dim" },
           { "id": "notes", "status": "normal" },
-          { "id": "note_tags", "x": 7.5, "y": 4.6, "label": "note_tags", "sublabel": "note_id + tag_id", "icon": "link", "kind": "data", "status": "active" }
+          { "id": "note_tags", "x": 6.2, "y": 4.7, "label": "note_tags", "icon": "link", "kind": "data", "status": "active" }
         ],
         "edges": [
+          { "id": "notes>users", "label": null, "status": "dim" },
           { "from": "note_tags", "to": "notes", "label": "note_id" },
           { "from": "note_tags", "to": "tags", "label": "tag_id" }
         ]
@@ -123,7 +170,7 @@
       "title": "JOIN glues rows back together",
       "chapter": "how",
       "body": [
-        "A <span class=\"term\">JOIN</span> lines up rows from two tables wherever a key matches. For each note, Postgres finds the user whose <code>id</code> equals the note's <code>user_id</code>, and returns one combined row.",
+        "A <span class=\"term\">JOIN</span> lines up rows from two tables wherever a key matches. For each note, Postgres finds the user whose <code>id</code> equals the note's <code>user_id</code>, and returns one combined row: title and author name.",
         "You describe the match. The database decides the fastest way to find it."
       ],
       "code": {
@@ -131,82 +178,89 @@
         "code": "select notes.title, users.name as author\nfrom notes\njoin users on users.id = notes.user_id\nwhere notes.user_id = 7;",
         "caption": "Each result row: a note's title next to its author's name."
       },
+      "changes": [
+        "~ note_tags and tags step back",
+        "~ notes and users match on user_id",
+        "+ Combined rows flow to the App Server"
+      ],
       "scene": {
         "extends": "previous",
-        "caption": "Rows from notes and users meet where user_id matches id.",
-        "remove": ["screen"],
+        "caption": "Notes and users meet where user_id matches id. One combined row per note.",
         "nodes": [
-          { "id": "result", "x": 3.0, "y": 1.4, "label": "Result", "sublabel": "title + author", "icon": "list", "kind": "neutral", "status": "active" },
+          { "id": "app", "status": "normal" },
+          { "id": "users", "status": "active" },
+          { "id": "notes", "status": "active" },
           { "id": "note_tags", "status": "dim" },
           { "id": "tags", "status": "dim" }
         ],
         "edges": [
-          { "id": "notes>users", "label": "on user_id", "status": "active" },
-          { "from": "users", "to": "result", "label": "name", "packet": { "label": "name" } },
-          { "from": "notes", "to": "result", "label": "title", "packet": { "label": "title" } },
-          { "id": "note_tags>notes", "status": "dim" },
-          { "id": "note_tags>tags", "status": "dim" }
+          { "id": "notes>users", "label": "user_id", "status": "active" },
+          { "id": "note_tags>notes", "label": null, "status": "dim" },
+          { "id": "note_tags>tags", "label": null, "status": "dim" },
+          { "from": "users", "to": "app", "packet": { "kind": "data" } }
         ]
       }
     },
     {
-      "title": "Inner vs left: who gets dropped",
+      "title": "A plain join drops untagged notes",
       "chapter": "how",
       "body": [
-        "A plain <code>join</code> is an <span class=\"term\">inner join</span>: rows with no match vanish. Join notes to tags that way and every untagged note disappears from Maya's list.",
-        "A <span class=\"term\">left join</span> keeps every row from the first table and fills the missing side with <code>null</code>. Rule of thumb: if the other side is optional, use <code>left join</code>."
+        "Now add the tags, through <code>note_tags</code>. A plain <code>join</code> is an <span class=\"term\">inner join</span>: it keeps only rows that found a match on both sides.",
+        "Maya's Trip plan note has no tags yet. It finds no match, so it vanishes from her list. Nothing errors. The note is simply missing."
+      ],
+      "code": {
+        "language": "sql",
+        "code": "select notes.title, tags.name as tag\nfrom notes\njoin note_tags on note_tags.note_id = notes.id\njoin tags on tags.id = note_tags.tag_id;"
+      },
+      "changes": [
+        "~ users steps back; note_tags and tags come forward",
+        "~ Notes shown 3 of 3 → 2 of 3"
+      ],
+      "metrics": {
+        "shown": { "value": "2 of 3", "tone": "bad" }
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Joined through note_tags, the untagged note drops out of the result.",
+        "remove": ["users>app"],
+        "nodes": [
+          { "id": "users", "status": "dim" },
+          { "id": "notes", "status": "warn" },
+          { "id": "note_tags", "status": "normal" },
+          { "id": "tags", "status": "normal" }
+        ],
+        "edges": [
+          { "id": "notes>users", "status": "dim" },
+          { "id": "note_tags>notes", "status": "normal" },
+          { "id": "note_tags>tags", "status": "normal" },
+          { "from": "tags", "to": "app", "packet": { "kind": "data" } }
+        ]
+      }
+    },
+    {
+      "title": "A left join keeps every note",
+      "chapter": "how",
+      "body": [
+        "A <span class=\"term\">left join</span> keeps every row from the first table, and fills the missing side with <code>null</code> (empty). Trip plan comes back, with no tag.",
+        "Rule of thumb: if the other side is optional, like tags, use <code>left join</code>."
       ],
       "code": {
         "language": "sql",
         "code": "select notes.title, tags.name as tag\nfrom notes\nleft join note_tags on note_tags.note_id = notes.id\nleft join tags on tags.id = note_tags.tag_id;",
         "caption": "An untagged note still appears once, with tag = null."
       },
-      "scene": {
-        "extends": "previous",
-        "caption": "Joined through note_tags. A left join keeps notes that have no tags.",
-        "remove": ["users>result"],
-        "nodes": [
-          { "id": "result", "x": 6.1, "sublabel": "title + tag" },
-          { "id": "users", "status": "dim" },
-          { "id": "note_tags", "status": "normal" },
-          { "id": "tags", "status": "normal" }
-        ],
-        "edges": [
-          { "id": "notes>users", "label": "user_id", "status": "dim" },
-          { "id": "note_tags>notes", "status": "normal" },
-          { "id": "note_tags>tags", "status": "normal" },
-          { "from": "tags", "to": "result", "label": "tag or null", "packet": { "label": "tag" } }
-        ],
-        "notes": [
-          { "id": "n-inner", "x": 4.4, "y": 6.8, "text": "Inner join drops untagged notes", "status": "warn" },
-          { "id": "n-left", "x": 9.6, "y": 6.8, "text": "Left join keeps them", "status": "ok" }
-        ]
-      }
-    },
-    {
-      "title": "Supabase follows the keys for you",
-      "chapter": "example",
-      "body": [
-        "In Notely's Next.js code you rarely write the join by hand. The Supabase client reads your foreign keys and nests related rows in the result.",
-        "This one call returns each note with its author and its tags, through <code>note_tags</code>, as nested JSON. It only works because the foreign keys are declared. Plain id columns without <code>references</code> give Supabase nothing to follow."
+      "changes": [
+        "~ Notes shown 2 of 3 → 3 of 3",
+        "~ notes: untagged notes kept, with an empty tag"
       ],
-      "code": {
-        "language": "ts",
-        "filename": "app/notes/page.tsx",
-        "code": "const { data, error } = await supabase\n  .from('notes')\n  .select('id, title, users ( name ), tags ( name )')\n  .order('created_at', { ascending: false });",
-        "caption": "One request, one query. Result: [{ title, users: { name }, tags: [{ name }] }]"
+      "metrics": {
+        "shown": { "value": "3 of 3", "tone": "good" }
       },
       "scene": {
         "extends": "previous",
-        "caption": "One call fetches notes, authors and tags together for the screen.",
-        "remove": ["n-inner", "n-left", "tags>result"],
+        "caption": "A left join keeps notes that have no tags.",
         "nodes": [
-          { "id": "result", "label": "Note list", "sublabel": "title · author · tags", "kind": "client", "status": "ok" },
-          { "id": "users", "status": "normal" }
-        ],
-        "edges": [
-          { "id": "notes>users", "status": "normal" },
-          { "id": "notes>result", "label": "one query", "status": "ok", "packet": { "label": "nested", "status": "ok" } }
+          { "id": "notes", "status": "ok" }
         ]
       }
     },
@@ -214,41 +268,73 @@
       "title": "The N+1 query trap",
       "chapter": "watch-out",
       "body": [
-        "A classic slow page: fetch 50 notes, then loop and fetch each note's author one by one. That is 1 query plus 50 more, the <span class=\"term\">N+1 query</span> problem.",
-        "Each round trip to the database costs a few milliseconds. Fine on your laptop with five notes. Painful in production with hundreds. One joined query does the same work in one trip."
+        "A classic slow page: fetch 50 notes, then loop and fetch each note's author one by one. That is 1 query plus 50 more: the <span class=\"term\">N+1 query</span> problem.",
+        "Each trip to the database costs a few milliseconds. Fine on your laptop with five notes, painful in production with hundreds. One joined query does the same work in one trip."
       ],
       "callout": {
         "type": "claude-code",
-        "text": "Look for <code>await</code> inside a loop, or a <code>.map()</code> that calls the database. Ask Claude Code: \"Can this be one query with a join or a nested select?\" Also check that foreign key columns like <code>notes.user_id</code> have an <span class=\"term\">index</span>. Postgres does not add one for you."
+        "text": "Look for <code>await</code> inside a loop, or a <code>.map()</code> that calls the database. Ask: \"Can this be one query with a join?\" Also check that columns like <code>notes.user_id</code> have an <span class=\"term\">index</span>. Postgres does not add one for you."
+      },
+      "changes": [
+        "~ Queries per page 1 → 51",
+        "~ users: asked once for every single note",
+        "~ note_tags and tags step back"
+      ],
+      "metrics": {
+        "queries": { "value": 51, "tone": "bad" }
       },
       "scene": {
         "extends": "previous",
         "caption": "One query for the list, then one more per note. The page waits on 51 trips.",
+        "remove": ["tags>app"],
         "nodes": [
-          { "id": "result", "sublabel": "51 queries", "status": "error" }
+          { "id": "app", "status": "error" },
+          { "id": "users", "status": "error" },
+          { "id": "notes", "status": "normal" },
+          { "id": "note_tags", "status": "dim" },
+          { "id": "tags", "status": "dim" }
         ],
         "edges": [
-          { "id": "notes>result", "label": "50 notes", "status": "normal", "packet": { "label": "list" } },
-          { "from": "users", "to": "result", "label": "author, one by one", "status": "error", "packet": { "label": "x50", "status": "error", "speed": "fast" } }
+          { "id": "note_tags>notes", "status": "dim" },
+          { "id": "note_tags>tags", "status": "dim" },
+          { "from": "users", "to": "app", "status": "error", "packet": { "kind": "error", "speed": "fast" } }
         ]
       }
     },
     {
-      "title": "Recap in one breath",
+      "title": "One query that follows the keys",
       "chapter": "recap",
       "body": [
-        "Name the shape first. One-to-many: a foreign key on the many side. Many-to-many: a join table holding two foreign keys. A JOIN rebuilds the picture by matching keys; use a left join when the other side is optional.",
-        "Fetch related data in one query, never one query per row."
+        "Name the shape first. One-to-many: a foreign key on the many side. Many-to-many: a join table. A JOIN rebuilds the picture; use a left join when the other side is optional.",
+        "In Notely's code, the Supabase client (the library that talks to the database) follows declared foreign keys for you: one call returns notes, authors and tags."
       ],
+      "code": {
+        "language": "ts",
+        "filename": "app/notes/page.tsx",
+        "code": "const { data, error } = await supabase\n  .from('notes')\n  .select('id, title, users ( name ), tags ( name )')\n  .order('created_at', { ascending: false });",
+        "caption": "Works only because the foreign keys are declared with references."
+      },
+      "changes": [
+        "~ Queries per page 51 → 1",
+        "~ Every table back in view, one query following the keys"
+      ],
+      "metrics": {
+        "queries": { "value": 1, "tone": "good" }
+      },
       "scene": {
         "extends": "previous",
         "caption": "Keys in the right places, and one query that follows them.",
-        "remove": ["users>result"],
         "nodes": [
-          { "id": "result", "sublabel": "1 query", "status": "ok" }
+          { "id": "app", "status": "ok" },
+          { "id": "users", "status": "normal" },
+          { "id": "note_tags", "status": "normal" },
+          { "id": "tags", "status": "normal" }
         ],
         "edges": [
-          { "id": "notes>result", "label": "one query", "status": "ok", "packet": { "label": "nested", "status": "ok" } }
+          { "id": "notes>users", "status": "normal" },
+          { "id": "note_tags>notes", "status": "normal" },
+          { "id": "note_tags>tags", "status": "normal" },
+          { "id": "users>app", "status": "ok", "packet": { "kind": "data" } }
         ]
       }
     }

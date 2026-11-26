@@ -11,36 +11,69 @@
     "How <code>created_at</code>, <code>updated_at</code> and <b>soft delete</b> save you, and where soft delete bites"
   ],
   "glossary": {
+    "app server": "A computer, somewhere else, that runs the app's own code. Notely's runs on Vercel.",
     "schema": "The shape of your data: which tables exist, their columns, types and rules.",
     "data type": "The kind of value a column accepts, like text, integer, boolean or timestamptz.",
     "timestamptz": "Postgres type for an exact moment in time. It stores the instant in UTC and shows it in any time zone.",
-    "jsonb": "Postgres type for a JSON document stored in one column. Searchable, but the shape inside is not checked unless you add rules.",
+    "jsonb": "Postgres type for a JSON document (nested labels and values) stored in one column. Searchable, but the shape inside is not checked unless you add rules.",
     "normalization": "Designing tables so each fact is stored in exactly one place, and everything else points to it.",
     "constraint": "A rule declared on a column or table, like not null or check, that the database enforces on every write.",
     "default": "The value a column gets when an insert does not provide one, like now() or false.",
     "trigger": "A small function the database runs on its own when a row is inserted, updated or deleted.",
     "soft delete": "Marking a row as deleted, usually with a deleted_at time, instead of removing it from the table."
   },
+  "metrics": [
+    { "id": "stale", "label": "Stale emails", "icon": "mail" },
+    { "id": "bad", "label": "Bad saves", "icon": "alert", "unit": "a day" },
+    { "id": "lost", "label": "Notes lost", "icon": "trash" }
+  ],
   "steps": [
     {
-      "title": "Notely v1: it works, until it does not",
-      "chapter": "problem",
+      "title": "Notely's first notes table",
+      "chapter": "setup",
       "body": [
-        "Notely's first <code>notes</code> table was made in a hurry. It copies the author's email onto every note. It stores dates as text, like <code>9/1/26</code>. Deleting a note removes it for good.",
-        "Each shortcut saved a minute. Now emails are out of date, sorting by date is wrong, and Maya wants back a note she deleted by mistake."
+        "Let's rewind to Notely's very first version. The <span class=\"term\">app server</span> (the computer running Notely's code) saves each note as a row in one table, <code>notes</code>, inside the database.",
+        "Each row holds a title, the text, a date, and the author's email. It was built in a hurry, and on day one everything works."
       ],
+      "metrics": {
+        "stale": { "value": 0, "tone": "good" },
+        "bad": { "value": 0, "tone": "good" },
+        "lost": { "value": 0, "tone": "good" }
+      },
       "scene": {
-        "caption": "Three quick choices in version 1, three problems a few months later.",
+        "caption": "The app server saves every note into one notes table.",
         "nodes": [
-          { "id": "app", "x": 2, "y": 6.4, "label": "Notely API", "sublabel": "Next.js on Vercel", "icon": "server", "kind": "server" },
-          { "id": "notes", "x": 6.2, "y": 5.4, "label": "notes", "sublabel": "version 1", "icon": "table", "kind": "data", "status": "warn", "tags": ["author_email", "date as text", "hard delete"] }
+          { "id": "app", "x": 1.2, "y": 3.8, "label": "App Server", "icon": "server", "kind": "server" },
+          { "id": "notes", "x": 5.0, "y": 3.8, "label": "notes", "icon": "table", "kind": "data" }
         ],
         "edges": [
-          { "from": "app", "to": "notes", "label": "save note", "packet": true }
-        ],
-        "notes": [
-          { "id": "n-sort", "x": 9.6, "y": 1.8, "text": "'9/1/26' sorts after '10/1/26'", "status": "error" },
-          { "id": "n-gone", "x": 9.6, "y": 6.6, "text": "Deleted by mistake: gone", "status": "error" }
+          { "from": "app", "to": "notes", "packet": { "kind": "data" } }
+        ]
+      }
+    },
+    {
+      "title": "Months later, three shortcuts bite",
+      "chapter": "problem",
+      "body": [
+        "Each row copies the author's email, so when Maya changed hers, 300 notes kept the old one. Dates are stored as text, so <code>'9/1/26'</code> sorts after <code>'10/1/26'</code>, and junk like <code>'soon'</code> slips in.",
+        "And deleting a note removes it for good. Maya deleted one by mistake and wants it back. Nothing can bring it back."
+      ],
+      "changes": [
+        "~ notes: three shortcuts, three problems",
+        "~ Stale emails 0 → 300",
+        "~ Bad saves 0 → 25 a day",
+        "~ Notes lost 0 → 1"
+      ],
+      "metrics": {
+        "stale": { "value": 300, "tone": "bad" },
+        "bad": { "value": 25, "tone": "bad" },
+        "lost": { "value": 1, "tone": "bad" }
+      },
+      "scene": {
+        "extends": "previous",
+        "caption": "Three quick choices in version 1, three problems a few months later.",
+        "nodes": [
+          { "id": "notes", "status": "warn" }
         ]
       }
     },
@@ -48,25 +81,24 @@
       "title": "A schema is a promise you keep for years",
       "chapter": "idea",
       "body": [
-        "The <span class=\"term\">schema</span> is the shape of your data: tables, columns, types and rules. Every screen, API route and AI prompt in Notely leans on it.",
-        "Code is cheap to change. A schema with a million rows in it is not: every change becomes a careful operation on live data (next lesson). An hour of design now saves weeks later."
+        "The <span class=\"term\">schema</span> is the shape of your data: tables, columns, types and rules. Every screen, server route and AI prompt in Notely leans on it.",
+        "Code is cheap to change. A table with a million rows is not: every change becomes a careful operation on live data (next lesson). An hour of design now saves weeks later."
       ],
       "callout": {
         "type": "analogy",
         "text": "Plumbing in a new house. Moving a pipe before the walls go up takes minutes. After the family moves in, it means opening walls."
       },
+      "changes": [
+        "~ notes: a million rows deep, and growing"
+      ],
       "scene": {
         "extends": "previous",
         "caption": "Rows pile up. The table's shape gets harder to change every week.",
-        "remove": ["n-sort", "n-gone"],
         "nodes": [
-          { "id": "notes", "status": "active" }
+          { "id": "notes", "status": "active", "pill": "1M rows" }
         ],
         "edges": [
-          { "id": "app>notes", "packet": { "label": "row", "speed": "fast" } }
-        ],
-        "notes": [
-          { "id": "n-rows", "x": 9.6, "y": 4.2, "text": "10 rows today, millions later", "status": "active" }
+          { "id": "app>notes", "packet": { "kind": "data", "speed": "fast" } }
         ]
       }
     },
@@ -74,7 +106,7 @@
       "title": "Pick the type that matches the fact",
       "chapter": "how",
       "body": [
-        "Every column has a <span class=\"term\">data type</span>, and the right one works for you. Dates sort as dates. Numbers add up as numbers. Bad values are refused.",
+        "Every column has a <span class=\"term\">data type</span>, and the right one works for you: dates sort as dates, numbers add up, bad values are refused.",
         "Good defaults: <code>text</code> for words, <code>bigint</code> or <code>uuid</code> for ids, <code>boolean</code> for yes/no, <code>numeric</code> for money, <span class=\"term\">timestamptz</span> for moments, <span class=\"term\">jsonb</span> for loose extras like AI settings."
       ],
       "code": {
@@ -85,18 +117,21 @@
         "type": "warn",
         "text": "Never store money in a floating-point column. Floats cannot hold most decimals exactly, so totals drift by fractions of a cent. Use <code>numeric</code>, or whole cents in an <code>integer</code>."
       },
+      "changes": [
+        "~ App Server → notes: a text date like 'soon' is refused",
+        "~ Bad saves 25 → 9 a day"
+      ],
+      "metrics": {
+        "bad": { "value": 9, "tone": "warn" }
+      },
       "scene": {
         "extends": "previous",
         "caption": "A text value aimed at a timestamp column is refused at the door.",
-        "remove": ["n-rows"],
         "nodes": [
-          { "id": "notes", "status": "normal", "tags": ["timestamptz", "boolean", "jsonb"] }
+          { "id": "notes", "status": "normal", "pill": null }
         ],
         "edges": [
-          { "id": "app>notes", "label": "created_at?", "status": "error", "packet": { "label": "'soon-ish'", "status": "error" } }
-        ],
-        "notes": [
-          { "id": "n-type", "x": 2, "y": 4, "text": "Wrong type: rejected", "status": "error" }
+          { "id": "app>notes", "status": "error", "packet": { "kind": "error" } }
         ]
       }
     },
@@ -104,23 +139,29 @@
       "title": "Store each fact once",
       "chapter": "how",
       "body": [
-        "Notely v1 copied Maya's email onto each of her notes. When she changed it, 300 notes kept the old one.",
-        "<span class=\"term\">Normalization</span> means each fact lives in one place. The email lives once, in <code>users</code>. Notes point to it with <code>user_id</code>, as in lesson 1. Change it once, and every screen sees the new value."
+        "Maya's email was copied onto each of her notes, so changing it left 300 stale copies.",
+        "<span class=\"term\">Normalization</span> means each fact lives in one place. The email lives once, in a <code>users</code> table. Notes point to their owner with <code>user_id</code>, as in lesson 1. Change the email once, and every screen sees the new value."
       ],
       "callout": {
         "type": "tip",
-        "text": "Copying on purpose is fine when you mean a snapshot. Sam's salon keeps the price on each booking, because a later price change should not rewrite old receipts. Ask: should this change when the original changes?"
+        "text": "Copying on purpose is fine when you mean a snapshot. An order keeps the price that was paid, because a later price change should not rewrite old receipts. Ask: should this copy change when the original changes?"
+      },
+      "changes": [
+        "+ users: one row per person, the email stored once",
+        "~ notes keep only a user_id pointing at users",
+        "~ Stale emails 300 → 0"
+      ],
+      "metrics": {
+        "stale": { "value": 0, "tone": "good" }
       },
       "scene": {
         "extends": "previous",
         "caption": "The email moves to users. Notes only keep a pointer.",
-        "remove": ["n-type"],
         "nodes": [
-          { "id": "notes", "tags": ["user_id"] },
-          { "id": "users", "x": 2, "y": 2, "label": "users", "sublabel": "email lives here", "icon": "table", "kind": "data", "status": "ok" }
+          { "id": "users", "x": 5.0, "y": 0.4, "label": "users", "icon": "table", "kind": "data", "status": "ok" }
         ],
         "edges": [
-          { "id": "app>notes", "label": "save note", "status": null, "packet": true },
+          { "id": "app>notes", "status": "normal", "packet": { "kind": "data" } },
           { "from": "notes", "to": "users", "label": "user_id", "status": "ok" }
         ]
       }
@@ -130,22 +171,28 @@
       "chapter": "how",
       "body": [
         "Your app code will have bugs. The database is the last line of defense, so put the rules there as <span class=\"term\" data-term=\"constraint\">constraints</span>.",
-        "<code>not null</code>: must be filled. <code>unique</code>: no repeats. <code>check</code>: must pass a test. <code>references</code>: must point at a real row. A <span class=\"term\">default</span> fills in a value when the app leaves it out."
+        "<code>not null</code>: must be filled. <code>unique</code>: no repeats. <code>check</code>: must pass a test. <code>references</code>: must point at a real row. A <span class=\"term\">default</span> fills in a value when the app leaves one out."
       ],
       "code": {
         "language": "sql",
         "filename": "Inside create table notes",
         "code": "title   text not null check (length(title) <= 200),\npinned  boolean not null default false,\nuser_id bigint not null references users (id)"
       },
+      "changes": [
+        "~ App Server → notes: a note with no title is refused",
+        "~ Bad saves 9 → 0 a day"
+      ],
+      "metrics": {
+        "bad": { "value": 0, "tone": "good" }
+      },
       "scene": {
         "extends": "previous",
         "caption": "A note with no title breaks a rule, so Postgres refuses it.",
         "nodes": [
-          { "id": "users", "status": "normal" },
-          { "id": "notes", "tags": ["not null", "check", "default"] }
+          { "id": "users", "status": "normal" }
         ],
         "edges": [
-          { "id": "app>notes", "label": "rejected", "status": "error", "packet": { "label": "title: null", "status": "error" } },
+          { "id": "app>notes", "status": "error", "packet": { "kind": "error" } },
           { "id": "notes>users", "status": "normal" }
         ]
       }
@@ -154,24 +201,27 @@
       "title": "Timestamps on every table",
       "chapter": "how",
       "body": [
-        "Give almost every table two columns. <code>created_at</code>: when the row was born, filled by <code>default now()</code>. <code>updated_at</code>: when it last changed.",
-        "Use <code>timestamptz</code>, not <code>timestamp</code>. It records an exact instant, so the app can show it in Maya's Lisbon time and in Leo's Tokyo time. And <code>updated_at</code> does not update itself: a <span class=\"term\">trigger</span> sets it on every change."
+        "Give almost every table two columns: <code>created_at</code>, filled by <code>default now()</code>, and <code>updated_at</code>, when the row last changed. Use <code>timestamptz</code>, so Maya in Lisbon and Leo in Tokyo each see their own local time.",
+        "<code>updated_at</code> does not update itself. A <span class=\"term\">trigger</span>, a tiny function Postgres runs on its own, stamps it on every change."
       ],
       "code": {
         "language": "sql",
         "filename": "Supabase: keep updated_at fresh",
         "code": "create extension if not exists moddatetime schema extensions;\n\ncreate trigger notes_updated_at\n  before update on notes\n  for each row execute procedure moddatetime (updated_at);"
       },
+      "changes": [
+        "+ Trigger: a tiny function Postgres runs on every update",
+        "~ App Server → notes: saves go through again"
+      ],
       "scene": {
         "extends": "previous",
         "caption": "On every update, the trigger stamps updated_at before the row is saved.",
         "nodes": [
-          { "id": "notes", "tags": ["created_at", "updated_at"] },
-          { "id": "trig", "x": 10.4, "y": 6.4, "label": "Trigger", "sublabel": "runs on every update", "icon": "clock", "kind": "data", "status": "active" }
+          { "id": "trig", "x": 5.0, "y": 7.4, "label": "Trigger", "icon": "clock", "kind": "data", "status": "active" }
         ],
         "edges": [
-          { "id": "app>notes", "label": "update note", "status": null, "packet": true },
-          { "from": "trig", "to": "notes", "label": "sets updated_at", "status": "active", "packet": { "label": "now()" } }
+          { "id": "app>notes", "status": "normal", "packet": { "kind": "data" } },
+          { "from": "trig", "to": "notes", "status": "active", "packet": { "kind": "job" } }
         ]
       }
     },
@@ -179,25 +229,31 @@
       "title": "Soft delete: a trash can, not a shredder",
       "chapter": "how",
       "body": [
-        "Instead of removing a row, set a <code>deleted_at</code> time. The note leaves Maya's list but stays in the table. That is a <span class=\"term\">soft delete</span>.",
-        "Now \"Undo\" and a 30-day trash are one <code>update</code> away. Normal queries add <code>where deleted_at is null</code>, and a scheduled job can remove old trash for good."
+        "Instead of removing a row, set a <code>deleted_at</code> time. The note leaves Maya's list but stays in the table, visible in a Trash view. That is a <span class=\"term\">soft delete</span>.",
+        "Now Undo is one <code>update</code> away. Normal queries add <code>where deleted_at is null</code>, and a scheduled job can empty old trash for good."
       ],
       "code": {
         "language": "sql",
         "code": "-- delete\nupdate notes set deleted_at = now() where id = 101;\n\n-- undo\nupdate notes set deleted_at = null where id = 101;"
       },
+      "changes": [
+        "+ Trash: deleted notes, still in the table, ready for Undo",
+        "~ Trigger steps back",
+        "~ Notes lost 1 → 0"
+      ],
+      "metrics": {
+        "lost": { "value": 0, "tone": "good" }
+      },
       "scene": {
         "extends": "previous",
-        "caption": "Deleting only stamps deleted_at. The row moves to the trash view, not out of the table.",
+        "caption": "Deleting only stamps deleted_at. The note moves to the trash view, not out of the table.",
         "nodes": [
-          { "id": "notes", "tags": ["deleted_at"] },
           { "id": "trig", "status": "dim" },
-          { "id": "trash", "x": 10.4, "y": 2, "label": "Trash", "sublabel": "deleted_at is set", "icon": "trash", "kind": "neutral", "status": "active" }
+          { "id": "trash", "x": 8.8, "y": 3.8, "label": "Trash", "icon": "trash", "kind": "neutral", "status": "active" }
         ],
         "edges": [
           { "id": "trig>notes", "status": "dim", "packet": false },
-          { "id": "app>notes", "label": "delete note" },
-          { "from": "notes", "to": "trash", "label": "deleted_at = now()", "packet": { "label": "note" } }
+          { "from": "notes", "to": "trash", "packet": { "kind": "data", "direction": "both", "returns": "data" } }
         ]
       }
     },
@@ -205,85 +261,82 @@
       "title": "Where soft delete bites",
       "chapter": "watch-out",
       "body": [
-        "Forget <code>deleted_at is null</code> in one query and deleted notes come back: in search, in exports, in the AI summary. Unique rules bite too: a trashed note still holds its unique slug.",
-        "And sometimes deleting must be real. When a user asks you to erase their data, as privacy laws like GDPR allow, a soft delete is not enough."
+        "Forget <code>deleted_at is null</code> in one query and trashed notes come back: in search, in exports, in the weekly summary Notely asks the Claude API (Anthropic's AI) to write.",
+        "Sometimes deleting must be real, too. When a user asks you to erase their data, as privacy laws like GDPR allow, a soft delete is not enough."
       ],
       "callout": {
         "type": "tip",
-        "text": "A partial unique index ignores trashed rows: <code>create unique index on notes (user_id, slug) where deleted_at is null;</code> A view such as <code>active_notes</code> that filters them out gives every query one safe place to read from."
+        "text": "A view such as <code>active_notes</code> that filters out trashed rows gives every query one safe place to read from. A trashed row still holds its unique values; a partial index (<code>create unique index … where deleted_at is null</code>) ignores it."
       },
+      "changes": [
+        "+ Claude API: the AI that writes Maya's weekly summary",
+        "~ Trash: its notes leak into the summary"
+      ],
       "scene": {
         "extends": "previous",
-        "caption": "One forgotten filter and trashed notes leak back into search and AI answers.",
+        "caption": "One forgotten filter, and trashed notes leak into the AI summary.",
         "nodes": [
-          { "id": "notes", "status": "warn" },
-          { "id": "trash", "status": "warn" }
+          { "id": "trash", "status": "warn" },
+          { "id": "llm", "x": 1.2, "y": 7.4, "label": "Claude API", "icon": "sparkle", "kind": "ai", "status": "warn" }
         ],
         "edges": [
-          { "id": "notes>trash", "packet": false }
-        ],
-        "notes": [
-          { "id": "n-leak", "x": 6.4, "y": 1.2, "text": "Forgot the filter? They are back", "status": "warn" }
+          { "id": "notes>trash", "packet": false },
+          { "from": "app", "to": "llm", "status": "warn", "packet": { "kind": "request", "direction": "both" } }
         ]
       }
     },
     {
       "title": "Notely's notes table, version 2",
-      "chapter": "example",
+      "chapter": "recap",
       "body": [
-        "All of it together: right types, one fact per place, rules in the database, timestamps, soft delete.",
-        "This is a table you could ship to a paying client. It is also what you should expect, and ask for, when Claude Code designs a table for you."
+        "The schema outlives your code, so design it on purpose. Right types, each fact once, rules in the database, <code>timestamptz</code> timestamps, and soft delete filtered everywhere.",
+        "This is a table you could ship to a paying client, and what to ask for when Claude Code designs one."
       ],
       "code": {
         "language": "sql",
         "filename": "notes, version 2",
-        "code": "create table notes (\n  id bigint generated always as identity primary key,\n  user_id bigint not null references users (id),\n  title text not null check (length(title) <= 200),\n  body text not null default '',\n  pinned boolean not null default false,\n  created_at timestamptz not null default now(),\n  updated_at timestamptz not null default now(),\n  deleted_at timestamptz\n);\n\ncreate index on notes (user_id) where deleted_at is null;"
+        "code": "create table notes (\n  id bigint generated always as identity primary key,\n  user_id bigint not null references users (id),\n  title text not null check (length(title) <= 200),\n  body text not null default '',\n  pinned boolean not null default false,\n  created_at timestamptz not null default now(),\n  updated_at timestamptz not null default now(),\n  deleted_at timestamptz\n);"
       },
       "callout": {
         "type": "claude-code",
-        "text": "Check every table Claude Code proposes: times as <code>timestamptz</code>, money never as a float, required columns <code>not null</code>, real foreign keys, an index on each foreign key you filter by. Is any fact stored twice? If it soft-deletes, does every query filter on <code>deleted_at</code>?"
+        "text": "Check every table Claude Code proposes: times as <code>timestamptz</code>, money never as a float, required columns <code>not null</code>, real foreign keys. Is any fact stored twice? If it soft-deletes, does every query filter on <code>deleted_at</code>?"
       },
+      "changes": [
+        "~ notes: version 2, typed, ruled and safe to delete from",
+        "~ Summary query filters the trash: Claude API sees live notes only"
+      ],
       "scene": {
         "extends": "previous",
         "caption": "Version 2: typed, constrained, timestamped and safe to delete from.",
-        "remove": ["n-leak"],
         "nodes": [
-          { "id": "notes", "sublabel": "version 2", "status": "ok", "tags": ["typed", "constrained", "soft delete"] },
-          { "id": "trash", "status": "normal" },
+          { "id": "notes", "status": "ok" },
+          { "id": "users", "status": "normal" },
           { "id": "trig", "status": "normal" },
-          { "id": "users", "status": "ok" }
+          { "id": "trash", "status": "normal" },
+          { "id": "llm", "status": "ok" }
         ],
         "edges": [
           { "id": "trig>notes", "status": "normal" },
-          { "id": "app>notes", "label": "save note", "status": "ok" },
-          { "id": "notes>users", "status": "ok" }
+          { "id": "app>llm", "status": "ok" }
         ]
       }
-    },
-    {
-      "title": "Recap in one breath",
-      "chapter": "recap",
-      "body": [
-        "The schema outlives your code, so design it on purpose. Pick the type that matches the fact. Store each fact once and point to it. Put rules in the database. Add <code>created_at</code> and <code>updated_at</code> as <code>timestamptz</code>.",
-        "Use soft delete where people need undo, and filter it everywhere."
-      ]
     }
   ],
   "quiz": [
     {
-      "question": "Sam's salon booking app stores when each appointment starts. Clients book from different time zones. Which column type do you pick?",
+      "question": "Notely adds reminders: each one stores when it should fire. Maya is in Lisbon, Leo in Tokyo. Which column type do you pick?",
       "options": [
         { "text": "<code>text</code>, like <code>'2026-03-14 10:00'</code>", "why": "Text sorts as letters, not times, and accepts anything, including typos. There is also no time zone." },
-        { "text": "<code>timestamp</code> (without time zone)", "why": "It stores a wall-clock time with no zone, so 10:00 is ambiguous once clients or servers sit in different zones." },
+        { "text": "<code>timestamp</code> (without time zone)", "why": "It stores a wall-clock time with no zone, so 10:00 is ambiguous once users or servers sit in different zones." },
         { "text": "<code>timestamptz</code>", "correct": true, "why": "It records the exact instant, sorts correctly, and shows the right local time for each person." }
       ]
     },
     {
-      "question": "The salon's <code>bookings</code> table copies the client's phone number onto every booking. A client changes numbers, and reminders keep going to the old one. What is the fix?",
+      "question": "A <code>shares</code> table copies the recipient's email onto every shared note. A user changes their email, and share alerts keep going to the old one. What is the fix?",
       "options": [
-        { "text": "A <code>clients</code> table that holds the phone once, and <code>bookings.client_id</code> pointing to it.", "correct": true, "why": "Normalization: the phone is one fact, stored once. Change it there and every booking sees the new number." },
-        { "text": "A script that updates the phone on every past booking when it changes.", "why": "It patches the symptom. Any code path that forgets to run it brings the bug back." },
-        { "text": "Store the phone in a <code>jsonb</code> column instead.", "why": "The type is not the problem. The fact is still copied onto every booking." }
+        { "text": "Keep the email once in <code>users</code>, and give <code>shares</code> a <code>user_id</code> pointing to it.", "correct": true, "why": "Normalization: the email is one fact, stored once. Change it there and every share sees the new address." },
+        { "text": "A script that updates the email on every past share when it changes.", "why": "It patches the symptom. Any code path that forgets to run it brings the bug back." },
+        { "text": "Store the email in a <code>jsonb</code> column instead.", "why": "The type is not the problem. The fact is still copied onto every share." }
       ]
     },
     {
