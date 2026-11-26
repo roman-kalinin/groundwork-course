@@ -31,7 +31,7 @@
       "chapter": "setup",
       "body": [
         "Notely's 5,000 users reach the <b>app server</b>, the computer running Notely's code. It keeps their 200,000 notes in the <b>database</b>: Postgres, run for us by Supabase.",
-        "Maya also works with <b>Claude Code</b>, the AI assistant that writes code on her laptop. It can run commands on that same database when she asks."
+        "You build Notely with <b>Claude Code</b>, the AI assistant that writes code on your laptop. It can run commands on that same database when you ask."
       ],
       "metrics": {
         "notes": { "value": 200000, "tone": "good" },
@@ -56,8 +56,8 @@
       "title": "One query, every note gone",
       "chapter": "problem",
       "body": [
-        "Tuesday, 14:05. Maya asks Claude Code to clean up test notes. It runs a <code>delete</code> on the live database, but the filter has a bug. Every note in Notely is gone.",
-        "A database has no undo button. The only way back is a copy made before 14:05. Does she have one, and from when?"
+        "Tuesday, 14:05. You ask Claude Code to clean up test notes. It runs a <code>delete</code> on the live database, but the filter has a bug. Every note in Notely is gone.",
+        "A database has no undo button. The only way back is a copy made before 14:05. Do you have one, and from when?"
       ],
       "code": {
         "language": "sql",
@@ -67,7 +67,8 @@
       "changes": [
         "~ Claude Code → Database: a delete that matches every row",
         "~ Notes in DB 200,000 → 0",
-        "~ Work lost None → All notes"
+        "~ Work lost None → All notes",
+        "~ 5,000 users: their notes are gone"
       ],
       "metrics": {
         "notes": { "value": 0, "tone": "bad" },
@@ -130,7 +131,7 @@
       },
       "changes": [
         "~ Tue 03:00: the copy a nightly backup restores",
-        "~ Tue 14:04: out of reach, eleven hours later",
+        "~ Tue 14:04: lost; the nightly copy cannot reach it",
         "~ Work lost All notes → 11 hours"
       ],
       "metrics": {
@@ -155,7 +156,7 @@
       "chapter": "how",
       "body": [
         "Postgres writes every change to a running diary first: the <span class=\"term\">WAL</span>. Keep the nightly snapshot plus the diary since then, and you can replay changes up to any exact moment.",
-        "That is <span class=\"term\">point-in-time recovery</span>. Maya picks 14:04:59: the snapshot is loaded, then every change is replayed until one second before the bad query."
+        "That is <span class=\"term\">point-in-time recovery</span>. Notely has it turned on. You pick 14:04:59: the snapshot loads, then every change is replayed up to one second before the bad query."
       ],
       "changes": [
         "+ WAL: Postgres's diary of every change since 03:00",
@@ -286,7 +287,7 @@
       ],
       "callout": {
         "type": "claude-code",
-        "text": "Before Claude Code runs any <code>delete</code>, <code>update</code> or migration on production, ask: is there a backup from the last hour? Run a <code>select count(*)</code> with the same <code>where</code> first. Wrap it in <code>begin;</code>, check the count, then <code>commit;</code> or <code>rollback;</code>."
+        "text": "Before Claude Code runs any <code>delete</code>, <code>update</code> or migration on production, ask: is there a backup from the last hour? First run <code>select count(*)</code> with the same <code>where</code>. Then wrap the change in <code>begin;</code> and check the count before <code>commit;</code> (keep) or <code>rollback;</code> (undo)."
       },
       "changes": [
         "− Replica, Files",

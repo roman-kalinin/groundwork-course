@@ -32,8 +32,8 @@
       "title": "How Notely gets checked today",
       "chapter": "setup",
       "body": [
-        "Notely has four parts: the <b>browser</b> Maya types into, the <b>app server</b> running Notely's code, the <b>database</b> keeping every note, and the <b>Claude API</b>, the AI that writes summaries.",
-        "Before each deploy, Maya checks it all by hand: sign up, log in, create a note, summarize. Twenty minutes, every time."
+        "Notely has four parts: the <b>browser</b> that users like Maya type into, the <b>app server</b> running Notely's code, the <b>database</b> (Postgres, run by Supabase) keeping every note, and the <b>Claude API</b>, the AI that writes summaries.",
+        "Before each deploy (putting new code live), you check it all by hand: sign up, log in, create a note, summarize. Twenty minutes."
       ],
       "metrics": {
         "tests": 0,
@@ -41,16 +41,16 @@
         "unseen": { "value": 0, "tone": "good" }
       },
       "scene": {
-        "caption": "Maya clicks through every part of Notely by hand before each deploy.",
+        "caption": "You click through every part of Notely by hand before each deploy.",
         "nodes": [
-          { "id": "maya", "x": 0.8, "y": 3.2, "label": "Maya", "icon": "user", "kind": "person" },
+          { "id": "you", "x": 0.8, "y": 3.2, "label": "You", "icon": "laptop", "kind": "person" },
           { "id": "browser", "x": 4.1, "y": 3.2, "label": "Browser", "icon": "browser", "kind": "client" },
           { "id": "app", "x": 7.5, "y": 3.2, "label": "App Server", "icon": "server", "kind": "server" },
           { "id": "db", "x": 7.5, "y": 7.1, "label": "Database", "icon": "database", "kind": "data" },
           { "id": "llm", "x": 11.2, "y": 3.2, "label": "Claude API", "icon": "sparkle", "kind": "ai" }
         ],
         "edges": [
-          { "from": "maya", "to": "browser" },
+          { "from": "you", "to": "browser" },
           { "from": "browser", "to": "app", "packet": { "kind": "request", "direction": "both", "speed": "slow" } },
           { "from": "app", "to": "db", "packet": { "kind": "data", "direction": "both", "returns": "data", "speed": "slow" } },
           { "from": "app", "to": "llm", "packet": { "kind": "request", "direction": "both", "speed": "slow" } }
@@ -61,8 +61,8 @@
       "title": "Clicking around stops scaling",
       "chapter": "problem",
       "body": [
-        "Last week Maya was in a hurry and skipped sign up. A small change Claude Code had made to the sign-up form broke it.",
-        "Nobody new could join for four days, and nothing told her. Clicking by hand only checks what you remember to click."
+        "Last week you were in a hurry and skipped sign up. A small change Claude Code had made to the sign-up form broke it.",
+        "Nobody new could join for four days, and nothing told you. Clicking by hand only checks what you remember to click."
       ],
       "callout": {
         "type": "analogy",
@@ -91,13 +91,13 @@
         "Tests come in three sizes. Small ones test one function. Medium ones check real parts together. Large ones drive the whole app through a browser. Smaller is faster; larger is closer to real use."
       ],
       "changes": [
-        "− Maya: stops clicking through by hand",
-        "+ Test Runner: a program that runs the checks for her"
+        "− You: no more clicking through by hand",
+        "+ Test Runner: a program that runs the checks for you"
       ],
       "scene": {
         "extends": "previous",
-        "caption": "A test runner takes Maya's place. Next: what it can check.",
-        "remove": ["maya"],
+        "caption": "A test runner takes your place. Next: what it can check.",
+        "remove": ["you"],
         "nodes": [
           { "id": "runner", "x": 0.8, "y": 3.2, "label": "Test Runner", "icon": "robot", "kind": "neutral", "status": "active" }
         ]
@@ -140,7 +140,7 @@
       "chapter": "how",
       "body": [
         "An <span class=\"term\">integration test</span> runs real pieces together: real queries, from a signed-in test user, against a local copy of the database started with <code>supabase start</code>.",
-        "This is where the scariest bugs hide. Can Maya read Leo's notes? Only a test that runs your real <span class=\"term\">RLS</span> rules (who may read which rows) in Postgres can answer that."
+        "The scariest bugs hide here. Can Maya read the notes of Leo, another user? Only a test that runs your real <span class=\"term\">RLS</span> rules (who may read which rows) in Postgres can answer that."
       ],
       "code": {
         "language": "ts",
@@ -188,10 +188,10 @@
         "caption": "Playwright, a browser-driving tool, finds elements by role and label, like a screen reader."
       },
       "changes": [
-        "~ Test Runner → Browser: clicks through every part, like Maya",
-        "~ Automated tests 3 → 4",
-        "~ Check time 20 min → 2 min",
-        "~ Bug unseen 4 → 0 days: a broken sign-up now fails a test"
+        "+ Test Runner → Browser: clicks through the app like Maya",
+        "~ Browser: sign-up fixed, and now guarded by a test",
+        "~ Automated tests 3 → 4; Check time 20 min → 2 min",
+        "~ Bug unseen 4 → 0 days: a broken sign-up fails a test"
       ],
       "metrics": {
         "tests": { "value": 4, "tone": "good" },
@@ -276,8 +276,8 @@
       "title": "A test that proves nothing",
       "chapter": "watch-out",
       "body": [
-        "Asked to \"make the tests pass\", Claude Code sometimes fixes the code, and sometimes changes the test to expect the bug. Then <span class=\"term\">CI</span>, the robot that runs tests on every push, turns green, and the bug ships.",
-        "Mocking the very thing a test checks does the same. Fix or delete any <span class=\"term\">flaky test</span>: people learn to ignore red."
+        "Asked to \"make the tests pass\", Claude Code may change the test to expect the bug, not fix the code. <span class=\"term\">CI</span>, the robot that tests every push, turns green, and the bug ships.",
+        "So does mocking the very thing a test checks. Fix or delete any <span class=\"term\">flaky test</span> (one that fails at random): people learn to ignore red."
       ],
       "code": {
         "language": "diff",
@@ -345,7 +345,7 @@
       "question": "Notely's integration test calls the real Claude API and checks that the summary equals <code>\"Three trip ideas.\"</code>. It fails half the time. Why, and what is the fix?",
       "options": [
         { "text": "Claude is down half the time. Add retries.", "why": "The API is not the problem. Claude's wording changes on every call, so an exact text match can never be stable." },
-        { "text": "Lower the temperature to zero so the answer is always identical.", "why": "Lower temperature reduces variation but does not guarantee identical text, and the test still costs money and time on every run." },
+        { "text": "Set the temperature (the AI's randomness setting) to zero so the answer is always identical.", "why": "Lower temperature reduces variation but does not guarantee identical text, and the test still costs money and time on every run." },
         { "text": "AI output varies. Mock Claude in this test and check what your code does with the answer.", "correct": true, "why": "A mock gives a fixed answer, so the test checks your logic reliably. Summary quality is judged separately, with evals." }
       ]
     },

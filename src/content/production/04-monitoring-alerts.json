@@ -28,23 +28,23 @@
   ],
   "steps": [
     {
-      "title": "Notely is live, and Maya is busy",
+      "title": "Notely is live, and you are busy",
       "chapter": "setup",
       "body": [
         "Five thousand people use Notely. Their clicks reach the <b>app server</b>, the computer running Notely's code, which asks the <b>Claude API</b> (Anthropic's AI) for each summary.",
-        "Maya, who builds Notely, spends her days on new features. Nothing watches the live app for her. If it breaks, she will hear about it when someone tells her."
+        "You build Notely, and you spend your days on new features. Nothing watches the live app for you. If it breaks, you hear about it when someone tells you."
       ],
       "metrics": {
         "notice": "Unknown",
         "alerts": 0
       },
       "scene": {
-        "caption": "Users reach the app server, which calls the Claude API. Maya is busy elsewhere.",
+        "caption": "Users reach the app server, which calls the Claude API. You are busy elsewhere.",
         "nodes": [
           { "id": "users", "x": 0.8, "y": 4.0, "label": "5,000 users", "icon": "users", "shape": "crowd" },
           { "id": "app", "x": 4.6, "y": 4.0, "label": "App Server", "icon": "server", "kind": "server" },
           { "id": "llm", "x": 8.4, "y": 4.0, "label": "Claude API", "icon": "sparkle", "kind": "ai" },
-          { "id": "maya", "x": 8.4, "y": 7.4, "label": "Maya", "icon": "user", "kind": "person", "status": "dim" }
+          { "id": "you", "x": 8.4, "y": 7.4, "label": "You", "icon": "laptop", "kind": "person", "status": "dim" }
         ],
         "edges": [
           { "from": "users", "to": "app", "packet": { "kind": "request", "direction": "both" } },
@@ -57,7 +57,7 @@
       "chapter": "problem",
       "body": [
         "On Tuesday, the <b>Summarize</b> button starts failing for every user. The page shows a spinner forever.",
-        "Maya finds out three hours later, from an email titled \"is this broken??\". She has no idea when it started, how many people were hit, or what the error even says."
+        "You find out three hours later, from an email titled \"is this broken??\". You have no idea when it started, how many people were hit, or what the error even says."
       ],
       "callout": {
         "type": "analogy",
@@ -65,7 +65,7 @@
       },
       "changes": [
         "~ App Server → Claude API: every summary fails",
-        "+ An email from users reaches Maya, hours late",
+        "+ An email from users reaches you, hours late",
         "~ Time to notice Unknown → 3 hours"
       ],
       "metrics": {
@@ -73,15 +73,15 @@
       },
       "scene": {
         "extends": "previous",
-        "caption": "Summaries fail for hours. Maya learns it from an email.",
+        "caption": "Summaries fail for hours. You learn it from an email.",
         "nodes": [
           { "id": "app", "status": "error" },
           { "id": "users", "status": "warn" },
-          { "id": "maya", "status": "warn" }
+          { "id": "you", "status": "warn" }
         ],
         "edges": [
           { "id": "app>llm", "status": "error", "packet": { "kind": "error" } },
-          { "from": "users", "to": "maya", "label": "email", "route": "y-first", "style": "dashed", "packet": { "kind": "error", "speed": "slow" } }
+          { "from": "users", "to": "you", "label": "email", "route": "y-first", "style": "dashed", "packet": { "kind": "error", "speed": "slow" } }
         ]
       }
     },
@@ -93,7 +93,7 @@
         "<b>Errors</b>: what broke, and where in the code? <b>Uptime</b>: can anyone reach the app at all? <b>Logs</b>: what exactly happened on that request? <b>Analytics</b>: are people using it the way you expect? Each answers a question the others cannot."
       ],
       "changes": [
-        "− 5,000 users, Claude API and Maya: we focus on the app server",
+        "− 5,000 users, Claude API and You: we focus on the app server",
         "+ Errors, Uptime, Logs, Analytics: four ways to watch it"
       ],
       "scene": {
@@ -117,14 +117,14 @@
       "title": "Error tracking: crashes become reports",
       "chapter": "how",
       "body": [
-        "An <span class=\"term\">error tracking</span> service like Sentry catches every crash, in the browser and on the server. It groups identical ones and shows a <span class=\"term\">stack trace</span> (the path through the code to the crash), the release and how many users were hit.",
-        "Errors you catch yourself, send on purpose, with tags so you can filter them."
+        "An <span class=\"term\">error tracking</span> service like Sentry catches crashes in the browser and on the server. It groups repeats and shows the <span class=\"term\">stack trace</span> (the code path to the crash), the deploy it came from and how many users were hit.",
+        "Errors your code handles itself, like a Claude timeout, you send on purpose, with tags to filter by."
       ],
       "code": {
         "language": "ts",
         "filename": "app/api/summary/route.ts",
         "code": "import * as Sentry from '@sentry/nextjs';\n\ntry {\n  summary = await summarize(note.body);\n} catch (err) {\n  Sentry.captureException(err, {\n    tags: { feature: 'ai-summary' },\n    extra: { noteId: note.id },\n  });\n  return Response.json(\n    { error: 'Summary failed, try again' },\n    { status: 502 },\n  );\n}",
-        "caption": "The user gets a clear message instead of a spinner. Maya gets the full error."
+        "caption": "The user gets a clear message instead of a spinner. You get the full error."
       },
       "changes": [
         "~ Errors: every failed summary arrives as a report",
@@ -152,13 +152,13 @@
       "chapter": "how",
       "body": [
         "Error tracking runs inside your app. If the app is down completely, it cannot report anything.",
-        "An <span class=\"term\">uptime check</span> is an outside service that visits your app every minute. Point it at a <span class=\"term\">health check</span>: a small address that also tests the database, so \"up\" means truly working, not only \"the server answered\"."
+        "An <span class=\"term\">uptime check</span> is an outside service that visits your app every minute. Point it at a <span class=\"term\">health check</span> like <code>/api/health</code>: a small address that also tests the database, so \"up\" means truly working, not only \"the server answered\"."
       ],
       "code": {
         "language": "ts",
         "filename": "app/api/health/route.ts",
         "code": "export async function GET() {\n  const { error } = await supabase\n    .from('notes').select('id').limit(1);\n  if (error) {\n    return Response.json({ db: 'down' }, { status: 503 });\n  }\n  return Response.json({ ok: true });\n}",
-        "caption": "Keep it cheap: no Claude call here, or each knock would cost money."
+        "caption": "GET answers a visit. Status 503 tells the checker \"not working right now\". No Claude call here, or each knock would cost money."
       },
       "changes": [
         "~ Uptime: knocks on the app every minute, from outside",
@@ -238,16 +238,16 @@
       "title": "Alerts that are worth waking for",
       "chapter": "example",
       "body": [
-        "Signals are useless if nobody looks. Alerts push the important ones to Maya's phone.",
+        "Signals are useless if nobody looks. Alerts push the important ones to your phone.",
         "Alert on what users feel: the site is down, a new error hits many users, errors jump after a deploy. Everything else goes into a daily summary email. Too many pings cause <span class=\"term\">alert fatigue</span>, and the real one gets ignored."
       ],
       "callout": {
         "type": "claude-code",
-        "text": "When Claude Code sets up Sentry, check: is its key (the DSN) in an environment variable? Do alert rules fire only for <code>production</code>? Are source maps uploaded, so traces show real file names? Is <code>sendDefaultPii</code> off unless you decided otherwise?"
+        "text": "When Claude Code sets up Sentry, check: is its key (the DSN) in an environment variable, not in the code? Do alert rules fire only for <code>production</code>? Are source maps uploaded, so traces show real file names? Is <code>sendDefaultPii</code> (send users' personal data) off?"
       },
       "changes": [
-        "+ Maya: gets an alert on her phone",
-        "~ Errors and Uptime alert her; Logs and Analytics wait for the digest",
+        "+ You: get an alert on your phone",
+        "~ Errors and Uptime alert you; Logs and Analytics go in a daily email",
         "~ Time to notice 3 hours → 2 min",
         "~ Alerts a day 0 → 3"
       ],
@@ -257,17 +257,17 @@
       },
       "scene": {
         "extends": "previous",
-        "caption": "Only errors and downtime reach Maya's phone.",
+        "caption": "Only errors and downtime reach your phone.",
         "nodes": [
           { "id": "analytics", "status": "dim", "pill": null },
           { "id": "errors", "status": "normal" },
           { "id": "uptime", "status": "normal" },
-          { "id": "maya", "x": 8.4, "y": 7.4, "label": "Maya", "icon": "user", "kind": "person", "status": "active" }
+          { "id": "you", "x": 8.4, "y": 7.4, "label": "You", "icon": "laptop", "kind": "person", "status": "active" }
         ],
         "edges": [
           { "id": "app>analytics", "status": "dim", "packet": false },
-          { "from": "errors", "to": "maya", "label": "alert", "packet": { "kind": "error", "speed": "slow" } },
-          { "from": "uptime", "to": "maya", "packet": { "kind": "error", "speed": "slow" } }
+          { "from": "errors", "to": "you", "label": "alert", "packet": { "kind": "error", "speed": "slow" } },
+          { "from": "uptime", "to": "you", "packet": { "kind": "error", "speed": "slow" } }
         ]
       }
     },
@@ -289,7 +289,7 @@
       },
       "changes": [
         "~ Logs: now hold private note text and login tokens",
-        "~ Errors, Uptime and Maya step back"
+        "~ Errors, Uptime and You step back"
       ],
       "scene": {
         "extends": "previous",
@@ -297,12 +297,12 @@
         "nodes": [
           { "id": "errors", "status": "dim" },
           { "id": "uptime", "status": "dim" },
-          { "id": "maya", "status": "dim" },
+          { "id": "you", "status": "dim" },
           { "id": "logs", "status": "error", "pill": { "text": "note text", "tone": "bad" } }
         ],
         "edges": [
-          { "id": "errors>maya", "status": "dim", "packet": false },
-          { "id": "uptime>maya", "status": "dim", "packet": false },
+          { "id": "errors>you", "status": "dim", "packet": false },
+          { "id": "uptime>you", "status": "dim", "packet": false },
           { "id": "app>logs", "status": "error", "packet": { "kind": "secret" } }
         ]
       }
@@ -316,7 +316,7 @@
       ],
       "changes": [
         "~ Logs: ids and numbers only",
-        "~ All four signals and Maya's alerts back in view"
+        "~ All four signals and your alerts back in view"
       ],
       "scene": {
         "extends": "previous",
@@ -325,12 +325,12 @@
           { "id": "errors", "status": "ok" },
           { "id": "uptime", "status": "ok" },
           { "id": "analytics", "status": "ok" },
-          { "id": "maya", "status": "normal" },
+          { "id": "you", "status": "normal" },
           { "id": "logs", "status": "ok", "pill": { "text": "ids only", "tone": "good" } }
         ],
         "edges": [
-          { "id": "errors>maya", "status": "normal" },
-          { "id": "uptime>maya", "status": "normal" },
+          { "id": "errors>you", "status": "normal" },
+          { "id": "uptime>you", "status": "normal" },
           { "id": "app>logs", "status": "normal", "packet": { "kind": "data", "speed": "slow" } },
           { "id": "app>analytics", "status": "normal" },
           { "id": "app>errors", "status": "normal" },
@@ -341,7 +341,7 @@
   ],
   "quiz": [
     {
-      "question": "Notely's server is completely down. Which signal tells Maya first?",
+      "question": "Notely's server is completely down. Which signal tells you first?",
       "options": [
         { "text": "Sentry, because it catches every error.", "why": "Sentry runs inside the app. If the app is not running, there is nothing to send the error." },
         { "text": "An uptime check calling <code>/api/health</code> from outside.", "correct": true, "why": "It runs on someone else's servers, so it notices when your app stops answering, and it alerts within minutes." },
@@ -357,7 +357,7 @@
       ]
     },
     {
-      "question": "Maya gets about 40 alerts a day, mostly warnings from preview builds. Last night she slept through a real outage. What should change?",
+      "question": "You get about 40 alerts a day, mostly warnings from preview builds. Last night you slept through a real outage. What should change?",
       "options": [
         { "text": "Alert only on user-facing problems in production, and send the rest to a digest.", "correct": true, "why": "Alert fatigue made the real alert invisible. Fewer, clearer alerts get acted on. Tagging the environment keeps preview noise out." },
         { "text": "Turn alerts up to the loudest sound.", "why": "Louder noise does not help when most of it is meaningless. People mute or ignore it." },

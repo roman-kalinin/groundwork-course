@@ -30,15 +30,15 @@
       "title": "Where Notely runs today",
       "chapter": "setup",
       "body": [
-        "Notely's users reach the <b>app server</b>, the computer running Notely's live code. It keeps their notes in the <b>database</b>. Together, that live setup is called production.",
-        "Maya also runs Notely on her <b>laptop</b>, to try changes before they go live. A settings file on the laptop gives it the database address: the very same one the live app uses."
+        "Notely's 5,000 users reach the <b>app server</b>, the computer running Notely's live code. It keeps their notes in the <b>database</b>, run by Supabase. That live setup is called production.",
+        "You also run Notely on your <b>laptop</b> to try changes. A settings file on the laptop gives it the database address: the same one the live app uses."
       ],
       "metrics": {
         "tests": { "value": "Real data", "tone": "warn" },
         "gate": "None"
       },
       "scene": {
-        "caption": "The live app and Maya's laptop both talk to the same database.",
+        "caption": "The live app and your laptop both talk to the same database.",
         "nodes": [
           { "id": "users", "x": 0.8, "y": 4.2, "label": "5,000 users", "icon": "users", "shape": "crowd" },
           { "id": "app", "x": 4.6, "y": 4.2, "label": "App Server", "icon": "server", "kind": "server" },
@@ -56,8 +56,8 @@
       "title": "One database for everything",
       "chapter": "problem",
       "body": [
-        "Maya is building a <b>delete all my notes</b> button. On her laptop she clicks it a few times to try it.",
-        "Real users' notes disappear. Nothing was wrong with her laptop. It was talking to the one database that mattered."
+        "You are building a <b>delete all my notes</b> button. On your laptop you click it a few times to try it.",
+        "Real users' notes disappear. Nothing was wrong with your laptop. It was talking to the one database that mattered."
       ],
       "callout": {
         "type": "analogy",
@@ -91,8 +91,8 @@
         "<b>Local</b> is the laptop, with a throwaway database. <b>Preview</b> is a copy of the app per branch, on test data. <b>Production</b> is the live app server and the only place with real users. A mistake in the first two costs nothing."
       ],
       "changes": [
-        "− 5,000 users: out of frame for now",
-        "+ Local DB and Test DB: throwaway data for trying things",
+        "− 5,000 users: out of frame; the rest form three columns",
+        "+ Local DB and Test DB: throwaway data; the laptop now uses Local DB",
         "+ Preview: a copy of the app for each branch",
         "~ Tests touch Real data → Test data"
       ],
@@ -120,8 +120,8 @@
       "title": "Same code, different settings",
       "chapter": "how",
       "body": [
-        "How does one codebase know which database to use? <span class=\"term\" data-term=\"environment variable\">Environment variables</span>: named settings handed to the app from outside the code. The code reads <code>SUPABASE_URL</code>, and each environment fills in a different address.",
-        "On the laptop they live in <code>.env.local</code>, never committed. On Vercel you set them per environment."
+        "How does one codebase know which database to use? <span class=\"term\" data-term=\"environment variable\">Environment variables</span>: named settings handed to the app from outside the code. The code reads one name, like <code>NEXT_PUBLIC_SUPABASE_URL</code>, and each environment fills in its own address.",
+        "On the laptop they live in <code>.env.local</code>, never committed. On Vercel, the host that runs Notely, you set them per environment."
       ],
       "code": {
         "language": "env",
@@ -131,7 +131,7 @@
       },
       "callout": {
         "type": "warn",
-        "text": "In Next.js, Notely's toolkit, any variable starting with <code>NEXT_PUBLIC_</code> is copied into the code every browser downloads. Only public values go there. Never the Claude API key or the Supabase service role key."
+        "text": "In Next.js, Notely's toolkit, any variable starting with <code>NEXT_PUBLIC_</code> is copied into the code every browser downloads. Only public values go there, never a secret like the Claude API key."
       },
       "changes": [
         "~ Each column's link: the address now comes from its own settings"
@@ -187,8 +187,8 @@
       "title": "CI: a robot checks every push",
       "chapter": "idea",
       "body": [
-        "Separate environments protect data. <span class=\"term\">CI</span> protects code. On every push to GitHub, a machine installs the app and runs the same checks: <span class=\"term\">lint</span> (an automatic read-through for likely mistakes), type check, tests.",
-        "Then <span class=\"term\">CD</span> takes over: merge to main, and production deploys on its own. The whole route from push to live is the <span class=\"term\">pipeline</span>."
+        "Environments protect data; <span class=\"term\">CI</span> protects code. On every push to GitHub (where the code lives), a robot runs checks: <span class=\"term\">lint</span> (a read-through for likely mistakes), a type check (do values fit) and tests. For now, red only warns.",
+        "Then <span class=\"term\">CD</span>: merge to main, and Vercel deploys production on its own. The whole route is the <span class=\"term\">pipeline</span>."
       ],
       "callout": {
         "type": "analogy",
@@ -196,25 +196,25 @@
       },
       "changes": [
         "− Laptop, Local DB, Test DB, Database: we follow the code now",
-        "+ GitHub: stores the code and its pull requests",
-        "+ CI: a robot that runs checks on every push",
+        "+ GitHub: stores the code; each push starts CI and a preview",
+        "+ CI: a robot that runs checks and reports back to GitHub",
         "~ Merge gate None → Warns"
       ],
       "metrics": {
         "gate": { "value": "Warns", "tone": "warn" }
       },
       "scene": {
-        "caption": "Every push goes through CI. A merge to main deploys production.",
+        "caption": "Every push is checked by CI and gets a preview. A merge to main deploys production.",
         "nodes": [
-          { "id": "github", "x": 0.8, "y": 3.6, "label": "GitHub", "icon": "git", "kind": "external" },
-          { "id": "ci", "x": 4.6, "y": 3.6, "label": "CI", "icon": "robot", "kind": "server", "status": "active" },
+          { "id": "github", "x": 4.6, "y": 3.6, "label": "GitHub", "icon": "git", "kind": "external" },
+          { "id": "ci", "x": 0.8, "y": 3.6, "label": "CI", "icon": "robot", "kind": "server", "status": "active" },
           { "id": "preview", "x": 8.4, "y": 1.2, "label": "Preview", "icon": "globe", "kind": "server", "pill": "preview", "status": "normal" },
           { "id": "app", "x": 8.4, "y": 6.0, "label": "App Server", "icon": "server", "kind": "server", "pill": "production", "status": "normal" }
         ],
         "edges": [
-          { "from": "github", "to": "ci", "packet": { "kind": "request" } },
-          { "from": "ci", "to": "preview", "packet": { "kind": "data", "speed": "slow" } },
-          { "from": "ci", "to": "app", "label": "on merge", "style": "dashed" }
+          { "from": "github", "to": "ci", "packet": { "kind": "request", "direction": "both" } },
+          { "from": "github", "to": "preview", "packet": { "kind": "data", "speed": "slow" } },
+          { "from": "github", "to": "app", "label": "on merge", "style": "dashed" }
         ]
       }
     },
@@ -242,7 +242,7 @@
         "extends": "previous",
         "caption": "CI runs four commands on every push.",
         "nodes": [
-          { "id": "ci", "pill": "4 checks" }
+          { "id": "ci", "pill": "4 steps" }
         ]
       }
     },
@@ -255,8 +255,8 @@
       ],
       "changes": [
         "~ CI: one test fails",
-        "~ CI → App Server: the merge is blocked",
-        "~ Merge gate Warns → Blocks"
+        "~ GitHub → App Server: the merge is blocked",
+        "~ Merge gate Warns → Blocks; App Server keeps its good code"
       ],
       "metrics": {
         "gate": { "value": "Blocks", "tone": "good" }
@@ -269,7 +269,7 @@
           { "id": "app", "status": "ok" }
         ],
         "edges": [
-          { "id": "ci>app", "label": "blocked", "status": "error" }
+          { "id": "github>app", "label": "blocked", "status": "error" }
         ]
       }
     },
@@ -317,7 +317,7 @@
       ],
       "changes": [
         "− Preview → Database link: Preview gets its own test keys",
-        "~ Test DB back in use",
+        "~ Test DB back in use, Database safe again",
         "~ Tests touch Real data → Test data"
       ],
       "metrics": {
@@ -340,7 +340,7 @@
   ],
   "quiz": [
     {
-      "question": "Maya wants to try a database change that drops a column. Where should she run it first?",
+      "question": "You want to try a database change that drops a column. Where do you run it first?",
       "options": [
         { "text": "On production, late at night when traffic is low.", "why": "Low traffic does not make a dropped column come back. Try destructive changes where data is fake." },
         { "text": "Locally or on a preview database, then production after it works.", "correct": true, "why": "That is what non-production environments are for. A mistake there costs a reset, not real users' data." },
@@ -352,7 +352,7 @@
       "options": [
         { "text": "Nothing, as long as the variable is set on Vercel and not committed.", "why": "Where it is stored does not matter. The <code>NEXT_PUBLIC_</code> prefix copies the value into the code every visitor downloads." },
         { "text": "The name is too long for Vercel.", "why": "The name is fine. The prefix is the problem." },
-        { "text": "The key is shipped to every browser. Call Claude from the app server with a private variable.", "correct": true, "why": "Anyone can open the downloaded code and spend your credits. The key must stay on the server, behind your own API route." }
+        { "text": "The key is shipped to every browser. Call Claude from the app server with a private variable.", "correct": true, "why": "Anyone can open the downloaded code and spend your credits. The key must stay on the app server, which calls Claude for the browser." }
       ]
     },
     {

@@ -33,7 +33,7 @@
       "chapter": "setup",
       "body": [
         "Notely's users reach the <b>app server</b>, the computer running Notely's code, which asks the <b>Claude API</b> (Anthropic's AI) for summaries.",
-        "At 18:25, Maya made a <span class=\"term\">deploy</span>: she put a new version of the code live. Everything looked fine, so she went to make dinner."
+        "At 18:25, you made a <span class=\"term\">deploy</span>: you put a new version of Notely's code live on Vercel, the company that runs it. Everything looked fine, so you went to make dinner."
       ],
       "metrics": {
         "stage": "Normal",
@@ -41,12 +41,12 @@
         "told": "No need"
       },
       "scene": {
-        "caption": "Users, the app server running the 18:25 version, and the Claude API. Maya is off duty.",
+        "caption": "Users, the app server running the 18:25 version, and the Claude API. You are off duty.",
         "nodes": [
-          { "id": "users", "x": 0.8, "y": 3.6, "label": "3,000 users", "icon": "users", "shape": "crowd" },
+          { "id": "users", "x": 0.8, "y": 3.6, "label": "5,000 users", "icon": "users", "shape": "crowd" },
           { "id": "app", "x": 4.6, "y": 3.6, "label": "App Server", "icon": "server", "kind": "server", "pill": "18:25 code" },
           { "id": "llm", "x": 8.4, "y": 3.6, "label": "Claude API", "icon": "sparkle", "kind": "ai" },
-          { "id": "maya", "x": 4.6, "y": 7.4, "label": "Maya", "icon": "user", "kind": "person", "status": "dim" }
+          { "id": "you", "x": 4.6, "y": 7.4, "label": "You", "icon": "laptop", "kind": "person", "status": "dim" }
         ],
         "edges": [
           { "from": "users", "to": "app", "packet": { "kind": "request", "direction": "both" } },
@@ -58,12 +58,12 @@
       "title": "Friday, 18:40, the phone buzzes",
       "chapter": "problem",
       "body": [
-        "An alert: summary errors for hundreds of users, starting right after the 18:25 deploy. Maya's heart rate jumps.",
-        "She opens the code and starts changing things directly on main, the live branch. Three quick fixes in ten minutes. The third breaks login as well. Panic turned one broken feature into two."
+        "An alert: summary errors for hundreds of users, starting right after the 18:25 deploy. Your heart rate jumps.",
+        "You open the code and start changing things directly on main, the live branch. Three quick fixes in ten minutes. The third breaks login as well. Panic turned one broken feature into two."
       ],
       "changes": [
         "~ App Server → Claude API: summaries fail since 18:25",
-        "~ Maya → App Server: three rushed fixes, straight to main",
+        "~ You → App Server: three rushed fixes, straight to main",
         "~ Broken features 0 → 2: login breaks too",
         "~ Users told No need → Nobody"
       ],
@@ -77,11 +77,11 @@
         "nodes": [
           { "id": "app", "status": "error" },
           { "id": "users", "status": "warn" },
-          { "id": "maya", "status": "warn" }
+          { "id": "you", "status": "warn" }
         ],
         "edges": [
           { "id": "app>llm", "status": "error", "packet": { "kind": "error" } },
-          { "from": "maya", "to": "app", "status": "error", "packet": { "kind": "error", "speed": "fast" } }
+          { "from": "you", "to": "app", "status": "error", "packet": { "kind": "error", "speed": "fast" } }
         ]
       }
     },
@@ -97,16 +97,16 @@
         "text": "First aid. You stop the bleeding before you ask how the accident happened. The diagnosis comes later, in a calmer room."
       },
       "changes": [
-        "~ Maya → App Server: the rushed fixes stop"
+        "~ You → App Server: the rushed fixes stop"
       ],
       "scene": {
         "extends": "previous",
-        "caption": "Maya stops typing. The tile above will follow her through the five steps.",
+        "caption": "You stop typing. The Incident step tile above will follow you through the five steps.",
         "nodes": [
-          { "id": "maya", "status": "active" }
+          { "id": "you", "status": "active" }
         ],
         "edges": [
-          { "id": "maya>app", "status": "dim", "packet": false }
+          { "id": "you>app", "status": "dim", "packet": false }
         ]
       }
     },
@@ -119,7 +119,7 @@
       ],
       "callout": {
         "type": "tip",
-        "text": "Check your providers' status pages too. If the Claude API or Supabase is having an outage, your fix is a clear error message and patience, not a code change."
+        "text": "Check your providers' status pages too. If the Claude API or Supabase (Notely's database host) is down, your fix is a clear error message and patience, not a code change."
       },
       "changes": [
         "~ App Server: errors began with the 18:25 deploy",
@@ -132,7 +132,7 @@
         "extends": "previous",
         "caption": "The errors line up with the 18:25 deploy.",
         "nodes": [
-          { "id": "maya", "status": "normal" },
+          { "id": "you", "status": "normal" },
           { "id": "app", "pill": { "text": "since 18:25", "icon": "clock", "tone": "bad" } }
         ]
       }
@@ -141,12 +141,12 @@
       "title": "Stop the damage: roll back",
       "chapter": "how",
       "body": [
-        "The errors started with the 18:25 deploy, so the fastest way to <span class=\"term\">mitigate</span> is to put the 17:10 version back live: a <span class=\"term\">rollback</span>.",
-        "Vercel keeps every deploy. Instant Rollback points Notely back at an older one in seconds, with nothing to build. Users get a working app while Maya investigates calmly."
+        "The errors started with the 18:25 deploy. The fastest way to <span class=\"term\">mitigate</span>, or reduce the harm, is a <span class=\"term\">rollback</span>: put the last good deploy, from 17:10, back live. That undoes your rushed fixes too.",
+        "Vercel keeps every deploy. Instant Rollback switches back to an older one in seconds, with nothing to build. Then you can investigate calmly."
       ],
       "callout": {
         "type": "warn",
-        "text": "The bad code is still on <code>main</code>. Revert it there too (lesson 1). After an Instant Rollback, Vercel also stops putting new deploys live on its own, so your fix goes live only when you promote it."
+        "text": "The bad code is still on <code>main</code>. Revert it there too (lesson 1). After an Instant Rollback, Vercel also stops putting new deploys live on its own, so your fix goes live only when you promote it (make it the live one)."
       },
       "changes": [
         "+ Deploy 18:25 and Deploy 17:10: two kept versions",
@@ -209,27 +209,29 @@
       "title": "Tell people early, then on a schedule",
       "chapter": "how",
       "body": [
-        "Back to Friday. Silence feels worse than bad news. Post a short update as soon as the problem is confirmed, on a <span class=\"term\">status page</span> (a public page about outages) or in the app, and tell the client directly.",
+        "Back to the real Friday. Post a short update as soon as the problem is confirmed, on a <span class=\"term\">status page</span> (a public page about outages) or in the app. On client work, tell the client directly.",
         "Say what is affected, what is safe, what you are doing, and when the next update comes. Then keep that promise."
       ],
       "code": {
         "language": "text",
         "filename": "Status update, 18:52",
-        "code": "AI summaries failed for most users from 18:25.\nYour notes are safe. We rolled back at 18:50,\nand everything works again. We are fixing the cause.\nNext update by 19:30.",
+        "code": "Summaries, then login, failed from 18:25.\nYour notes are safe. We rolled back at 18:50,\nand everything works again. We are fixing the cause.\nNext update by 19:30.",
         "caption": "Four sentences: what broke, what is safe, what you are doing, when you will speak again."
       },
       "changes": [
         "+ Status Page: tells users what broke and what is safe",
         "~ Claude API and App Server back to Friday's real state",
-        "~ Users told Nobody → 18:52"
+        "~ Users told Nobody → 18:52",
+        "~ Incident step Stop harm → Tell users"
       ],
       "metrics": {
-        "told": { "value": "18:52", "tone": "good" }
+        "told": { "value": "18:52", "tone": "good" },
+        "stage": { "value": "Tell users", "tone": "warn" }
       },
       "scene": {
         "extends": "previous",
-        "caption": "Maya writes one update; the status page carries it to every user.",
-        "remove": ["maya>app"],
+        "caption": "You write one update; the status page carries it to every user.",
+        "remove": ["you>app"],
         "nodes": [
           { "id": "llm", "status": "normal" },
           { "id": "app", "status": "ok", "pill": "17:10 code" },
@@ -237,7 +239,7 @@
         ],
         "edges": [
           { "id": "app>llm", "status": "normal", "packet": { "kind": "request", "direction": "both", "speed": "slow" } },
-          { "from": "maya", "to": "status", "packet": { "kind": "request", "speed": "slow" } },
+          { "from": "you", "to": "status", "packet": { "kind": "request", "speed": "slow" } },
           { "from": "status", "to": "users", "packet": { "kind": "response", "speed": "slow" } }
         ]
       }
@@ -246,7 +248,7 @@
       "title": "Fix it properly, on a branch",
       "chapter": "example",
       "body": [
-        "Now there is time. Find the <span class=\"term\">root cause</span>, not only the symptom. The 18:25 deploy renamed a field, and the summary code still read the old name.",
+        "Now find the <span class=\"term\">root cause</span>, not only the symptom. The 18:25 deploy renamed a function, and the summary code still called it by the old name.",
         "Fix it the normal way: a branch, a test that reproduces the bug (lesson 3), a pull request, a preview. Then put it live and watch the errors for a few minutes."
       ],
       "callout": {
@@ -256,7 +258,7 @@
       "changes": [
         "+ Fix Branch: the real fix, with a test, through a pull request",
         "~ Status Page steps back",
-        "~ Incident step Stop harm → Fix"
+        "~ Incident step Tell users → Fix"
       ],
       "metrics": {
         "stage": { "value": "Fix", "tone": "warn" }
@@ -269,7 +271,7 @@
           { "id": "fix", "x": 4.6, "y": 0.6, "label": "Fix Branch", "icon": "git", "shape": "tile", "kind": "neutral", "status": "active", "pill": { "text": "test passes", "tone": "good" } }
         ],
         "edges": [
-          { "id": "maya>status", "status": "dim", "packet": false },
+          { "id": "you>status", "status": "dim", "packet": false },
           { "id": "status>users", "status": "dim", "packet": false },
           { "from": "fix", "to": "app", "packet": { "kind": "data", "speed": "slow" } }
         ]
@@ -279,22 +281,22 @@
       "title": "A rollback does not roll back data",
       "chapter": "watch-out",
       "body": [
-        "Rolling back swaps the code, not the <b>database</b>, where Notely keeps every note. If a bad deploy changed the database's shape, or wrote broken rows, those stay.",
-        "The old code may even crash on the new shape. So make database changes additive (add a column, stop using the old one later), and check the data after every incident."
+        "Rolling back swaps the code, not the <b>database</b>, where Notely keeps every note. Broken rows a bad deploy wrote, or a table it changed, stay.",
+        "What if the 18:25 deploy had also renamed the column <code>body</code> to <code>content</code>? The 17:10 code asks for <code>body</code> and crashes. Make database changes additive: add the new column, drop the old one later."
       ],
       "callout": {
         "type": "warn",
         "text": "If a change dropped or renamed a column, a rollback can make things worse. That is the case for point-in-time recovery from lesson 5, so know where your backups are before the bad day."
       },
       "changes": [
-        "− Maya, Status Page, Fix Branch: we look at the data",
+        "− You, Status Page, Fix Branch: a what-if about the data",
         "+ Database: keeps every note; the rollback never touched it",
-        "~ App Server: old code expects a column that was renamed"
+        "~ What if: a renamed column makes the 17:10 code crash"
       ],
       "scene": {
         "extends": "previous",
-        "caption": "Old code, new database shape: the rollback cannot fix this mismatch.",
-        "remove": ["maya", "status", "fix"],
+        "caption": "What if: old code meets a renamed column. A rollback cannot fix this.",
+        "remove": ["you", "status", "fix"],
         "nodes": [
           { "id": "app", "status": "error", "pill": { "text": "17:10 code", "tone": "bad" } },
           { "id": "db", "x": 4.6, "y": 7.4, "label": "Database", "icon": "database", "kind": "data", "status": "warn", "pill": { "text": "body→content", "tone": "warn" } }
@@ -308,7 +310,7 @@
       "title": "Learn, then recap",
       "chapter": "recap",
       "body": [
-        "Within a few days, write a one-page <span class=\"term\">postmortem</span>: timeline, impact, root cause, two or three changes. Blameless: ask \"what let this through?\", not \"who did it?\". Here: no test covered summaries, and the rename shipped in one step.",
+        "Within a few days, write a one-page <span class=\"term\">postmortem</span>: timeline, impact, root cause, two or three changes. Blameless: ask \"what let this through?\", not \"who did it?\". Here: no test covered summaries, and rushed fixes went straight to main.",
         "The order: confirm, stop the damage, tell people, fix, learn. Code rolls back; data does not."
       ],
       "callout": {
@@ -316,7 +318,7 @@
         "text": "For client work, a calm postmortem builds trust. Clients forgive outages. They do not forgive silence, or the same outage twice."
       },
       "changes": [
-        "~ App Server and Database: the fix works with both",
+        "~ Back to the real Friday: App Server and Database healthy",
         "~ Incident step Fix → Learn"
       ],
       "metrics": {

@@ -35,23 +35,21 @@
       "title": "How a change reaches Notely today",
       "chapter": "setup",
       "body": [
-        "Maya builds Notely, our notes app, with Claude Code on her <b>laptop</b>. Finished changes go up to <span class=\"term\">GitHub</span>, a website that stores the project's code.",
-        "Vercel, the company that runs Notely, picks up the new code from GitHub and puts it on the <b>app server</b> (the computer running Notely's code). That live version is called <span class=\"term\">production</span>."
+        "You build Notely, our notes app, with Claude Code on your <b>laptop</b>. When a change looks done, Claude Code uploads the files straight to Vercel, the company that runs Notely.",
+        "Vercel puts them on the <b>app server</b> (the computer running Notely's code), replacing what was there. That live version is called <span class=\"term\">production</span>. Nothing else keeps track of the changes."
       ],
       "metrics": {
         "saves": 0,
         "live": { "value": "Working", "tone": "good" }
       },
       "scene": {
-        "caption": "Code goes from the laptop to GitHub, and from GitHub to the live app server.",
+        "caption": "Files go straight from the laptop to the live app server. No save points yet.",
         "nodes": [
-          { "id": "laptop", "x": 0.8, "y": 3.6, "label": "Laptop", "icon": "laptop", "kind": "client" },
-          { "id": "github", "x": 4.6, "y": 3.6, "label": "GitHub", "icon": "git", "kind": "external" },
-          { "id": "app", "x": 8.4, "y": 3.6, "label": "App Server", "icon": "server", "kind": "server", "pill": "live" }
+          { "id": "laptop", "x": 2.4, "y": 3.6, "label": "Laptop", "icon": "laptop", "kind": "client" },
+          { "id": "app", "x": 7.4, "y": 3.6, "label": "App Server", "icon": "server", "kind": "server", "pill": "live" }
         ],
         "edges": [
-          { "from": "laptop", "to": "github", "packet": { "kind": "data", "speed": "slow" } },
-          { "from": "github", "to": "app", "packet": { "kind": "data", "speed": "slow" } }
+          { "from": "laptop", "to": "app", "packet": { "kind": "data", "speed": "slow" } }
         ]
       }
     },
@@ -59,8 +57,8 @@
       "title": "It worked yesterday",
       "chapter": "problem",
       "body": [
-        "Maya asks Claude Code to add tags to notes. It edits fourteen files, and they go straight to production. Now the <b>Summarize</b> button throws an error.",
-        "Which of the fourteen changes broke it? What did the files look like yesterday? Nothing recorded it, so Maya can only guess and patch on top of the damage."
+        "You ask Claude Code to add tags to notes. It edits fourteen files, and they go straight to production. Now the <b>Summarize</b> button throws an error.",
+        "Which of the fourteen changes broke it? What did the files look like yesterday? Nothing recorded the changes one by one, so you can only guess and patch on top of the damage."
       ],
       "callout": {
         "type": "analogy",
@@ -82,7 +80,7 @@
           { "id": "app", "status": "error", "pill": { "text": "live", "tone": "bad" } }
         ],
         "edges": [
-          { "id": "github>app", "status": "error", "packet": { "kind": "error", "speed": "fast" } }
+          { "id": "laptop>app", "status": "error", "packet": { "kind": "error", "speed": "fast" } }
         ]
       }
     },
@@ -90,15 +88,15 @@
       "title": "Commits: save points with names",
       "chapter": "idea",
       "body": [
-        "<span class=\"term\">Git</span>, a program on Maya's laptop, fixes this with <span class=\"term\" data-term=\"commit\">commits</span>. A commit is a snapshot of the whole project, with a short message and an id like <code>7c2e</code>.",
-        "Commits line up into a history, kept in the <span class=\"term\">repository</span> on the laptop and on GitHub. Any snapshot can be opened, compared or restored."
+        "<span class=\"term\">Git</span>, a program on your laptop, fixes this with <span class=\"term\" data-term=\"commit\">commits</span>. A commit is a snapshot of the whole project, with a message and an id like <code>7c2e</code>.",
+        "Replay the same work with Git: each change becomes a commit in the project's history, its <span class=\"term\">repository</span>. Yesterday is one step back."
       ],
       "callout": {
         "type": "tip",
         "text": "Claude Code creates commits for you when you ask it to. You still decide when a save point is worth making: after each small, working change."
       },
       "changes": [
-        "− Laptop, GitHub and App Server: we zoom into the history",
+        "− Laptop and App Server: we zoom into the history",
         "+ Notes list, AI summary, Add tags: three commits in a row",
         "~ Save points 0 → 3"
       ],
@@ -106,7 +104,7 @@
         "saves": { "value": 3, "tone": "good" }
       },
       "scene": {
-        "caption": "Three named snapshots. The newest one is broken; the one before it still exists.",
+        "caption": "The same work, saved as three commits. The newest one is broken; the one before it still exists.",
         "nodes": [
           { "id": "c1", "x": 0.8, "y": 3.0, "label": "Notes list", "icon": "git", "shape": "tile", "pill": "a1f3" },
           { "id": "c2", "x": 4.4, "y": 3.0, "label": "AI summary", "icon": "git", "shape": "tile", "pill": "7c2e", "status": "ok" },
@@ -123,7 +121,7 @@
       "chapter": "how",
       "body": [
         "Production is broken. Do not start editing files in a hurry. Use <span class=\"term\">revert</span>.",
-        "<code>git revert</code> creates a <b>new commit</b> that does the exact opposite of the bad one. The history stays complete, the new commit goes live like any other, and the app is back to how it was before tags."
+        "<code>git revert</code> creates a <b>new commit</b> that does the exact opposite of the bad one. The history stays complete. Push it to <span class=\"term\">GitHub</span> (a website that stores the code, which Vercel now deploys from), and the app is back to how it was before tags."
       ],
       "code": {
         "language": "bash",
@@ -161,8 +159,8 @@
       "title": "Branches: work beside the live app",
       "chapter": "how",
       "body": [
-        "Now Maya redoes tags, safely. A <span class=\"term\">branch</span> is a separate line of commits. <span class=\"term\">Main</span> holds what is live. New work goes on its own branch, here <code>feature/tags</code>.",
-        "She can commit half-finished tags all afternoon. Production keeps running main, untouched, until she decides the work is ready."
+        "Now you redo tags, safely. A <span class=\"term\">branch</span> is a separate line of commits. <span class=\"term\">Main</span> holds what is live. New work goes on its own branch, here <code>feature/tags</code>.",
+        "You can commit half-finished tags all afternoon. Production keeps running main, untouched, until you decide the work is ready."
       ],
       "callout": {
         "type": "analogy",
@@ -232,15 +230,15 @@
       "title": "Pull requests: the door to main",
       "chapter": "how",
       "body": [
-        "When the branch is ready, Maya opens a <span class=\"term\">pull request</span> on GitHub: a page asking to bring the branch into main, with the full diff.",
-        "Two things happen on their own. <b>Checks</b> run, like tests and type checks. Vercel builds a <b>preview</b>: a copy of this branch at its own web address. Nothing reaches production until someone presses Merge."
+        "When the branch is ready, you open a <span class=\"term\">pull request</span> on GitHub: a page asking to bring the branch into main, with the full diff.",
+        "Then, on their own, <b>Checks</b> run: small programs that test the code. Vercel builds a <b>preview</b>: a copy of this branch at its own web address. Nothing goes live until someone presses Merge."
       ],
       "callout": {
         "type": "tip",
         "text": "Working alone? Still use pull requests. The preview link is free QA, and the pull request page is a written record a client can read."
       },
       "changes": [
-        "− Revert tags, Tag chips, Tag filter: the branch is now one block",
+        "− Revert tags, Tag chips, Tag filter, lanes: the branch is one block",
         "+ Tags Branch → Pull Request: asks to join main",
         "+ Checks and Preview: run on their own for the request",
         "~ App Server waits: nothing is merged yet"
@@ -252,12 +250,12 @@
           { "id": "pr", "x": 4.6, "y": 4.2, "label": "Pull Request", "icon": "code", "kind": "external", "status": "active" },
           { "id": "app", "x": 8.4, "y": 4.2, "label": "App Server", "icon": "server", "kind": "server", "pill": "live", "status": "dim" },
           { "id": "checks", "x": 4.6, "y": 0.6, "label": "Checks", "icon": "check", "kind": "server" },
-          { "id": "preview", "x": 8.4, "y": 0.6, "label": "Preview", "icon": "globe", "kind": "server" }
+          { "id": "preview", "x": 4.6, "y": 7.4, "label": "Preview", "icon": "globe", "kind": "server" }
         ],
         "edges": [
           { "from": "branch", "to": "pr", "packet": { "kind": "request", "speed": "slow" } },
           { "from": "pr", "to": "checks" },
-          { "from": "checks", "to": "preview", "style": "dashed" },
+          { "from": "pr", "to": "preview" },
           { "from": "pr", "to": "app", "label": "merge", "style": "dotted", "status": "dim" }
         ]
       }
@@ -267,7 +265,7 @@
       "chapter": "example",
       "body": [
         "Claude Code can run the whole loop: branch, small commits, push, and open the pull request with <code>gh</code>, GitHub's command line tool.",
-        "Maya's job moves from typing commands to <b>reviewing</b>. She reads the diff like a design crit, clicks through the preview, waits for green checks, and only then lets it <span class=\"term\">merge</span>."
+        "Your job moves from typing commands to <b>reviewing</b>. You read the diff like a design crit, click through the preview, wait for green checks, and only then let it <span class=\"term\">merge</span>."
       ],
       "code": {
         "language": "bash",
@@ -279,7 +277,7 @@
         "text": "Ask it to work on a branch, never on main. Check the diff for files you did not expect: lockfiles, config, database changes, <code>.env</code>. Are commit messages specific? Did it push with <code>--force</code>? If so, ask why."
       },
       "changes": [
-        "+ Maya: reads the diff and clicks through the preview",
+        "+ You: read the diff and click through the preview",
         "~ Checks green, Pull Request merged into main",
         "~ App Server deploys the new main"
       ],
@@ -287,13 +285,13 @@
         "extends": "previous",
         "caption": "Checks are green and the preview looks right, so the pull request merges and main goes live.",
         "nodes": [
-          { "id": "maya", "x": 0.8, "y": 0.6, "label": "Maya", "icon": "user", "kind": "person", "status": "active" },
+          { "id": "you", "x": 0.8, "y": 7.4, "label": "You", "icon": "laptop", "kind": "person", "status": "active" },
           { "id": "checks", "status": "ok" },
           { "id": "pr", "status": "ok" },
           { "id": "app", "status": "active" }
         ],
         "edges": [
-          { "from": "maya", "to": "checks", "label": "review", "style": "dashed" },
+          { "from": "you", "to": "preview", "label": "review", "style": "dashed" },
           { "id": "pr>app", "status": "ok", "style": "solid", "packet": { "kind": "data" } }
         ]
       }
@@ -302,15 +300,15 @@
       "title": "Secrets in history stay in history",
       "chapter": "watch-out",
       "body": [
-        "Revert has a blind spot. Say a commit included <code>.env.local</code>, the file holding Notely's Claude API key. Reverting removes the file from the latest version only. The key is still readable in the old commit, forever.",
-        "Treat a committed secret as <b>leaked</b>. Create a new key, delete the old one, then list the file in <code>.gitignore</code> so Git skips it."
+        "Say the Add tags commit also held <code>.env.local</code>, the file with Notely's Claude API key (its password for the AI). Reverting removes the file from the newest version only; the old commit still holds the key, forever.",
+        "Treat it as <b>leaked</b> and <b>rotate</b> it: make a new key, delete the old. List the file in <code>.gitignore</code> so Git skips it."
       ],
       "callout": {
         "type": "warn",
         "text": "Do not rewrite shared history with a <span class=\"term\">force push</span> to hide it. Copies already exist on GitHub and other laptops, and bots scan public repositories for keys within minutes. Rotating the key is the real fix."
       },
       "changes": [
-        "− Maya, Tags Branch, Pull Request, Checks, Preview, App Server",
+        "− You, Tags Branch, Pull Request, Checks, Preview, App Server",
         "+ Add tags, Revert tags: two commits on main",
         "+ .env.local: a secret file still inside Add tags"
       ],
@@ -352,7 +350,7 @@
   ],
   "quiz": [
     {
-      "question": "A merged pull request broke production ten minutes ago. Your teammate has already pulled main. What is the safest way to undo it?",
+      "question": "A merged pull request broke production ten minutes ago. A teammate already has the new main on their laptop. What is the safest way to undo it?",
       "options": [
         { "text": "<code>git reset --hard</code> to the old commit, then force push main.", "why": "That rewrites shared history. Your teammate's copy no longer matches GitHub, and their next push can bring the bad commit back or lose work." },
         { "text": "Edit the broken files by hand until the error goes away.", "why": "Patching under pressure often adds new bugs, and the app stays broken while you work." },
@@ -368,10 +366,10 @@
       ]
     },
     {
-      "question": "Maya notices she committed <code>.env.local</code> with a live API key and pushed it. She reverts the commit. Is she safe?",
+      "question": "You notice you committed <code>.env.local</code> with a live API key and pushed it. You revert the commit. Are you safe?",
       "options": [
         { "text": "Yes. The revert removed the file.", "why": "It removed the file from the newest version only. The old commit still contains the key, and anyone with the repository can read it." },
-        { "text": "No. She must create a new key, delete the old one, and ignore the file.", "correct": true, "why": "Once a secret is pushed, assume it is leaked. Rotating the key makes the leaked copy worthless, and <code>.gitignore</code> stops it happening again." },
+        { "text": "No. Create a new key, delete the old one, and ignore the file.", "correct": true, "why": "Once a secret is pushed, assume it is leaked. Rotating the key makes the leaked copy worthless, and <code>.gitignore</code> stops it happening again." },
         { "text": "Yes, as long as the repository is private.", "why": "Private repositories still get cloned, shared with tools and opened to collaborators. Private lowers the risk; it does not undo the leak." }
       ]
     }
