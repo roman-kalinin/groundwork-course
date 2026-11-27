@@ -12,3 +12,4 @@ screenshots/
 .env*
 *.tmp.mjs
 *.tmp.py
+.rvtmp/
